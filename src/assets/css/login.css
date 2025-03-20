@@ -1,0 +1,130 @@
+.container {
+    height: 100vh;
+    width: 100%;
+    background-image: url('../imgs/background.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.login-area {
+    float: right;
+    text-align: center;
+    margin-right: 130px;
+}
+
+.logo {
+    margin-top: 40px;
+    margin-bottom: 16px;
+    width: 120px;
+    height: 140px;
+}
+
+.login-input {
+    display: flex;
+    flex-direction: column;
+    margin-top: 28px;
+    margin-bottom: 16px;
+}
+
+.input {
+    position: relative;
+    width: 500px;
+    height: 80px;
+    border-radius: 16px;
+    padding-left: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    font-size: 20px;
+    transition: 0.3s;
+}
+
+.login-label {
+    position: absolute;
+    left: 60%;
+    transform: translateY(-50%);
+    color: #aaa;
+    font-size: 20px;
+    pointer-events: none;
+    transition: 0.3s;
+}
+
+.label-st {
+    top: 41%;
+}
+
+.label-st.active {
+    top: 37%;
+    font-size: 16px;
+}
+
+.label-pass {
+    top: 54.5%;
+}
+
+.label-pass.active {
+    top: 51%;
+    font-size: 16px;
+}
+
+.input::placeholder {
+    font-size: 20px;
+}
+
+.input:focus-visible {
+    outline: none;
+    box-shadow: 1px 1px 5px #aaa;
+}
+
+.checkbox {
+    text-align: left;
+    display: flex;
+}
+
+.checkbox label {
+    font-size: 14px;
+    margin-left: 8px;
+}
+
+.login-btn {
+    display: flex;
+    flex-direction: column;
+    margin-top: 16px;
+}
+
+.btn {
+    width: 500px;
+    height: 50px;
+    border-radius: 16px;
+    line-height: 2.5;
+    font-size: 20px;
+}
+
+.btn-login {
+    background: linear-gradient(to left, #3375B7, #2AB6EE);
+    color: #fff;
+    border: none;
+}
+
+.btn-login:hover {
+    background: #3375B7;
+    cursor: pointer;
+    box-shadow: 5px 5px 5px #aaaaaa;
+}
+
+.btn-login-email {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ccc;
+}
+
+.btn-login-email:hover {
+    cursor: pointer;
+    box-shadow: 5px 5px 5px #aaaaaa;
+}
+
+.btn-login-email img {
+    height: 40px;
+    vertical-align: middle;
+    margin-right: 8px;
+}

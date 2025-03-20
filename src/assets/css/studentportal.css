@@ -1,0 +1,165 @@
+/* Keep your existing styles but enhance the hover effect */
+.announcements-section {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 1px 1px 5px #aaaaaa;
+}
+
+.right-sidebar {
+  width: 300px;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #000;
+}
+
+/* Announcement Items with enhanced hover effect */
+.announcement-item {
+  background-color: #e8f4f9;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease; /* Smooth transition for all properties */
+  position: relative;
+  top: 0;
+  border: 1px solid transparent;
+}
+
+.announcement-item:hover {
+  background-color: #d9edf7; 
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); 
+  top: -1px;
+  transform: translateY(-1px);
+}
+
+.announcement-item:hover .announcement-title {
+  text-decoration: underline;
+}
+
+.announcement-header {
+  margin-bottom: 10px;
+}
+
+.announcement-title {
+  font-size: 16px;
+  color: #000;
+  margin: 0;
+  transition: color 0.2s ease;
+}
+
+.announcement-date {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0 0 0;
+}
+
+.announcement-content p {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 5px;
+}
+
+.pagination-item {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  color: #333;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-item:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.05);
+}
+
+.pagination-item.active {
+  background-color: #4990e2;
+  color: white;
+}
+
+.pagination-ellipsis {
+  color: #666;
+  padding: 0 5px;
+}
+
+/* Announcement Detail Styles */
+.announcement-detail-section {
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 1px 1px 5px #aaaaaa;
+}
+
+.back-nav {
+  margin-bottom: 20px;
+}
+
+.back-button {
+  background-color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: #000;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  font-size: 20px;
+}
+
+.back-button:hover {
+  background-color: #fff;
+  transform: translateX(-3px);
+}
+
+.announcement-detail {
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+}
+
+.announcement-detail-header {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 12px;
+  margin-bottom: 15px;
+}
+
+.announcement-detail-title {
+  font-size: 1.3rem;
+  color: #0066cc;
+  margin: 0 0 10px 0;
+}
+
+.announcement-detail-date {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.announcement-detail-content {
+  line-height: 1.6;
+  font-size: 1rem;
+}

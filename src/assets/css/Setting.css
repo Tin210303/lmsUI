@@ -1,0 +1,375 @@
+/* Setting.css */
+.setting-container {
+    max-width: 900px;
+    flex: 1;
+    padding: 12px;
+    margin-top: 12px;   
+    border-radius: 8px;
+    box-shadow: 1px 1px 5px #aaaaaa;
+}
+
+.setting-title {
+    font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #333;
+}
+
+.setting-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 14px;
+}
+
+.setting-tabs button {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #777;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s;
+}
+
+.setting-tabs button:hover {
+    color: #0078d4;
+}
+
+.setting-tabs button.tab-active {
+    color: #0078d4;
+    font-weight: 500;
+}
+
+.setting-tabs button.tab-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #0078d4;
+}
+
+.setting-content {
+    background-color: #fff;
+    padding: 0 20px;
+}
+
+/* Personal Info Content */
+.personal-info-content {
+    display: flex;
+    justify-content: space-around;
+}
+
+.profile-section {
+    margin-bottom: 30px;
+}
+
+.profile-image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.profile-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+}
+
+.image-placeholder {
+    font-size: 24px;
+    color: #888;
+}
+
+.change-image-btn {
+    background-color: #f5f5f5;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #444;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.change-image-btn:hover {
+    background-color: #e8e8e8;
+}
+
+.profile-details {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.profile-name {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    color: #333;
+}
+
+.profile-id, .profile-faculty, .profile-semester {
+    margin: 3px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Info Details */
+.info-details {
+    width: 50%;
+}
+
+.info-details section {
+    margin-bottom: 25px;
+}
+
+.info-details h3 {
+    color: #0078d4;
+    font-size: 18px;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 10px 20px;
+    margin-bottom: 15px;
+}
+
+.info-label {
+    color: #666;
+    font-size: 15px;
+}
+
+.info-value {
+    color: #333;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.edit-info-btn {
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+}
+
+.edit-info-btn:hover {
+    background-color: #0069c0;
+}
+
+/* Password Content */
+.password-content {
+    padding: 20px 0;
+}
+
+.password-form {
+    max-width: 500px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 15px;
+    color: #555;
+}
+
+.password-input-container {
+    position: relative;
+}
+
+.password-input {
+    width: 100%;
+    padding: 12px 40px 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 15px;
+    transition: border-color 0.3s;
+}
+
+.password-input:focus {
+    outline: none;
+    border-color: #0078d4;
+}
+
+.password-error {
+    border-color: #e74c3c;
+}
+
+/* Success state for password field */
+.password-success {
+    border-color: #27ae60;
+}
+
+.password-placeholder::placeholder {
+    color: #aaa;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    fill: #888;
+}
+
+.valid-indicator {
+    position: absolute;
+    right: -30px;
+    top: 36px;
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.valid-indicator.success {
+    color: #27ae60;
+}
+
+.valid-indicator.error {
+    color: red;
+}
+
+.password-help {
+    font-size: 13px;
+    color: #e74c3c;
+    margin-top: 8px;
+}
+
+/* Hide password help text when all requirements are met */
+.all-requirements-met .password-help {
+    display: none;
+}
+
+.password-requirements {
+    margin-top: 15px;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.password-requirements div {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    align-items: center;
+}
+
+.password-requirements div:last-child {
+    margin-bottom: 0;
+}
+
+.bullet {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ccc;
+    margin-right: 10px;
+}
+
+.requirement-met .bullet {
+    background-color: #27ae60;
+}
+
+.requirement-error .bullet {
+    background-color: #e74c3c;
+}
+
+.requirement-met {
+    color: #27ae60;
+}
+
+.requirement-error {
+    color: #e74c3c;
+}
+
+/* Add valid indicator next to password field when all requirements are met */
+.form-group.all-requirements-met .password-input-container::after {
+    content: "✓";
+    position: absolute;
+    right: -30px;
+    top: 12px;
+    color: #27ae60;
+    font-weight: bold;
+}
+
+/* Remove error styling when all requirements are met */
+.form-group.all-requirements-met .password-input.password-error {
+    border-color: #27ae60;
+}
+
+.change-password-btn {
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.change-password-btn:hover {
+    background-color: #0069c0;
+}
+
+/* Language and Help Content */
+.language-content, .help-content {
+    padding: 30px;
+    text-align: center;
+    color: #777;
+    font-size: 16px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .profile-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    }
+    
+    .profile-image-container {
+    margin-right: 0;
+    margin-bottom: 20px;
+    }
+    
+    .info-grid {
+    grid-template-columns: 1fr;
+    }
+    
+    .setting-tabs {
+    overflow-x: auto;
+    width: 100%;
+    }
+    
+    .setting-tabs button {
+    white-space: nowrap;
+    padding: 12px 15px;
+    }
+}

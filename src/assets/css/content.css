@@ -1,0 +1,10 @@
+.main-content {
+  width: 60%;
+}
+.content-container {
+  display: flex;
+  height: 724px;
+  padding: 10px;
+  gap: 20px;
+  background-color: #fff;
+}
