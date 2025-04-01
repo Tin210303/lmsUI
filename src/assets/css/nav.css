@@ -23,6 +23,10 @@ nav {
     transition: all 0.3s ease-in-out;
 }
 
+.nav-active:hover {
+    background-color: rgb(238, 249, 255);
+}
+
 .nav-active.active {
     background-color: #D9EDF7;
     box-shadow: 2px 2px 5px #aaaaaa;

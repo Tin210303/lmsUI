@@ -1,7 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import axios from 'axios';
 import '../assets/css/Setting.css';
+import { UserContext } from '../context/userContext';
 
 const Setting = () => {
+  const accessToken = localStorage.getItem('authToken');
+  const [uploading, setUploading] = useState(false);
+  const { profileImage, setProfileImage, infoUser, setInfoUser } = useContext(UserContext)
+
+  // Chạy fetchInfoUser khi component được mount
+  useEffect(() => {
+    fetchInfoUser();
+  }, []);
+
+  // Chạy fetchProfileImage khi infoUser được cập nhật
+  useEffect(() => {
+    if (infoUser?.result?.id) {
+      fetchProfileImage();
+    }
+  }, [infoUser]); 
+
+  const fetchInfoUser = async () => {
+    try {
+        const response = await axios.get('http://localhost:8080/lms/student/myinfo', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        setInfoUser(response.data);
+    } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu:', error);
+    }
+  };
+  
+  // Lấy ảnh từ API
+  const fetchProfileImage = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/lms/student/image/${infoUser.result.id}.JPG`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        responseType: 'blob'
+      });
+      const imageUrl = URL.createObjectURL(response.data);
+      setProfileImage(imageUrl);
+    } catch (error) {
+      console.error('Lỗi khi lấy ảnh:', error);
+    }
+  };
+
+  // Upload ảnh lên server
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setUploading(true);
+      await axios.post(
+        `http://localhost:8080/lms/student/${infoUser.result.id}/upload-photo`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      fetchProfileImage();
+    } catch (error) {
+      console.error('Lỗi khi upload ảnh:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState('personal');
   const [formData, setFormData] = useState({
     fullName: 'Nguyễn Đắc Tịnh Tín',
@@ -30,6 +101,54 @@ const Setting = () => {
     special: false,
     number: false
   });
+
+  // Xử lý đổi mật khẩu
+  const handleChangePassword = async () => {
+    if (!isOldPasswordEntered || !allRequirementsMet || !isConfirmPasswordMatch) {
+      alert('Vui lòng nhập đúng thông tin đổi mật khẩu.');
+      return;
+    }
+  
+    try {
+      const response = await axios.put(
+        'http://localhost:8080/lms/users/changePassword',
+        {
+          oldPassword: passwordData.oldPassword,
+          newPassword: passwordData.newPassword
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+  
+      if (response.data.id) {
+        alert('Đổi mật khẩu thành công!');
+        setPasswordData({
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        if (response.data.code === 1009) {
+          alert('Mật khẩu hiện tại của bạn không đúng')
+        }
+        alert( 'Có lỗi xảy ra, vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi đổi mật khẩu:', error);
+      alert((error.status === 400) ? 'Mật khẩu hiện tại của bạn không đúng' : 'lỗi');
+    }
+  };
+
+  // Trạng thái hiển thị mật khẩu
+  const [showPassword, setShowPassword] = useState({
+    oldPassword: false,
+    newPassword: false,
+    confirmPassword: false
+  });
   
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -52,6 +171,14 @@ const Setting = () => {
       });
     }
   };
+
+  // Toggle hiển thị mật khẩu
+  const togglePasswordVisibility = (field) => {
+    setShowPassword((prev) => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
   
   // Check if all password requirements are met
   const allRequirementsMet = Object.values(passwordRequirements).every(req => req === true);
@@ -63,6 +190,31 @@ const Setting = () => {
   const isConfirmPasswordMatch = passwordData.confirmPassword !== '' && 
                                 passwordData.confirmPassword === passwordData.newPassword;
   
+  // FAQ
+
+  const faqs = [
+    { question: "Tổng quan về LMS", answer: "Nobody knows." },
+    { question: "Làm thế nào để đổi mật khẩu?", answer: "They make up everything" },
+    { question: "Làm thế nào để đổi ngôn ngữ?", answer: "Inheritance." },
+    { question: "Làm thế nào để tham gia làm bài thi?", answer: "Ten-tickles!" },
+    { question: "Làm thế nào để tải tài liệu học tập?", answer: "Depends on who are you asking." },
+    { question: "Làm thế nào để xây dựng lộ trình học tập?", answer: "Nobody knows." },
+    { question: "Làm thế nào để trao đổi với giảng viên?", answer: "Nobody knows." },
+  ];
+
+  const FAQItem = ({ title, text }) => {
+    const [isActive, setIsActive] = useState(false);
+
+    return (
+      <div className={`faq ${isActive ? "active" : ""}`}>
+        <h3 className="faq-title">{title}</h3>
+        <p className="faq-text">{text}</p>
+        <button className="faq-toggle" onClick={() => setIsActive(!isActive)}>
+          <i className={isActive ? "fas fa-times" : "fas fa-chevron-down"}></i>
+        </button>
+      </div>
+    );
+  };
   return (
     <div className="setting-container">
       <h1 className="setting-title">Cài Đặt</h1>
@@ -93,15 +245,27 @@ const Setting = () => {
           <div className="personal-info-content">
             <div className="profile-section">
               <div className="profile-image-container">
-                <div className="profile-image">
-                  <span className="image-placeholder">.ar</span>
-                </div>
-                <button className="change-image-btn">Thay đổi ảnh</button>
+                {profileImage ? (
+                  <img src={profileImage} alt="Avatar" className="profile-image" />
+                ) : (
+                  <span className="image-placeholder">No Image</span>
+                )}
+                <label htmlFor="upload-photo" className="change-image-btn">
+                  {uploading ? 'Đang tải...' : 'Thay đổi ảnh'}
+                </label>
+                <input
+                  type="file"
+                  id="upload-photo"
+                  accept="image/*"
+                  className='change-image-btn'
+                  style={{display: 'none'}}
+                  onChange={handleImageUpload}
+                />
               </div>
              
               <div className="profile-details">
-                <h3 className="profile-name">{formData.fullName}</h3>
-                <p className="profile-id">MSSV: {formData.studentId}</p>
+                <h3 className="profile-name">{infoUser?.result?.fullName}</h3>
+                <p className="profile-id">MSSV: {infoUser?.result?.code}</p>
                 <p className="profile-faculty">{formData.faculty}</p>
                 <p className="profile-semester">{formData.currentSemester}</p>
               </div>
@@ -112,16 +276,16 @@ const Setting = () => {
                 <h3>Thông tin cơ bản</h3>
                 <div className="info-grid">
                   <div className="info-label">Họ và Tên:</div>
-                  <div className="info-value">{formData.fullName}</div>
+                  <div className="info-value">{infoUser?.result?.fullName}</div>
                  
                   <div className="info-label">MSSV:</div>
-                  <div className="info-value">{formData.studentId}</div>
+                  <div className="info-value">{infoUser?.result?.code}</div>
                  
                   <div className="info-label">Ngày Sinh:</div>
-                  <div className="info-value">{formData.dateOfBirth}</div>
+                  <div className="info-value">{new Date(infoUser?.result?.dateOfBirth).toLocaleDateString('vi-VN')}</div>
                  
                   <div className="info-label">Giới Tính:</div>
-                  <div className="info-value">{formData.gender}</div>
+                  <div className="info-value">{infoUser?.result?.gender}</div>
                 </div>
               </section>
              
@@ -129,13 +293,13 @@ const Setting = () => {
                 <h3>Thông tin liên hệ</h3>
                 <div className="info-grid">
                   <div className="info-label">Email:</div>
-                  <div className="info-value">{formData.email}</div>
+                  <div className="info-value">{infoUser?.result?.email}</div>
                  
                   <div className="info-label">Số Điện Thoại:</div>
-                  <div className="info-value">{formData.phone}</div>
+                  <div className="info-value">{infoUser?.result?.phoneNumber}</div>
                  
                   <div className="info-label">Địa Chỉ:</div>
-                  <div className="info-value">{formData.address}</div>
+                  <div className="info-value">{infoUser?.result?.contactAddress}</div>
                 </div>
               </section>
              
@@ -143,7 +307,7 @@ const Setting = () => {
                 <h3>Thông tin học tập</h3>
                 <div className="info-grid">
                   <div className="info-label">Khoa:</div>
-                  <div className="info-value">{formData.faculty}</div>
+                  <div className="info-value">{infoUser?.result?.majorId.name}</div>
                  
                   <div className="info-label">Lớp:</div>
                   <div className="info-value">{formData.className}</div>
@@ -166,36 +330,31 @@ const Setting = () => {
                 <label>Mật Khẩu Hiện Tại</label>
                 <div className="password-input-container">
                   <input
-                    type="password"
+                    type={showPassword.oldPassword ? 'text' : 'password'}
                     name="oldPassword"
                     value={passwordData.oldPassword}
                     onChange={handlePasswordChange}
                     className="password-input"
                     placeholder="Nhập mật khẩu hiện tại"
                   />
-                  <span className="password-toggle">
-                    <svg viewBox="0 0 24 24" width="24" height="24">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                    </svg>
+                  <span className="password-toggle" onClick={() => togglePasswordVisibility('oldPassword')}>
+                    {showPassword.oldPassword ? '👁️' : '🙈'}
                   </span>
                 </div>
-                {isOldPasswordEntered && <span className="valid-indicator">✓</span>}
               </div>
              
               <div className={`form-group ${allRequirementsMet ? 'all-requirements-met' : ''}`}>
                 <label>Mật Khẩu Mới</label>
                 <div className="password-input-container">
                   <input
-                    type="text"
+                    type={showPassword.newPassword ? 'text' : 'password'}
                     name="newPassword"
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     className={`password-input ${allRequirementsMet ? 'password-success' : 'password-error'}`}
                   />
-                  <span className="password-toggle">
-                    <svg viewBox="0 0 24 24" width="24" height="24">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                    </svg>
+                  <span className="password-toggle" onClick={() => togglePasswordVisibility('newPassword')}>
+                    {showPassword.newPassword ? '👁️' : '🙈'}
                   </span>
                 </div>
                 <p className="password-help">Vui lòng thêm tất cả các ký tự cần thiết để tạo mật khẩu an toàn.</p>
@@ -223,7 +382,7 @@ const Setting = () => {
                 <label>Xác Nhận Mật Khẩu</label>
                 <div className="password-input-container">
                   <input
-                    type="password"
+                    type={showPassword.confirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}
@@ -231,10 +390,8 @@ const Setting = () => {
                               isConfirmPasswordMatch ? 'password-success' : 'password-error'}`}
                     placeholder="enter your confirm new password"
                   />
-                  <span className="password-toggle">
-                    <svg viewBox="0 0 24 24" width="24" height="24">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                    </svg>
+                  <span className="password-toggle" onClick={() => togglePasswordVisibility('confirmPassword')}>
+                    {showPassword.confirmPassword ? '👁️' : '🙈'}
                   </span>
                 </div>
                 {passwordData.confirmPassword !== '' && (
@@ -244,14 +401,18 @@ const Setting = () => {
                 )}
               </div>
              
-              <button className="change-password-btn">Đổi Mật Khẩu</button>
+              <button className="change-password-btn" onClick={handleChangePassword}>Đổi Mật Khẩu</button>
             </div>
           </div>
         )}
        
         {activeTab === 'help' && (
           <div className="help-content">
-            <p>Nội dung trợ giúp sẽ hiển thị ở đây</p>
+            <div className="faq-container">
+              {faqs.map((faq, index) => (
+                <FAQItem key={index} title={faq.question} text={faq.answer} />
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -1,0 +1,98 @@
+.custom-container {
+    width: 1200px;
+    background: white;
+    margin: 12px auto;
+    padding: 0 20px;
+    border-radius: 8px;
+    box-shadow: 1px 1px 5px #aaaaaa;
+}
+.content {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.left-panel, .right-panel {
+    width: 48%;
+    border: 2px solid #ccc;
+    padding: 10px;
+    min-height: 400px;
+    background: #fff;
+}
+
+.right-panel {
+    position: sticky;
+    top: 40px; /* Cách mép trên 10px */
+    height: fit-content;
+    max-height: 90vh; /* Giới hạn chiều cao để tránh tràn màn hình */
+    overflow-y: auto; /* Thêm thanh cuộn nếu nội dung quá dài */
+    border: 2px solid #ccc;
+    padding: 10px;
+    background: #fff;
+}
+  
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.droppable th, .droppable td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.left-panel th, .left-panel td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    font-size: 12px;
+}
+.droppable th {
+    background: #f4f4f4;
+}
+
+.left-panel th {
+    background: #f4f4f4;
+}
+
+.draggable {
+    display: inline-block;
+    background: #f1f1f1;
+    padding: 5px 10px;
+    margin: 5px 0;
+    cursor: grab;
+    border-radius: 5px;
+}
+.droppable {
+    min-height: 200px;
+    transition: background 0.3s ease-in-out;
+}
+.droppable.highlight {
+    background: #f0f8ff;
+    border-color: #007bff;
+}
+.dropped-item td {
+    background: #d9edf7;
+}
+.empty-message {
+    text-align: center;
+    color: #888;
+}
+.semester-header {
+    background: #f4f4f4;
+    font-weight: bold;
+    transition: background 0.3s ease-in-out;
+}
+.semester-header.highlight {
+    background: #cce5ff;
+}
+
+.red {
+    color: red;
+    font-weight: bold;
+}
+
+.green {
+    color: #28a745;
+    font-weight: bold;
+}

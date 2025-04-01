@@ -12,7 +12,7 @@
 * {
     padding: 0;
     margin: 0;
-    box-sizing: inherit;
+    box-sizing: border-box;
     font-family: "Montserrat", sans-serif;
 }
 
@@ -31,6 +31,14 @@ html {
     font-optical-sizing: auto;
     font-weight: 300;
     font-style: normal;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-left {
+    text-align: left !important;
 }
 
 .fw-600 {
@@ -94,6 +102,10 @@ html {
 
 .justify-content-center {
     justify-content: center;
+}
+
+.justify-content-between {
+    justify-content: space-between;
 }
 
 .justify-content-around {

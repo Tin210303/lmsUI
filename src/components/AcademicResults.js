@@ -14,7 +14,7 @@ const AcademicResults = () => {
             totalAccumulatedCredits: 15,
             academicYear: "2021 - 2022",
             semester: "1",
-            semesterGPA: 4.0, // Thêm điểm trung bình học kỳ
+            semesterGPA: 4.0,
             subjects: [
                 {
                     code: "LLCTTH3",
@@ -149,6 +149,30 @@ const AcademicResults = () => {
                     grade10: 7.2,
                     letterGrade: "D",
                     grade4: 3.0
+                },
+                {
+                    code: "TIN3021",
+                    name: "Phát triển phần mềm hướng dịch vụ",
+                    credits: 4,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 7.5,
+                    gradeExam: 7.0,
+                    grade10: 7.2,
+                    letterGrade: "D",
+                    grade4: 3.0
+                },
+                {
+                    code: "TIN3021",
+                    name: "Phát triển phần mềm hướng dịch vụ",
+                    credits: 4,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 7.5,
+                    gradeExam: 7.0,
+                    grade10: 7.2,
+                    letterGrade: "D",
+                    grade4: 3.0
                 }
             ]
         },
@@ -225,6 +249,376 @@ const AcademicResults = () => {
                     grade4: 3.0
                 }
             ]
+        },
+        // Học kỳ 4
+        {
+            completedCredits: 109,
+            totalCredits: 123,
+            averageGrade: 2.92,
+            totalGrade: 4.0,
+            totalRegisteredCredits: 15,
+            totalAccumulatedCredits: 15,
+            academicYear: "2022 - 2023",
+            semester: "2",
+            semesterGPA: 4.0,
+            subjects: [
+                {
+                    code: "LLCTTH3",
+                    name: "Triết học Mác - Lênin",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3033",
+                    name: "Công nghệ Web",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3001",
+                    name: "Cơ sở dữ liệu nâng cao",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "ENG2013",
+                    name: "Tiếng Anh chuyên ngành CNTT",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                }
+            ]
+        },
+        // Học kỳ 5
+        {
+            completedCredits: 109,
+            totalCredits: 123,
+            averageGrade: 2.92,
+            totalGrade: 4.0,
+            totalRegisteredCredits: 15,
+            totalAccumulatedCredits: 15,
+            academicYear: "2023 - 2024",
+            semester: "1",
+            semesterGPA: 4.0,
+            subjects: [
+                {
+                    code: "LLCTTH3",
+                    name: "Triết học Mác - Lênin",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3033",
+                    name: "Công nghệ Web",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3001",
+                    name: "Cơ sở dữ liệu nâng cao",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                }
+            ]
+        },
+        // Học kỳ 6
+        {
+            completedCredits: 109,
+            totalCredits: 123,
+            averageGrade: 2.92,
+            totalGrade: 4.0,
+            totalRegisteredCredits: 15,
+            totalAccumulatedCredits: 15,
+            academicYear: "2023 - 2024",
+            semester: "2",
+            semesterGPA: 4.0,
+            subjects: [
+                {
+                    code: "LLCTTH3",
+                    name: "Triết học Mác - Lênin",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3001",
+                    name: "Cơ sở dữ liệu nâng cao",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "ENG2013",
+                    name: "Tiếng Anh chuyên ngành CNTT",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                }
+            ]
+        },
+        // Học kỳ 7
+        {
+            completedCredits: 109,
+            totalCredits: 123,
+            averageGrade: 2.92,
+            totalGrade: 4.0,
+            totalRegisteredCredits: 15,
+            totalAccumulatedCredits: 15,
+            academicYear: "2024 - 2025",
+            semester: "1",
+            semesterGPA: 4.0,
+            subjects: [
+                {
+                    code: "LLCTTH3",
+                    name: "Triết học Mác - Lênin",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3033",
+                    name: "Công nghệ Web",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3001",
+                    name: "Cơ sở dữ liệu nâng cao",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "ENG2013",
+                    name: "Tiếng Anh chuyên ngành CNTT",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Phân tích và thiết kế các hệ thống thông tin - Nhóm 1",
+                    credits: 3,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 8.5,
+                    gradeExam: 8.5,
+                    grade10: 8.5,
+                    letterGrade: "A",
+                    grade4: 4.0
+                }
+            ]
+        },
+        // Học kỳ 8
+        {
+            completedCredits: 109,
+            totalCredits: 123,
+            averageGrade: 2.92,
+            totalGrade: 4.0,
+            totalRegisteredCredits: 14,
+            totalAccumulatedCredits: 14,
+            academicYear: "2024 - 2025",
+            semester: "2",
+            semesterGPA: 4.0,
+            subjects: [
+                {
+                    code: "LLCTTH3",
+                    name: "Thực tập tốt nghiệp - Nhóm 1",
+                    credits: 4,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 10,
+                    gradeExam: 10,
+                    grade10: 10,
+                    letterGrade: "A",
+                    grade4: 4.0
+                },
+                {
+                    code: "TIN3093",
+                    name: "Khóa luận tốt nghiệp - Nhóm 8",
+                    credits: 10,
+                    studyTimes: 1,
+                    examTimes: 1,
+                    gradeQTHT: 10,
+                    gradeExam: 10,
+                    grade10: 10,
+                    letterGrade: "A",
+                    grade4: 4.0
+                }
+            ]
         }
     ];
 
@@ -238,7 +632,7 @@ const AcademicResults = () => {
     const completionPercentage = Math.round((studentData.completedCredits / studentData.totalCredits) * 100);
     const gradePercentage = Math.round((studentData.averageGrade / studentData.totalGrade) * 100);
     
-    // Create unique semester options for the dropdown
+    // Tạo option học kỳ - năm cho nút select
     const semesterOptions = allSemesterData.map((data, index) => ({
         id: `${data.academicYear}-${data.semester}`,
         label: `Học Kỳ: ${data.semester} - Năm Học: ${data.academicYear}`,

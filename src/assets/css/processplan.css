@@ -1,0 +1,188 @@
+/* Container chính */
+.process-container {
+    display: flex;
+    justify-content: center;
+    width: 1200px;
+    background-color: #fff;
+    margin: 12px auto;
+    padding: 0 20px;
+    border-radius: 8px;
+    box-shadow: 1px 1px 5px #aaaaaa;
+}
+
+/* Khung hộp chứa nội dung */
+.process-box {
+    width: 100%;
+    padding: 30px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+}
+
+/* Hiệu ứng chuyển đổi trang */
+.process-slide {
+    position: relative;
+    transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+}
+
+.slide-in {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.slide-out {
+    transform: translateX(-100%);
+    opacity: 0;
+}
+
+/* Văn bản */
+
+.back-to-step1 {
+    color: #000;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 20px;
+}
+
+.back-to-step1:hover {
+    transform: translateX(-3px);
+}
+
+.process-text {
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.process-subtext {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* Nhóm nút */
+.process-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.year-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+    margin-top: 32px;
+}
+
+/* Nút */
+.process-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.process-btn:hover {
+    box-shadow: 1px 3px 5px #dfdfdf;
+    transform: translateY(-3px);
+}
+
+.continue-btn {
+    background: #1a73e8;
+    color: white;
+    border: none;
+}
+
+.continue-btn:hover {
+    background: #0056b3;
+}
+
+.year-btn {
+    background: white;
+    font-weight: bold;
+    width: 24rem;
+    margin: auto;
+    padding: 16px;
+}
+
+.study-plan {
+    width: 74rem;
+    margin: 12px auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.summary {
+    margin: 20px 0;
+    font-size: 16px;
+    text-align: left;
+}
+
+.summary p {
+    margin-bottom: 4px;
+}
+
+.study-table {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.study-table th, .study-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+.study-table th {
+    background: #f8f8f8;
+    text-align: center;
+}
+
+.semester-header {
+    background: #f2f2f2;
+    font-weight: bold;
+    text-align: left;
+}
+
+.total-credits {
+    background: #fafafa;
+    font-weight: bold;
+    text-align: right;
+}
+
+.course-type.red {
+    color: red;
+    font-weight: bold;
+}
+
+.course-type.green {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.button-group {
+    margin-top: 20px;
+}
+
+.edit-btn, .save-btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+.edit-btn {
+    background: #ddd;
+}
+
+.save-btn {
+    background: #28a745;
+    color: white;
+}
+  

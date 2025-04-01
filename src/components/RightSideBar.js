@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import axios from 'axios';
+import { UserContext } from '../context/userContext';
 import '../assets/css/rightsidebar.css';
 
 // Sample class schedule data (same as in the original code)
@@ -12,26 +14,65 @@ const scheduleData = [
   },
   {
     id: 2,
-    name: "Thiết kế cơ sở dữ liệu - TIN4012",
-    room: "B202",
-    startTime: "7:00",
-    endTime: "11:00"
+    name: "Phân tích và thiết kế hệ thống thông tin - TIN4012",
+    room: "H403",
+    startTime: "13:00",
+    endTime: "17:00"
   },
   {
     id: 3,
-    name: "Thiết kế cơ sở dữ liệu - TIN4012",
-    room: "B202",
-    startTime: "7:00",
-    endTime: "11:00"
+    name: "Cấu trúc dữ liệu và thuật toán - TIN4012",
+    room: "E204",
+    startTime: "18:00",
+    endTime: "20:30"
   },
 ];
 
 const RightSideBar = () => {
+    const accessToken = localStorage.getItem('authToken');
+    const { profileImage, setProfileImage, infoUser, setInfoUser } = useContext(UserContext);
+
+    // Chạy fetchInfoUser khi component được mount
+    useEffect(() => {
+        fetchInfoUser();
+    }, []);
+
+    // Chạy fetchProfileImage khi infoUser được cập nhật
+    useEffect(() => {
+        if (infoUser?.result?.id) {
+        fetchProfileImage();
+        }
+    }, [infoUser]); 
+
+    const fetchInfoUser = async () => {
+        try {
+            const response = await axios.get('http://localhost:8080/lms/student/myinfo', {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            setInfoUser(response.data);
+        } catch (error) {
+            console.error('Lỗi khi lấy dữ liệu:', error);
+        }
+    };
+    
+    // Lấy ảnh từ API
+    const fetchProfileImage = async () => {
+        try {
+            const response = await axios.get(`http://localhost:8080/lms/student/image/${infoUser.result.id}.JPG`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` },
+                responseType: 'blob'
+            });
+            const imageUrl = URL.createObjectURL(response.data);
+            setProfileImage(imageUrl);
+        } catch (error) {
+            console.error('Lỗi khi lấy ảnh:', error);
+        }
+    };
+
     // Calendar state
     const [currentDate, setCurrentDate] = useState(new Date());
     const [calendarDays, setCalendarDays] = useState([]);
 
-    
     // Generate calendar
     useEffect(() => {
         generateCalendarDays();
@@ -94,13 +135,13 @@ const RightSideBar = () => {
             {/* Student Info Card */}
             <div className="student-info-card">
             <div className="student-avatar">
-                <img src="/api/placeholder/80/80" alt="Student Avatar" />
+                <img src={profileImage} alt="Student Avatar" />
             </div>
             <div className="student-details">
                 <p className="student-course">KHÓA K45 (2021 - 2025)</p>
                 <p className="student-major">KỸ THUẬT PHẦN MỀM</p>
                 <p className="student-year">HỌC KỲ: 2, NĂM HỌC 2024 - 2025</p>
-                <p className="student-name">User Name</p>
+                <p className="student-name">{infoUser?.result?.fullName}</p>
             </div>
             </div>
         
@@ -160,6 +201,7 @@ const RightSideBar = () => {
                 <div key={schedule.id} className="schedule-item">
                 <div className="schedule-time">
                     <p>{schedule.startTime}</p>
+                    <p style={{margin: '4px 0'}}>|</p>
                     <p>{schedule.endTime}</p>
                 </div>
                 <div className="schedule-class">
