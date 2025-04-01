@@ -6,7 +6,7 @@ import "../assets/css/processplan.css";
 const ProcessPlan = () => {
     const [step, setStep] = useState(1);
     const navigate = useNavigate();
-    const { studyPlan, years } = useContext(StudyPlanContext);
+    const { studyPlan } = useContext(StudyPlanContext);
     console.log('a',studyPlan.total_credits);
     
     
@@ -58,7 +58,7 @@ const ProcessPlan = () => {
 
             ):(
                 <div className="study-plan">
-                    <h2>Lộ trình học trong vòng {years} năm của bạn</h2>
+                    <h2>LỘ TRÌNH HỌC CỦA BẠN</h2>
 
                     <div className="d-flex justify-content-between imy-20">
                         <div className="summary">

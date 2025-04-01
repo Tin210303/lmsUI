@@ -116,11 +116,9 @@ const StudyPlan = () => {
     const queryParams = new URLSearchParams(location.search);
     const years = queryParams.get("years");
     const { setStudyPlan } = useContext(StudyPlanContext);
-    const { setYears } = useContext(StudyPlanContext)
 
     const handleSavePlan = () => {
         setStudyPlan(studyPlanData);
-        setYears(years)
         alert("Lộ trình đã được lưu!");
         navigate(`/process`)
     };
