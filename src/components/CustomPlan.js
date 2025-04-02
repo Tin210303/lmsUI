@@ -98,6 +98,225 @@ const subjects = [
     ]
   },
 ];
+const subjectsArchitecture = [
+  {
+    id: 1,
+    knowledge: "Kiến thức giáo dục đại cương - học phần bắt buộc",
+    total_credit: 25,
+    credit_required: 25,
+    courses: [
+      { id: "KNM1013", name: "Kỹ năng mềm", credits: 3, type: "Bắt buộc", semester: 3 },
+      { id: "KTR1013", name: "Hình học họa hình 1", credits: 3, type: "Bắt buộc", semester: 1 },
+      { id: "KTR3052", name: "Cơ học lý thuyết", credits: 2, type: "Bắt buộc", semester: 2 },
+      { id: "LLCTKT2", name: "Kinh tế chính trị Mác - Lênin", credits: 2, type: "Bắt buộc", semester: 2 },
+      { id: "LLCTLS2", name: "Lịch sử Đảng cộng sản Việt Nam", credits: 2, type: "Bắt buộc", semester: 4 },
+      { id: "LLCTTH3", name: "Triết học Mác - Lênin", credits: 3, type: "Bắt buộc", semester: 1 },
+      { id: "LLCTTT2", name: "Tư tưởng Hồ Chí Minh", credits: 2, type: "Bắt buộc", semester: 7 },
+      { id: "LLCTXH2", name: "Chủ nghĩa xã hội khoa học", credits: 2, type: "Bắt buộc", semester: 3 },
+      { id: "LUA1012", name: "Pháp luật Việt Nam đại cương", credits: 2, type: "Bắt buộc", semester: 6 },
+      { id: "MTR1022", name: "Giáo dục môi trường đại cương", credits: 2, type: "Bắt buộc", semester: 4 },
+      { id: "TOA1022", name: "Đại số tuyến tính", credits: 3, type: "Bắt buộc", semester: 1 },
+    ]
+  },
+  {
+    id: 2,
+    knowledge: "Kiến thức giáo dục đại cương - học phần tự chọn_Nhóm 1",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KTR1032", name: "Phong thủy trong kiến trúc và quy hoạch", credits: 2, type: "Tự chọn", semester: 3 },
+      { id: "LIS1022", name: "Văn hóa Việt Nam đại cương", credits: 2, type: "Tự chọn", semester: 3 },
+    ]
+  },
+  {
+    id: 3,
+    knowledge: "Kiến thức giáo dục đại cương - học phần tự chọn_Nhóm 2",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KTR2062", name: "Tin học ứng dụng", credits: 2, type: "Tự chọn", semester: 4 },
+      { id: "KTR2072", name: "Anh văn chuyên ngành", credits: 2, type: "Tự chọn", semester: 4 },
+    ]
+  },
+  {
+    id: 4,
+    knowledge: "Kiến thức giáo dục đại cương - học phần tự chọn_Nhóm 3",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KQH2012", name: "Mỹ học đô thị", credits: 2, type: "Tự chọn", semester: 2 },
+      { id: "XHH4012", name: "Xã hội học đô thị", credits: 2, type: "Tự chọn", semester: 2 },
+    ]
+  },
+  {
+    id: 5,
+    knowledge: "Kiến thức giáo dục đại cương - học phần tự chọn_Nhóm 4",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KTR2082", name: "Quản lý đô thị", credits: 2, type: "Tự chọn", semester: 8 },
+      { id: "KTR2103", name: "Kinh tế xây dựng", credits: 2, type: "Tự chọn", semester: 8 },
+    ]
+  },
+  {
+    id: 6,
+    knowledge: "Kiến thức cơ sở ngành - học phần bắt buộc",
+    total_credit: 12,
+    credit_required: 12,
+    courses: [
+      { id: "KTR1022", name: "Hình học họa hình 2", credits: 2, type: "Bắt buộc", semester: 2 },
+      { id: "KTR2022", name: "Sức bền vật liệu", credits: 2, type: "Bắt buộc", semester: 3 },
+      { id: "KTR2042", name: "Bê tông", credits: 2, type: "Bắt buộc", semester: 5 },
+      { id: "KTR2052", name: "Cơ học kết cấu", credits: 2, type: "Bắt buộc", semester: 4 },
+      { id: "MTH2012", name: "Mỹ thuật 1", credits: 2, type: "Bắt buộc", semester: 1 },
+      { id: "MTH2022", name: "Mỹ thuật 2", credits: 2, type: "Bắt buộc", semester: 1 },
+    ]
+  },
+  {
+    id: 7,
+    knowledge: "Kiến thức cơ sở ngành - học phần tự chọn_Nhóm 1",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KTR2032", name: "Kết cấu thép", credits: 2, type: "Tự chọn", semester: 6 },
+      { id: "KTR3112", name: "Kết cấu ứng dụng công nghệ mới", credits: 2, type: "Tự chọn", semester: 6 },
+    ]
+  },
+  {
+    id: 8,
+    knowledge: "Kiến thức cơ sở ngành - học phần tự chọn_Nhóm 2",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KTR2012", name: "Vật liệu xây dựng", credits: 2, type: "Tự chọn", semester: 3 },
+      { id: "KTR3122", name: "Vật liệu nội thất", credits: 2, type: "Tự chọn", semester: 3 },
+    ]
+  },
+  {
+    id: 9,
+    knowledge: "Kiến thức cơ sở ngành - học phần tự chọn_Nhóm 3",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "MTH3012", name: "Mỹ thuật 2", credits: 2, type: "Tự chọn", semester: 4 },
+      { id: "MTH3022", name: "Mỹ thuật 3", credits: 2, type: "Tự chọn", semester: 4 },
+    ]
+  },
+  {
+    id: 10,
+    knowledge: "Kiến thức cơ sở ngành - học phần tự chọn_Nhóm 4",
+    total_credit: 4,
+    credit_required: 0,
+    courses: [
+      { id: "KTR3132", name: "Công nghệ chuyển đổi số trong kiến trúc", credits: 2, type: "Tự chọn", semester: 5 },
+      { id: "KTR3142", name: "Thiết bị kỹ thuật kiến trúc công trình", credits: 2, type: "Tự chọn", semester: 5 },
+      { id: "KTR3152", name: "Vật lý kiến trúc", credits: 2, type: "Tự chọn", semester: 5 },
+    ]
+  },
+  {
+    id: 11,
+    knowledge: "Kiến thức cơ sở ngành - học phần bắt buộc",
+    total_credit: 69,
+    credit_required: 69,
+    courses: [
+      { id: "KTR3013", name: "Phương pháp sáng tác kiến trúc", credits: 3, type: "Bắt buộc", semester: 2 },
+      { id: "KTR3023", name: "Phương pháp thể hiện kiến trúc", credits: 3, type: "Bắt buộc", semester: 1 },
+      { id: "KTR3032", name: "Vẽ ghi", credits: 2, type: "Bắt buộc", semester: 2 },
+      { id: "KTR3042", name: "Lịch sử kiến trúc Việt Nam", credits: 2, type: "Bắt buộc", semester: 6 },
+      { id: "KTR3062", name: "Kiến trúc nhà ở", credits: 2, type: "Bắt buộc", semester: 3 },
+      { id: "KTR3072", name: "Kiến trúc nhà công cộng", credits: 2, type: "Bắt buộc", semester: 4 },
+      { id: "KTR3082", name: "Kiến trúc nhà công nghiệp", credits: 2, type: "Bắt buộc", semester: 5 },
+      { id: "KTR3092", name: "Nội, ngoại thất kiến trúc", credits: 2, type: "Bắt buộc", semester: 6 },
+      { id: "KTR3103", name: "Quy hoạch xây dựng và phát triển đô thị", credits: 3, type: "Bắt buộc", semester: 7 },
+      { id: "KTR3113", name: "Đồ án kiến trúc nhà công cộng quy mô nhỏ", credits: 3, type: "Bắt buộc", semester: 3 },
+      { id: "KTR3123", name: "Đồ án kiến trúc nhà ở quy mô nhỏ", credits: 3, type: "Bắt buộc", semester: 4 },
+      { id: "KTR3133", name: "Đồ án kiến trúc nhà công cộng quy mô trung bình 1", credits: 3, type: "Bắt buộc", semester: 5 },
+      { id: "KTR3144", name: "Đồ án kiến trúc nhà cao tầng và khách sạn", credits: 4, type: "Bắt buộc", semester: 6 },
+      { id: "KTR3174", name: "Đồ án quy hoạch đô thị", credits: 4, type: "Bắt buộc", semester: 8 },
+      { id: "KTR3185", name: "Đồ án kiến trúc công trình tổ hợp đa chức năng", credits: 5, type: "Bắt buộc", semester: 9 },
+      { id: "KTR3213", name: "Lịch sử kiến trúc thế giới", credits: 3, type: "Bắt buộc", semester: 5 },
+      { id: "KTR3273", name: "Đồ án Bảo tồn kiến trúc", credits: 3, type: "Bắt buộc", semester: 9 },
+      { id: "KTR3332", name: "Cấu tạo kiến trúc nhà dân dụng", credits: 2, type: "Bắt buộc", semester: 2 },
+      { id: "KTR4014", name: "Đồ án kiến trúc nhà công cộng không gian lớn có khán giả", credits: 4, type: "Bắt buộc", semester: 7 },
+      { id: "KTR4021", name: "Đồ án thiết kế nhanh 1", credits: 1, type: "Bắt buộc", semester: 4 },
+      { id: "KTR4022", name: "Kỹ thuật hạ tầng và thiết kế đô thị", credits: 2, type: "Bắt buộc", semester: 7 },
+      { id: "KTR4023", name: "Đồ án thiết kế đô thị", credits: 3, type: "Bắt buộc", semester: 8 },
+      { id: "KTR4031", name: "Đồ án thiết kế nhanh 2", credits: 1, type: "Bắt buộc", semester: 7 },
+      { id: "KTR4032", name: "Thi công công trình", credits: 2, type: "Bắt buộc", semester: 8 },
+      { id: "KTR4033", name: "Đồ án kiến trúc nhà công cộng quy mô trung bình 2", credits: 3, type: "Bắt buộc", semester: 5 },
+      { id: "KTR4062", name: "Đồ án kiến trúc cảnh quan", credits: 2, type: "Bắt buộc", semester: 8 },
+    ]
+  },
+  {
+    id: 12,
+    knowledge: "Kiến thức ngành - học phần tự chọn_Nhóm 1",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KQH3102", name: "Du lịch và di sản đô thị", credits: 2, type: "Tự chọn", semester: 7 },
+      { id: "KTR3232", name: "Bảo tồn kiến trúc công trình", credits: 2, type: "Tự chọn", semester: 7 },
+    ]
+  },
+  {
+    id: 13,
+    knowledge: "Kiến thức ngành - học phần tự chọn_Nhóm 2",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KTR3242", name: "Phân tích cảnh quan", credits: 2, type: "Tự chọn", semester: 8 },
+      { id: "KTR4072", name: "Xu hướng thiết kế kiến trúc cảnh quan", credits: 2, type: "Tự chọn", semester: 8 },
+    ]
+  },
+  {
+    id: 14,
+    knowledge: "Kiến thức ngành - học phần tự chọn_Nhóm 3",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KTR3312", name: "Đồ án nội thất", credits: 2, type: "Tự chọn", semester: 7 },
+      { id: "KTR3322", name: "Đồ án ngoại thất", credits: 2, type: "Tự chọn", semester: 7 },
+    ]
+  },
+  {
+    id: 15,
+    knowledge: "Kiến thức ngành - học phần tự chọn_Nhóm 4",
+    total_credit: 2,
+    credit_required: 0,
+    courses: [
+      { id: "KTR4093", name: "Đồ án kiến trúc nhà công nghiệp 1", credits: 2, type: "Tự chọn", semester: 6 },
+      { id: "KTR4103", name: "Đồ án kiến trúc nhà công nghiệp 2", credits: 2, type: "Tự chọn", semester: 6 },
+    ]
+  },
+  {
+    id: 16,
+    knowledge: "Kiến thức bổ trợ",
+    total_credit: 2,
+    credit_required: 2,
+    courses: [
+      { id: "KTR5022", name: "Chuyên đề kiến trúc", credits: 2, type: "Bắt buộc", semester: 9 },
+    ]
+  },
+  {
+    id: 17,
+    knowledge: "Thực tập, kiến tập",
+    total_credit: 8,
+    credit_required: 8,
+    courses: [
+      { id: "KTR3011", name: "Thực tế tổng hợp", credits: 1, type: "Bắt buộc", semester: 6 },
+      { id: "KTR3202", name: "Thực tập công trường", credits: 2, type: "Bắt buộc", semester: 8 },
+      { id: "KTR4015", name: "Thực tập tốt nghiệp", credits: 5, type: "Bắt buộc", semester: 9 },
+    ]
+  },
+  {
+    id: 18,
+    knowledge: "Đồ án tốt nghiệp",
+    total_credit: 10,
+    credit_required: 10,
+    courses: [
+      { id: "KTR3319", name: "Đồ án tốt nghiệp", credits: 10, type: "Bắt buộc", semester: 10 },
+    ]
+  },
+];
 const semesters = [
   "Học Kỳ: 1 - Năm Học: 2021 - 2022",
   "Học Kỳ: 2 - Năm Học: 2021 - 2022",
@@ -301,10 +520,13 @@ export default function CustomPlan() {
         elective_credits: electiveCredits,
         process: processData,
     };
-    alert("Lộ trình đã được lưu!");
-
-    setStudyPlan(studyPlan);
-    navigate(`/process`);
+    if (processData.length === 0) {
+      alert("Lộ trình trống vui lòng nhập đủ học phần")
+    } else {
+      alert("Lộ trình đã được lưu!");
+      setStudyPlan(studyPlan);
+      navigate(`/process`)
+    }
   };
 
   return (

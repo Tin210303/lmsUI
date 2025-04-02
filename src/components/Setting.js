@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
 import '../assets/css/Setting.css';
 import { UserContext } from '../context/userContext';
+import ReactPlayer from 'react-player';
 
 const Setting = () => {
   const accessToken = localStorage.getItem('authToken');
@@ -190,31 +191,113 @@ const Setting = () => {
   const isConfirmPasswordMatch = passwordData.confirmPassword !== '' && 
                                 passwordData.confirmPassword === passwordData.newPassword;
   
-  // FAQ
-
+  // FAQ region
   const faqs = [
-    { question: "Tổng quan về LMS", answer: "Nobody knows." },
-    { question: "Làm thế nào để đổi mật khẩu?", answer: "They make up everything" },
-    { question: "Làm thế nào để đổi ngôn ngữ?", answer: "Inheritance." },
-    { question: "Làm thế nào để tham gia làm bài thi?", answer: "Ten-tickles!" },
-    { question: "Làm thế nào để tải tài liệu học tập?", answer: "Depends on who are you asking." },
-    { question: "Làm thế nào để xây dựng lộ trình học tập?", answer: "Nobody knows." },
-    { question: "Làm thế nào để trao đổi với giảng viên?", answer: "Nobody knows." },
+    { question: "Tổng quan về LMS", videoUrl: "https://www.youtube.com/watch?v=DF57Ki04vD8" },
+    { question: "Làm thế nào để đổi mật khẩu?", videoUrl: "https://www.youtube.com/watch?v=h6RONxjPBf4" },
+    { question: "Làm thế nào để đổi ngôn ngữ?", videoUrl: "https://www.youtube.com/watch?v=n6Pnzi6r9NU" },
+    { question: "Làm thế nào để tham gia làm bài thi?", videoUrl: "https://www.youtube.com/watch?v=RTBl0s8-y1o" },
+    { question: "Làm thế nào để tải tài liệu học tập?", videoUrl: "https://www.youtube.com/watch?v=Vdm6i1m4tDE" },
+    { question: "Làm thế nào để xây dựng lộ trình học tập?", videoUrl: "https://www.youtube.com/watch?v=NLBTbCfR-Fg" },
+    { question: "Làm thế nào để trao đổi với giảng viên?", videoUrl: "https://www.youtube.com/watch?v=sVmgsS8_fc8" },
   ];
+  
 
-  const FAQItem = ({ title, text }) => {
+  const FAQItem = ({ title, url }) => {
     const [isActive, setIsActive] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const playerRef = useRef(null);
+    const [played, setPlayed] = useState(0);
+    const [volume, setVolume] = useState(0.5);
+    const [isMuted, setIsMuted] = useState(false);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+
+    const handlePlayPause = () => {
+      setIsPlaying(!isPlaying);
+    };
+  
+    const handleProgress = (state) => {
+      setPlayed(state.played);
+      setCurrentTime(state.playedSeconds);
+    };
+  
+    const handleSeek = (e) => {
+      const newPlayed = parseFloat(e.target.value);
+      setPlayed(newPlayed);
+      playerRef.current.seekTo(newPlayed);
+    };
+
+    const formatTime = (time) => {
+      const date = new Date(time * 1000);
+      const hour = date.getUTCHours();
+      const minute = date.getUTCMinutes();
+      const second = ('0' + date.getUTCSeconds()).slice(-2);
+      if (hour) {
+        return `${hour}:${('0' + minute).slice(-2)}:${second}`;
+      }
+      return `${minute}:${second}`;
+    }
 
     return (
       <div className={`faq ${isActive ? "active" : ""}`}>
         <h3 className="faq-title">{title}</h3>
-        <p className="faq-text">{text}</p>
-        <button className="faq-toggle" onClick={() => setIsActive(!isActive)}>
+        <div className='video-container'>
+          <ReactPlayer
+            ref={playerRef}
+            url={url}
+            width="800px"
+            height="360px"
+            playing={isPlaying}
+            controls={true}
+            volume={volume}
+            muted={isMuted}
+            onProgress={handleProgress}
+            onDuration={(d) => setDuration(d)}
+            className="faq-text"
+          />
+          {/* Custom Controls */}
+          {/* <div className="custom-controls">
+            <button onClick={handlePlayPause}>
+              {isPlaying ? "⏸" : "▶"}
+            </button>
+            <span className="time">{formatTime(currentTime)} / {formatTime(duration)}</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={played}
+              onChange={handleSeek}
+              className="video-progress-bar"
+            />
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              className="video-volumn"
+            />
+            <button onClick={() => setIsMuted(!isMuted)}>
+              {isMuted ? "🔇" : "🔊"}
+            </button>
+          </div> */}
+        </div>
+        <button
+          className="faq-toggle" 
+          onClick={() => {
+            setIsActive(!isActive)
+            setIsPlaying(!isPlaying)
+        }}
+        >
           <i className={isActive ? "fas fa-times" : "fas fa-chevron-down"}></i>
         </button>
       </div>
     );
   };
+  
   return (
     <div className="setting-container">
       <h1 className="setting-title">Cài Đặt</h1>
@@ -410,7 +493,7 @@ const Setting = () => {
           <div className="help-content">
             <div className="faq-container">
               {faqs.map((faq, index) => (
-                <FAQItem key={index} title={faq.question} text={faq.answer} />
+                <FAQItem key={index} title={faq.question} url={faq.videoUrl}/>
               ))}
             </div>
           </div>

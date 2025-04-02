@@ -376,9 +376,6 @@
 
 .faq-container {
     margin: 30px auto;
-    display: grid;
-    grid-template-columns: repeat(2,1fr);
-    gap: 30px;
 }
 
 .faq {
@@ -389,6 +386,7 @@
     position: relative;
     overflow: hidden;
     transition: 0.3s ease;
+    margin-bottom: 20px;
 }
 
 .faq.active {
@@ -467,3 +465,63 @@
 .faq.active .faq-toggle {
     background-color: #9fa4a8;
 }
+
+.video-container {
+    position: relative;
+    width: 800px;
+    display: none;
+}
+
+.faq.active .video-container {
+    display: block;
+}
+  
+.custom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px;
+    border-radius: 5px;
+    position: absolute;
+    bottom: 0px;
+    left: 0;
+    width: 100%;
+    color: white;
+}
+
+.custom-controls button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.video-progress-bar {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: white;
+    cursor: pointer;
+    appearance: none;
+}
+
+.video-volumn {
+    height: 3px;
+    border-radius: 2px;
+}
+
+.video-progress-bar::-webkit-slider-thumb {
+    appearance: none;
+    width: 5px;
+    height: 5px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.time {
+    font-size: 14px;
+}
+  

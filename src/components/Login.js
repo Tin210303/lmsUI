@@ -22,27 +22,27 @@ function Login() {
         }
 
         try {
-            const response = await axios.post('http://localhost:8080/lms/auth/token', requestData, {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+            // const response = await axios.post('http://localhost:8080/lms/auth/token', requestData, {
+            //     headers: {
+            //         'Content-Type': 'application/json'
+            //     }
+            // });
 
-            const token = response.data.result.token;
-            localStorage.setItem('authToken', token);
+            // const token = response.data.result.token;
+            // localStorage.setItem('authToken', token);
 
-            axios.get('http://localhost:8080/lms/student/myinfo', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            .then(response => {
-                navigate('/homepage')
-            })
-            .catch(error => {
-                console.error("Lỗi khi lấy dữ liệu:", error);
-            });
-            // navigate('/homepage')
+            // axios.get('http://localhost:8080/lms/student/myinfo', {
+            //     headers: {
+            //         'Authorization': `Bearer ${token}`
+            //     }
+            // })
+            // .then(response => {
+            //     navigate('/homepage')
+            // })
+            // .catch(error => {
+            //     console.error("Lỗi khi lấy dữ liệu:", error);
+            // });
+            navigate('/homepage')
         } catch (error) {
             setError('Sai TK or MK')
         }

@@ -31,7 +31,7 @@
     width: 500px;
     height: 80px;
     border-radius: 16px;
-    padding-left: 20px;
+    padding-left: 16px;
     margin-bottom: 20px;
     border: 1px solid #ccc;
     font-size: 20px;
@@ -53,8 +53,8 @@
 }
 
 .label-st.active {
-    top: 37%;
-    font-size: 16px;
+    top: 38%;
+    font-size: 12px;
 }
 
 .label-pass {
@@ -62,8 +62,8 @@
 }
 
 .label-pass.active {
-    top: 51%;
-    font-size: 16px;
+    top: 51.5%;
+    font-size: 12px;
 }
 
 .input::placeholder {

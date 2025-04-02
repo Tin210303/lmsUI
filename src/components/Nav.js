@@ -10,79 +10,79 @@ function Nav() {
     const TOKEN_REFRESH_INTERVAL = 300000; // Refresh token every 15 seconds (before 20s expiration)
     
     // Function to refresh token
-    const refreshToken = async () => {
-        try {
-            const currentToken = localStorage.getItem('authToken');
-            if (!currentToken) {
-                // No token found, redirect to login
-                navigate('/');
-                return;
-            }
+    // const refreshToken = async () => {
+    //     try {
+    //         const currentToken = localStorage.getItem('authToken');
+    //         if (!currentToken) {
+    //             // No token found, redirect to login
+    //             navigate('/');
+    //             return;
+    //         }
 
-            // Call the refresh token API
-            const response = await axios.post('http://localhost:8080/lms/auth/refresh', {
-                token: currentToken
-            }, {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+    //         // Call the refresh token API
+    //         const response = await axios.post('http://localhost:8080/lms/auth/refresh', {
+    //             token: currentToken
+    //         }, {
+    //             headers: {
+    //                 'Content-Type': 'application/json'
+    //             }
+    //         });
 
-            // Update with new token if provided
-            if (response.data && response.data.result && response.data.result.token) {
-                localStorage.setItem('authToken', response.data.result.token);
-            }
-        } catch (error) {
-            console.error("Lỗi khi refresh token:", error);
-            // If refresh fails with 401, redirect to login
-            if (error.response && error.response.status === 401) {
-                localStorage.removeItem('authToken');
-                navigate('/');
-            }
-        }
-    };
+    //         // Update with new token if provided
+    //         if (response.data && response.data.result && response.data.result.token) {
+    //             localStorage.setItem('authToken', response.data.result.token);
+    //         }
+    //     } catch (error) {
+    //         console.error("Lỗi khi refresh token:", error);
+    //         // If refresh fails with 401, redirect to login
+    //         if (error.response && error.response.status === 401) {
+    //             localStorage.removeItem('authToken');
+    //             navigate('/');
+    //         }
+    //     }
+    // };
 
-    useEffect(() => {
-        // Skip token verification if we're already on the login page
-        if (location.pathname === '/') {
-            return;
-        }
+    // useEffect(() => {
+    //     // Skip token verification if we're already on the login page
+    //     if (location.pathname === '/') {
+    //         return;
+    //     }
 
-        // Check token existence
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            navigate('/');
-            return;
-        }
+    //     // Check token existence
+    //     const token = localStorage.getItem('authToken');
+    //     if (!token) {
+    //         navigate('/');
+    //         return;
+    //     }
 
-        // Set up axios interceptor to catch 401 errors
-        const interceptor = axios.interceptors.response.use(
-            response => response,
-            error => {
-                if (error.response && error.response.status === 401) {
-                    // Only redirect if the error is not from the refresh token endpoint
-                    if (!error.config.url.includes('/refresh')) {
-                        // Try to refresh the token once
-                        refreshToken().catch(() => {
-                            // If refresh fails, redirect to login
-                            localStorage.removeItem('authToken');
-                            navigate('/');
-                        });
-                    }
-                }
-                return Promise.reject(error);
-            }
-        );
+    //     // Set up axios interceptor to catch 401 errors
+    //     const interceptor = axios.interceptors.response.use(
+    //         response => response,
+    //         error => {
+    //             if (error.response && error.response.status === 401) {
+    //                 // Only redirect if the error is not from the refresh token endpoint
+    //                 if (!error.config.url.includes('/refresh')) {
+    //                     // Try to refresh the token once
+    //                     refreshToken().catch(() => {
+    //                         // If refresh fails, redirect to login
+    //                         localStorage.removeItem('authToken');
+    //                         navigate('/');
+    //                     });
+    //                 }
+    //             }
+    //             return Promise.reject(error);
+    //         }
+    //     );
 
-        // Set up interval for token refresh
-        const tokenRefreshInterval = setInterval(refreshToken, TOKEN_REFRESH_INTERVAL);
+    //     // Set up interval for token refresh
+    //     const tokenRefreshInterval = setInterval(refreshToken, TOKEN_REFRESH_INTERVAL);
 
-        // Clean up
-        return () => {
-            clearInterval(tokenRefreshInterval);
-            axios.interceptors.response.eject(interceptor);
-        };
-    }, [navigate, location.pathname, TOKEN_REFRESH_INTERVAL]);
+    //     // Clean up
+    //     return () => {
+    //         clearInterval(tokenRefreshInterval);
+    //         axios.interceptors.response.eject(interceptor);
+    //     };
+    // }, [navigate, location.pathname, TOKEN_REFRESH_INTERVAL]);
 
     
     const navItems = [
