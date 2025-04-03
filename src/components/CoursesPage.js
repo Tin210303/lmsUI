@@ -1,8 +1,7 @@
-// Search theo API
-
 import React, { useState, useRef } from 'react';
 import '../assets/css/coursespage.css';
 import logo from '../logo.svg'
+import SendIcon from '@mui/icons-material/Send';
 
 // Sample course data
 const coursesData = [
@@ -449,7 +448,7 @@ function CoursesPage() {
                       onChange={handleCommentChange}
                       onKeyPress={handleCommentSubmit}
                     />
-                    <button className="send-button">›</button>
+                    <SendIcon className='send-button'/>
                   </div>
                 </div>
               ))}

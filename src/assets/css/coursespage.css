@@ -117,7 +117,7 @@
 }
 
 .course-header {
-  padding: 15px 15px 0 15px;
+  padding: 12px 12px 0 12px;
   border-bottom: 1px solid #eee;
 }
 
@@ -133,6 +133,7 @@
   align-items: center;
   font-size: 24px;
   color: #666;
+  margin-bottom: 20px;
 }
 
 .back_button {
@@ -143,6 +144,8 @@
   padding: 0;
   margin-right: 16px;
   font-size: 24px;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
 .back_button:hover {
@@ -338,11 +341,7 @@
 }
 
 .send-button {
-  width: 30px;
-  height: 30px;
   border-radius: 50%;
-  border: none;
-  background-color: #fff;
   color: #666;
   font-size: 24px;
   display: flex;
@@ -350,10 +349,14 @@
   justify-content: center;
   margin-left: 10px;
   cursor: pointer;
+  padding: 2px;
+  padding: 4px;
+  width: 30px !important;
+  height: 30px !important;
 }
 
 .send-button:hover {
-  background-color: #e0e0e0;
+  background-color: #f4f4f4;
 }
 
 /* Tasks tab styling */
@@ -632,6 +635,10 @@
   content: attr(placeholder);
   color: #999;
   pointer-events: none;
+}
+
+.editor-content ul {
+  padding-left: 16px;
 }
 
 .editor {

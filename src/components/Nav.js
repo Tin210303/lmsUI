@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../assets/css/nav.css';
+import HomeIcon from '@mui/icons-material/Home';
 
 function Nav() {
     const location = useLocation();
@@ -9,7 +10,7 @@ function Nav() {
     const [activeIndex, setActiveIndex] = useState(0);
     const TOKEN_REFRESH_INTERVAL = 300000; // Refresh token every 15 seconds (before 20s expiration)
     
-    // Function to refresh token
+    // // Function to refresh token
     // const refreshToken = async () => {
     //     try {
     //         const currentToken = localStorage.getItem('authToken');

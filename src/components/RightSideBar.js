@@ -138,8 +138,8 @@ const RightSideBar = () => {
                 <img src={profileImage} alt="Student Avatar" />
             </div>
             <div className="student-details">
-                <p className="student-course">KHÓA K45 (2021 - 2025)</p>
-                <p className="student-major">KỸ THUẬT PHẦN MỀM</p>
+                <p className="student-course">{infoUser?.result?.clazz?.course?.name} ({new Date(infoUser?.result?.clazz?.course?.startDate).getFullYear()} - {new Date(infoUser?.result?.clazz?.course?.endDate).getFullYear()})</p>
+                <p className="student-major">{infoUser?.result?.major?.name}</p>
                 <p className="student-year">HỌC KỲ: 2, NĂM HỌC 2024 - 2025</p>
                 <p className="student-name">{infoUser?.result?.fullName}</p>
             </div>

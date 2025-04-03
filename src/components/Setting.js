@@ -3,6 +3,16 @@ import axios from 'axios';
 import '../assets/css/Setting.css';
 import { UserContext } from '../context/userContext';
 import ReactPlayer from 'react-player';
+import Grid from '@mui/material/Grid'
+import { Typography } from '@mui/material';
+import Button from '@mui/material/Button';
+import BookmarkIcon from '@mui/material/Icon'
+import IconButton from '@mui/material/IconButton';
+import FastRewindIcon from '@mui/icons-material/FastRewind';
+import FastForwardIcon from '@mui/icons-material/FastForward';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import Slider from '@mui/material/Slider'
 
 const Setting = () => {
   const accessToken = localStorage.getItem('authToken');
@@ -193,7 +203,7 @@ const Setting = () => {
   
   // FAQ region
   const faqs = [
-    { question: "Tổng quan về LMS", videoUrl: "https://www.youtube.com/watch?v=DF57Ki04vD8" },
+    { question: "Tổng quan về LMS", videoUrl: "https://player.vimeo.com/video/1071661900?h=baa0dd66d9&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" },
     { question: "Làm thế nào để đổi mật khẩu?", videoUrl: "https://www.youtube.com/watch?v=h6RONxjPBf4" },
     { question: "Làm thế nào để đổi ngôn ngữ?", videoUrl: "https://www.youtube.com/watch?v=n6Pnzi6r9NU" },
     { question: "Làm thế nào để tham gia làm bài thi?", videoUrl: "https://www.youtube.com/watch?v=RTBl0s8-y1o" },
@@ -208,24 +218,8 @@ const Setting = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const playerRef = useRef(null);
     const [played, setPlayed] = useState(0);
-    const [volume, setVolume] = useState(0.5);
-    const [isMuted, setIsMuted] = useState(false);
-    const [duration, setDuration] = useState(0);
-    const [currentTime, setCurrentTime] = useState(0);
-
-    const handlePlayPause = () => {
-      setIsPlaying(!isPlaying);
-    };
-  
     const handleProgress = (state) => {
       setPlayed(state.played);
-      setCurrentTime(state.playedSeconds);
-    };
-  
-    const handleSeek = (e) => {
-      const newPlayed = parseFloat(e.target.value);
-      setPlayed(newPlayed);
-      playerRef.current.seekTo(newPlayed);
     };
 
     const formatTime = (time) => {
@@ -240,7 +234,13 @@ const Setting = () => {
     }
 
     return (
-      <div className={`faq ${isActive ? "active" : ""}`}>
+      <div 
+        className={`faq ${isActive ? "active" : ""}`} 
+        onClick={() => {
+          setIsActive(!isActive)
+          setIsPlaying(!isPlaying)
+        }}
+      >
         <h3 className="faq-title">{title}</h3>
         <div className='video-container'>
           <ReactPlayer
@@ -250,40 +250,40 @@ const Setting = () => {
             height="360px"
             playing={isPlaying}
             controls={true}
-            volume={volume}
-            muted={isMuted}
             onProgress={handleProgress}
-            onDuration={(d) => setDuration(d)}
             className="faq-text"
           />
-          {/* Custom Controls */}
-          {/* <div className="custom-controls">
-            <button onClick={handlePlayPause}>
-              {isPlaying ? "⏸" : "▶"}
-            </button>
-            <span className="time">{formatTime(currentTime)} / {formatTime(duration)}</span>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={played}
-              onChange={handleSeek}
-              className="video-progress-bar"
-            />
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={volume}
-              onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="video-volumn"
-            />
-            <button onClick={() => setIsMuted(!isMuted)}>
-              {isMuted ? "🔇" : "🔊"}
-            </button>
+
+          {/* <div className='controls-wrapper'>
+            <Grid container direction="row" alignItems="center" justifyContent="space-between" style={{padding:16}}>
+              <Grid item>
+                <Typography variant='h5' style={{color: "#fff"}}>Video title</Typography>
+              </Grid>
+
+              <Grid item>
+                <Button variant="contained" color="primary" startIcon={<BookmarkIcon/>}>Bookmark</Button>
+              </Grid>
+            </Grid>
+
+            <Grid container direction="row" alignItems="center" justifyContent="center">
+              <IconButton aria-label='requind' className='control-icons'>
+                <FastRewindIcon fontSize='inherit'/>
+              </IconButton>
+
+              <IconButton aria-label='requind' className='control-icons'>
+                <PlayArrowIcon fontSize='inherit'/>
+              </IconButton>
+
+              <IconButton aria-label='requind' className='control-icons'>
+                <FastForwardIcon fontSize='inherit'/>
+              </IconButton>
+            </Grid>
+
+            <Grid container direction="row" alignItems="center" justifyContent="center" style={{padding: 16}}>
+
+            </Grid>
           </div> */}
+
         </div>
         <button
           className="faq-toggle" 
@@ -349,8 +349,8 @@ const Setting = () => {
               <div className="profile-details">
                 <h3 className="profile-name">{infoUser?.result?.fullName}</h3>
                 <p className="profile-id">MSSV: {infoUser?.result?.code}</p>
-                <p className="profile-faculty">{formData.faculty}</p>
-                <p className="profile-semester">{formData.currentSemester}</p>
+                <p className="profile-faculty">{infoUser?.result?.major?.faculty?.name}</p>
+                <p className="profile-semester">{infoUser?.result?.clazz?.course?.name} ({new Date(infoUser?.result?.clazz?.course?.startDate).getFullYear()} - {new Date(infoUser?.result?.clazz?.course?.endDate).getFullYear()})</p>
               </div>
             </div>
            
@@ -390,16 +390,13 @@ const Setting = () => {
                 <h3>Thông tin học tập</h3>
                 <div className="info-grid">
                   <div className="info-label">Khoa:</div>
-                  <div className="info-value">{infoUser?.result?.majorId.name}</div>
+                  <div className="info-value">{infoUser?.result?.major?.faculty?.name}</div>
                  
                   <div className="info-label">Lớp:</div>
-                  <div className="info-value">{formData.className}</div>
+                  <div className="info-value">{infoUser?.result?.major?.name}</div>
                  
                   <div className="info-label">Khóa Học:</div>
-                  <div className="info-value">{formData.schoolYear}</div>
-                 
-                  <div className="info-label">Học Kỳ Hiện Tại:</div>
-                  <div className="info-value">{formData.currentSemester}</div>
+                  <div className="info-value">{infoUser?.result?.clazz?.course?.name} ({new Date(infoUser?.result?.clazz?.course?.startDate).getFullYear()} - {new Date(infoUser?.result?.clazz?.course?.endDate).getFullYear()})</div>
                 </div>
               </section>
             </div>

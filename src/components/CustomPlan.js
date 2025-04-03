@@ -317,6 +317,112 @@ const subjectsArchitecture = [
     ]
   },
 ];
+const subjectsInfomationTechnology = [
+  {
+    id: 1,
+    knowledge: "Kiến thức giáo dục đại cương",
+    total_credit: 30,
+    credit_required: 30,
+    courses: [
+      { id: "KNM1013", name: "Kỹ năng mềm", credits: 3, type: "Bắt buộc", semester: 2 },
+      { id: "LLCTKT2", name: "Kinh tế chính trị Mác - Lênin", credits: 2, type: "Bắt buộc", semester: 5 },
+      { id: "LLCTLS2", name: "Lịch sử Đảng cộng sản Việt Nam", credits: 2, type: "Bắt buộc", semester: 6 },
+      { id: "LLCTTH3", name: "Triết học Mác - Lênin", credits: 3, type: "Bắt buộc", semester: 1 },
+      { id: "LLCTTT2", name: "Tư tưởng Hồ Chí Minh", credits: 2, type: "Bắt buộc", semester: 7 },
+      { id: "LLCTXH2", name: "Chủ nghĩa xã hội khoa học", credits: 2, type: "Bắt buộc", semester: 5 },
+      { id: "LUA1012", name: "Pháp luật Việt Nam đại cương", credits: 2, type: "Bắt buộc", semester: 6 },
+      { id: "MTR1022", name: "Giáo dục môi trường đại cương", credits: 2, type: "Bắt buộc", semester: 1 },
+      { id: "TIN1093", name: "Nhập môn lập trình", credits: 3, type: "Bắt buộc", semester: 1 },
+      { id: "TIN1103", name: "Lập trình Python", credits: 3, type: "Bắt buộc", semester: 3 },
+      { id: "TOA1023", name: "Đại số tuyến tính", credits: 3, type: "Bắt buộc", semester: 2 },
+      { id: "TOA1053", name: "Giải tích", credits: 3, type: "Bắt buộc", semester: 3 },
+    ]
+  },
+  {
+    id: 2,
+    knowledge: "Kiến thức cơ sở ngành",
+    total_credit: 25,
+    credit_required: 22,
+    courses: [
+      { id: "TIN1033", name: "Java cơ bản", credits: 3, type: "Bắt buộc", semester: 4 },
+      { id: "TIN1083", name: "Kỹ thuật lập trình", credits: 3, type: "Bắt buộc", semester: 2 },
+      { id: "TIN2013", name: "Kiến trúc máy tính", credits: 3, type: "Bắt buộc", semester: 1 },
+      { id: "TIN3023", name: "Toán học rời rạc", credits: 3, type: "Bắt buộc", semester: 3 },
+      { id: "TIN3083", name: "Lập trình nâng cao", credits: 3, type: "Bắt buộc", semester: 2 },
+      { id: "TIN3092", name: "Lập trình Front - End", credits: 2, type: "Bắt buộc", semester: 2 },
+      { id: "TIN4083", name: "Ngôn ngữ hình thức và Ôtômat", credits: 3, type: "Tự chọn", semester: 5 },
+      { id: "TOA1012", name: "Cơ sở toán", credits: 2, type: "Bắt buộc", semester: 1 },
+      { id: "TOA2023", name: "Xác suất thống kê", credits: 3, type: "Bắt buộc", semester: 4 },
+      { id: "TOA2033", name: "Phương pháp tính", credits: 3, type: "Tự chọn", semester: 5 },
+      { id: "TOA4213", name: "Lý thuyết tối ưu", credits: 3, type: "Tự chọn", semester: 5 }
+    ]
+  },
+  {
+    id: 3,
+    knowledge: "Kiến thức ngành",
+    total_credit: 30,
+    credit_required: 25,
+    courses: [
+      { id: "TIN3012", name: "Ngôn ngữ truy vấn có cấu trúc (SQL)", credits: 2, type: "Bắt buộc", semester: 2 },
+      { id: "TIN3022", name: "Mô phỏng mạng", credits: 2, type: "Tự chọn", semester: 4 },
+      { id: "TIN3032", name: "Nhập môn cơ sở dữ liệu", credits: 2, type: "Bắt buộc", semester: 1 },
+      { id: "TIN3042", name: "Nguyên lý hệ điều hành", credits: 2, type: "Bắt buộc", semester: 3 },
+      { id: "TIN3043", name: "Kỹ nghệ phần mềm", credits: 3, type: "Tự chọn", semester: 4 },
+      { id: "TIN3053", name: "Các hệ quản trị cơ sở dữ liệu", credits: 3, type: "Bắt buộc", semester: 5 },
+      { id: "TIN3073", name: "Lập trình hướng đối tượng", credits: 3, type: "Bắt buộc", semester: 3 },
+      { id: "TIN3084", name: "Cấu trúc dữ liệu và thuật toán", credits: 4, type: "Bắt buộc", semester: 4 },
+      { id: "TIN3093", name: "Phân tích và thiết kế các hệ thống thông tin", credits: 3, type: "Bắt buộc", semester: 5 },
+      { id: "TIN3123", name: "Mạng máy tính", credits: 3, type: "Bắt buộc", semester: 3 },
+      { id: "TIN3133", name: "Đồ họa máy tính", credits: 3, type: "Tự chọn", semester: 4 },
+      { id: "TIN3163", name: "An ninh mạng", credits: 3, type: "Tự chọn", semester: 4 },
+      { id: "TIN4012", name: "Thiết kế cơ sở dữ liệu", credits: 2, type: "Tự chọn", semester: 4 },
+      { id: "TIN4122", name: "Ngôn ngữ mô hình hoá UML", credits: 2, type: "Tự chọn", semester: 4 },
+      { id: "TIN4663", name: "Trí tuệ nhân tạo", credits: 3, type: "Bắt buộc", semester: 5 },
+    ]
+  },
+  {
+    id: 4,
+    knowledge: "Kiến thức chuyên ngành",
+    total_credit: 21,
+    credit_required: 9,
+    courses: [
+      { id: "TIN4013", name: "Java nâng cao", credits: 3, type: "Tự chọn", semester: 7 },
+      { id: "TIN4063", name: "Phần mềm mã nguồn mở", credits: 3, type: "Tự chọn", semester: 7 },
+      { id: "TIN4133", name: "Quản trị dự án phần mềm", credits: 3, type: "Bắt buộc", semester: 6 },
+      { id: "TIN4183", name: "Kiểm định phần mềm", credits: 3, type: "Bắt buộc", semester: 6 },
+      { id: "TIN4253", name: "Mẫu thiết kế", credits: 3, type: "Tự chọn", semester: 6 },
+      { id: "TIN4403", name: "Lập trình ứng dụng cho các thiết bị di động", credits: 3, type: "Tự chọn", semester: 7 },
+      { id: "TIN4423", name: "Web ngữ nghĩa", credits: 3, type: "Tự chọn", semester: 6 },
+      { id: "TIN4453", name: "Phát triển ứng dụng Desktop", credits: 3, type: "Tự chọn", semester: 7 },
+      { id: "TIN4503", name: "Đồ án công nghệ phần mềm", credits: 3, type: "Bắt buộc", semester: 7 },
+      { id: "TIN4553", name: "Lập trình Game", credits: 3, type: "Tự chọn", semester: 7 },
+      { id: "TIN4583", name: "XML và ứng dụng", credits: 3, type: "Tự chọn", semester: 6 },
+      { id: "TIN4613", name: "Lập trình ứng dụng Web", credits: 3, type: "Tự chọn", semester: 7 },
+    ]
+  },
+  {
+    id: 5,
+    knowledge: "Thực tập, kiến tập",
+    total_credit: 6,
+    credit_required: 6,
+    courses: [
+      { id: "TIN3142", name: "Thực tập viết niên luận", credits: 2, type: "Bắt buộc", semester: 6 },
+      { id: "TIN4014", name: "Thực tập tốt nghiệp", credits: 4, type: "Bắt buộc", semester: 8 },
+    ]
+  },
+  {
+    id: 6,
+    knowledge: "Khóa luận tốt nghiệp hoặc các học phần thay thế KLTN",
+    total_credit: 10,
+    credit_required: 10,
+    courses: [
+      { id: "TIN4019", name: "Khóa luận tốt nghiệp", credits: 10, type: "Tự chọn", semester: 8 },
+      { id: "TIN4024", name: "Phát triển ứng dụng IoT", credits: 4, type: "Tự chọn", semester: 8 },
+      { id: "TIN4313", name: "Lập trình phân tán", credits: 3, type: "Tự chọn", semester: 8 },
+      { id: "TIN4353", name: "Hệ cơ sở dữ liệu phân tán", credits: 3, type: "Tự chọn", semester: 8 },
+    ]
+  },
+];
 const semesters = [
   "Học Kỳ: 1 - Năm Học: 2021 - 2022",
   "Học Kỳ: 2 - Năm Học: 2021 - 2022",

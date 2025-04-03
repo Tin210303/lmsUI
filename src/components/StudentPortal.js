@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import '../assets/css/studentportal.css';
 
 // Sample announcement data (same as in the original code)
@@ -127,11 +128,67 @@ const announcementData = [
 
 // Main component
 const StudentPortal = () => {
+  const accessToken = localStorage.getItem('authToken');
+  const [announcementData, setAnnouncementData] = useState([]);
+
+  // Chạy fetchNoti khi component được mount
+  useEffect(() => {
+    fetchNoti();
+  }, []);
+
+  // Lấy noti từ API
+  const fetchNoti = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/lms/noti', {
+          headers: { 
+            'Authorization': `Bearer ${accessToken}`,
+            "Content-Type": "application/json", 
+          }
+      });
+      
+      // Sắp xếp thông báo theo ngày đăng mới nhất
+      const sortedData = (response.data.result || []).sort((a, b) => 
+        new Date(b.createdDate) - new Date(a.createdDate)
+      );
+
+      setAnnouncementData(sortedData);
+    } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu:', error);
+    }
+  };
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [announcementsPerPage] = useState(3);
+  const [announcementsPerPage, setAnnouncementsPerPage] = useState(3);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [showAnnouncementList, setShowAnnouncementList] = useState(true);
+
+  // Tính toán số thông báo hiển thị dựa trên chiều cao màn hình
+  const calculateAnnouncementsPerPage = () => {
+    const screenHeight = window.innerHeight;
+    const itemHeight = 120; 
+    const headerOffset = 150;
+
+    const newCount = Math.max(Math.floor((screenHeight - headerOffset) / itemHeight), 1);
+    setAnnouncementsPerPage(newCount);
+  };
+
+  // Gọi khi component mount và khi resize màn hình
+  useEffect(() => {
+    calculateAnnouncementsPerPage();
+    window.addEventListener("resize", calculateAnnouncementsPerPage);
+
+    return () => {
+      window.removeEventListener("resize", calculateAnnouncementsPerPage);
+    };
+  }, []);
+
+  // Hàm giới hạn số ký tự
+  const truncateText = (text, maxLength) => {
+    if (!text) return "";
+    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+  };
+
   
   // Calculate current announcements
   const indexOfLastAnnouncement = currentPage * announcementsPerPage;
@@ -174,11 +231,11 @@ const StudentPortal = () => {
               style={{ cursor: 'pointer' }}
             >
               <div className="announcement-header">
-                <h3 className="announcement-title">{announcement.title}</h3>
-                <p className="announcement-date">[{announcement.date}]</p>
+                <h3 className="announcement-title">{announcement?.title}</h3>
+                <p className="announcement-date">[{new Date(announcement?.createdDate).toLocaleDateString('vi-VN')} {new Date(announcement?.createdDate).getHours()}:{new Date(announcement?.createdDate).getMinutes()}]</p>
               </div>
               <div className="announcement-content">
-                <p>{announcement.content}</p>
+                <p>{truncateText(announcement?.detail, 300)}</p>
               </div>
             </div>
           ))}
@@ -221,19 +278,19 @@ const StudentPortal = () => {
       ) : (
         /* Announcement Detail Section */
         <div className="announcement-detail-section">
-          <div className="back-nav">
-            <button onClick={backToHomePage} className="back-button">
-              &larr;
-            </button>
+          <div className="announcement-back-nav">
+            <div onClick={backToHomePage} className="announcement-back-button">
+              THÔNG BÁO
+            </div>
           </div>
           
           <div className="announcement-detail">
             <div className="announcement-detail-header">
-              <h3 className="announcement-detail-title">{selectedAnnouncement.title}</h3>
-              <p className="announcement-detail-date">[{selectedAnnouncement.date}]</p>
+              <h3 className="announcement-detail-title">{selectedAnnouncement?.title}</h3>
+              <p className="announcement-detail-date">[{new Date(selectedAnnouncement?.createdDate).toLocaleDateString('vi-VN')} {new Date(selectedAnnouncement?.createdDate).getHours()}:{new Date(selectedAnnouncement?.createdDate).getMinutes()}]</p>
             </div>
             <div className="announcement-detail-content">
-              <p>{selectedAnnouncement.content}</p>
+              <p>{selectedAnnouncement?.detail}</p>
             </div>
           </div>
         </div>

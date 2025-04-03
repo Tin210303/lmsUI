@@ -387,6 +387,7 @@
     overflow: hidden;
     transition: 0.3s ease;
     margin-bottom: 20px;
+    cursor: pointer;
 }
 
 .faq.active {
@@ -399,18 +400,18 @@
     content: '\f075';
     font-family: 'Font Awesome 5 Free';
     color: #2ecc71;
-    font-size: 5rem;
+    font-size: 4rem;
     position: absolute;
     opacity: 0.2;
-    top: 30px;
+    top: -4px;
     left: 20px;
     z-index: 0;
 }
 
 .faq.active::before {
     color: #3498db;
-    top: 4px;
-    left: -30px;
+    top: -26px;
+    left: -10px;
     transform: rotateY(180deg);
 }
 
@@ -470,58 +471,34 @@
     position: relative;
     width: 800px;
     display: none;
+    position: relative;
 }
 
 .faq.active .video-container {
     display: block;
 }
-  
-.custom-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 8px;
-    border-radius: 5px;
+
+.controls-wrapper {
     position: absolute;
-    bottom: 0px;
+    top: 0;
+    right: 0;
     left: 0;
-    width: 100%;
-    color: white;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 1;
 }
 
-.custom-controls button {
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
+.control-icons {
+    color: #777;
+    font-size: 50px;
+    transform: scale(0.9); 
 }
 
-.video-progress-bar {
-    flex: 1;
-    height: 3px;
-    border-radius: 2px;
-    background: white;
-    cursor: pointer;
-    appearance: none;
-}
-
-.video-volumn {
-    height: 3px;
-    border-radius: 2px;
-}
-
-.video-progress-bar::-webkit-slider-thumb {
-    appearance: none;
-    width: 5px;
-    height: 5px;
-    background: white;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-.time {
-    font-size: 14px;
+.control-icons:hover {
+    color: #fff;
+    transform: scale(1); 
 }
   
