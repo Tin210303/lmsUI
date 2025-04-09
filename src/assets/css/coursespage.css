@@ -1,0 +1,124 @@
+.course-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-layout {
+    display: flex;
+    width: 100%;
+}
+
+.main-content {
+    flex: 1;
+}
+
+.course-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.course-header-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.course-card {
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #00000005;
+    transition: transform .2s,box-shadow .2s;
+}
+
+.course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 8px #0000001a;
+    cursor: pointer;
+}
+
+.course-image {
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    position: relative;
+}
+
+.image-text {
+    text-align: center;
+    z-index: 1;
+}
+
+.course-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    padding: 15px 15px 5px 15px;
+    min-height: 60px;
+}
+
+.free-tag {
+    color: #f05123;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+    padding: 0 15px 10px 15px;
+}
+
+.course-stats {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px 15px 15px;
+    border-top: 1px solid #eee;
+    color: #666;
+    font-size: 13px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+    .courses-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .course-header-title {
+        font-size: 20px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+    .courses-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .course-title {
+        font-size: 14px;
+    }
+
+    .course-stats {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}

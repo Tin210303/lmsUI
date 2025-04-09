@@ -1,0 +1,261 @@
+/* Header styles */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    border-bottom: 1px solid #efefef;
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2b6cb0;
+}
+
+.logo img {
+    width: 8rem;
+}
+
+.nav {
+    display: flex;
+    gap: 24px;
+}
+
+.nav a:hover {
+    color: #2b6cb0;
+}
+
+.login-btn {
+    padding: 8px 16px;
+    background-color: transparent;
+    border: 1px solid #2b6cb0;
+    border-radius: 4px;
+    color: #2b6cb0;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background-color: #2b6cb0;
+    color: #fff;
+}
+
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-container {
+    background-color: #f9f9f9;
+    width: 100%;
+    max-width: 600px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.back-btn, .close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #666;
+}
+
+.close-btn {
+    font-size: 1.5rem;
+}
+
+.modal-content {
+    padding: 2rem 4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.login-logo {
+    font-size: 1.5rem;
+    width: 70px;
+    height: 75px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 1.75rem;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.modal-warning {
+    color: #f05123;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    max-width: 80%;
+}
+
+.login-form {
+    width: 100%;
+}
+
+.login-form p {
+    text-align: center;
+    font-size: 12px;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.login-options {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.login-options .phone-option {
+    color: #666;
+    cursor: pointer;
+}
+
+.login-options .active {
+    color: #333;
+    font-weight: bold;
+}
+
+.form-group-login {
+    width: 100%;
+    padding: 0.8rem 0.75rem 0.8rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.form-checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.form-checkbox label {
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.login-submit-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 40px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.login-submit-btn.disabled {
+    background-color: #23cfb5;
+    background-image: linear-gradient(to right, #23cfb5, #45dbf6);
+    color: white;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.login-submit-btn.active {
+    background-color: #23cfb5;
+    color: white;
+    cursor: pointer;
+    background-image: linear-gradient(to right, #23cfb5, #45dbf6);
+}
+
+.form-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-size: 14px;
+}
+
+.register-link {
+    color: #2356b8;;
+    text-decoration: none;
+}
+
+.register-link:hover {
+    text-decoration: underline;
+}
+
+.forgot-link {
+    color: #666;
+    text-decoration: none;
+}
+
+.terms {
+    font-size: 0.8rem;
+    color: #666;
+    text-align: center;
+}
+
+.terms a {
+    color: #666;
+}
+
+.role-selection-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    align-items: center;
+    width: 50%;
+}
+
+.role-btn {
+    padding: 20px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+    border: none;
+    color: white;
+    transition: 0.3s;
+}
+
+.role-btn.student {
+    background-color: #007bff;
+}
+
+.role-btn.teacher {
+    background-color: #6f42c1;
+}
+
+.role-btn:hover {
+    opacity: 0.85;
+}
+

@@ -1,0 +1,147 @@
+.hero {
+    position: relative;
+    width: 100%;
+    min-height: 600px;
+    background-image: url('../imgs/background.png');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 0;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+.hero-container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hero-content {
+    text-align: center;
+    max-width: 800px;
+    margin-bottom: 50px;
+}
+
+.hero-content h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.hero-content p {
+    font-size: 18px;
+    line-height: 1.5;
+    margin-bottom: 30px;
+}
+
+.cta-button {
+    background-color: #f26b7a;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.cta-button:hover {
+    background-color: #e05465;
+    transform: translateY(-2px);
+}
+
+.arrow {
+    margin-left: 8px;
+}
+
+.feature-boxes {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.feature-box {
+    background-color: white;
+    color: #333;
+    text-align: center;
+    padding: 40px 20px;
+    flex: 1;
+    width: 33.333%;
+    transition: all 0.3s ease;
+}
+
+.feature-box.active {
+    background-color: #f26b7a;
+    color: white;
+}
+
+.icon-container {
+    margin-bottom: 15px;
+}
+
+.icon-container img {
+    width: 40px;
+    height: 40px;
+}
+
+.feature-box h3 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.scroll-top {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background-color: #333;
+    color: white;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 3;
+}
+
+@media (max-width: 768px) {
+    .feature-boxes {
+    flex-direction: column;
+    align-items: center;
+    }
+    
+    .feature-box {
+    margin: 10px 0;
+    width: 100%;
+    max-width: 300px;
+    }
+    
+    .hero-content h1 {
+    font-size: 36px;
+    }
+}
