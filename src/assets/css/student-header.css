@@ -1,0 +1,126 @@
+.student-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 20px;
+    border-bottom: 1px solid #eee;
+    background-color: white;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.left-section {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    width: 6rem;
+    margin-right: 8px;
+}
+
+.title {
+    font-weight: bold;
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+}
+
+.search-box input {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px 16px 8px 40px; 
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    font-size: 14px;
+    outline: none;
+    color: #333;
+    font-family: inherit;
+}
+
+.search-icon {
+    position: absolute;
+    left: 30%;
+    top: 50%;
+    transform: translateY(-40%);
+    pointer-events: none;
+}
+
+
+.right-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.my-courses {
+    font-weight: 500;
+    white-space: nowrap;
+    color: #333;
+}
+
+.bell-icon {
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5b5b5b;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Responsive for mobile */
+@media (max-width: 768px) {
+    .student-header {
+    flex-direction: column;
+    align-items: stretch;
+    }
+
+    .left-section,
+    .right-section {
+    justify-content: center;
+    }
+
+    .search-box {
+    order: 2;
+    width: 100%;
+    }
+
+    .right-section {
+    order: 3;
+    margin-top: 10px;
+    }
+
+    .title {
+    font-size: 14px;
+    }
+
+    .search-box input {
+    padding: 6px 12px;
+    font-size: 13px;
+    }
+
+    .my-courses {
+    font-size: 13px;
+    }
+
+    .bell-icon {
+    font-size: 18px;
+    }
+}

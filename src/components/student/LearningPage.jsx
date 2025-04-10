@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import logo from '../../assets/imgs/logo.png';
 import '../../assets/css/learning-page.css';
+import CommentSection from './CommentSection';
 
 const LearningPage = () => {
 const { id } = useParams();
@@ -120,50 +121,50 @@ const findCurrentPosition = () => {
 
 // Hàm chuyển trạng thái active cho lesson mới
 const setActiveLesson = (chapterIndex, lessonIndex) => {
-  const updatedChapters = courseData.chapters.map((chapter, chapIdx) => {
-    const updatedLessons = chapter.lessons.map((lesson, lesIdx) => {
-      return {
-        ...lesson,
-        active: chapIdx === chapterIndex && lesIdx === lessonIndex
-      };
+    const updatedChapters = courseData.chapters.map((chapter, chapIdx) => {
+        const updatedLessons = chapter.lessons.map((lesson, lesIdx) => {
+            return {
+                ...lesson,
+                active: chapIdx === chapterIndex && lesIdx === lessonIndex
+            };
+        });
+        
+        return {
+            ...chapter,
+            expanded: chapIdx === chapterIndex ? true : chapter.expanded,
+            lessons: updatedLessons
+        };
     });
-    
-    return {
-      ...chapter,
-      expanded: chapIdx === chapterIndex ? true : chapter.expanded,
-      lessons: updatedLessons
-    };
-  });
-  
-  setCourseData(prev => ({
-    ...prev,
-    chapters: updatedChapters
-  }));
-  
-  // Cập nhật ID chapter và lesson hiện tại
-  if (chapterIndex >= 0 && lessonIndex >= 0) {
-    setCurrentChapterId(courseData.chapters[chapterIndex].id);
-    setCurrentLessonId(courseData.chapters[chapterIndex].lessons[lessonIndex].id);
-    setCurrentChapter(courseData.chapters[chapterIndex].title)
-  }
+
+    setCourseData(prev => ({
+        ...prev,
+        chapters: updatedChapters
+    }));
+
+    // Cập nhật ID chapter và lesson hiện tại
+    if (chapterIndex >= 0 && lessonIndex >= 0) {
+        setCurrentChapterId(courseData.chapters[chapterIndex].id);
+        setCurrentLessonId(courseData.chapters[chapterIndex].lessons[lessonIndex].id);
+        setCurrentChapter(courseData.chapters[chapterIndex].title)
+    }
 };
 
 // Xử lý đóng/mở chapter
 const handleToggleChapter = (chapterId) => {
-  const updatedChapters = courseData.chapters.map(chapter => {
-    if (chapter.id === chapterId) {
-      return {
-        ...chapter,
-        expanded: !chapter.expanded
-      };
-    }
-    return chapter;
-  });
-  
-  setCourseData(prev => ({
-    ...prev,
-    chapters: updatedChapters
-  }));
+    const updatedChapters = courseData.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+            return {
+                ...chapter,
+                expanded: !chapter.expanded
+            };
+        }
+        return chapter;
+    });
+
+    setCourseData(prev => ({
+        ...prev,
+        chapters: updatedChapters
+    }));
 };
 
 // Xứ lý đóng/mở sidebar
@@ -173,58 +174,63 @@ const handleToggleSidebar = () => {
 
 // Xử lý chuyển đến bài học trước
 const handlePreviousLesson = () => {
-  const { chapterIndex, lessonIndex } = findCurrentPosition();
-  
-  if (chapterIndex !== -1 && lessonIndex !== -1) {
-    // Nếu không phải lesson đầu tiên trong chapter
-    if (lessonIndex > 0) {
-      setActiveLesson(chapterIndex, lessonIndex - 1);
-    } 
-    // Nếu là lesson đầu tiên và không phải chapter đầu tiên
-    else if (chapterIndex > 0) {
-      const prevChapterIndex = chapterIndex - 1;
-      const prevChapter = courseData.chapters[prevChapterIndex];
-      const prevLessonIndex = prevChapter.lessons.length - 1;
-      
-      if (prevLessonIndex >= 0) {
-        setActiveLesson(prevChapterIndex, prevLessonIndex);
-      }
+    const { chapterIndex, lessonIndex } = findCurrentPosition();
+
+    if (chapterIndex !== -1 && lessonIndex !== -1) {
+        // Nếu không phải lesson đầu tiên trong chapter
+        if (lessonIndex > 0) {
+            setActiveLesson(chapterIndex, lessonIndex - 1);
+        } 
+        // Nếu là lesson đầu tiên và không phải chapter đầu tiên
+        else if (chapterIndex > 0) {
+            const prevChapterIndex = chapterIndex - 1;
+            const prevChapter = courseData.chapters[prevChapterIndex];
+            const prevLessonIndex = prevChapter.lessons.length - 1;
+            
+            if (prevLessonIndex >= 0) {
+                setActiveLesson(prevChapterIndex, prevLessonIndex);
+            }
+        }
+        // Ngược lại, đây là lesson đầu tiên của chapter đầu tiên, không làm gì cả
     }
-    // Ngược lại, đây là lesson đầu tiên của chapter đầu tiên, không làm gì cả
-  }
 };
 
 // Xử lý chuyển đến bài học tiếp theo
 const handleNextLesson = () => {
-  const { chapterIndex, lessonIndex } = findCurrentPosition();
-  
-  if (chapterIndex !== -1 && lessonIndex !== -1) {
-    const currentChapter = courseData.chapters[chapterIndex];
-    
-    // Nếu không phải lesson cuối cùng trong chapter
-    if (lessonIndex < currentChapter.lessons.length - 1) {
-      setActiveLesson(chapterIndex, lessonIndex + 1);
-    } 
-    // Nếu là lesson cuối cùng và không phải chapter cuối cùng
-    else if (chapterIndex < courseData.chapters.length - 1) {
-      const nextChapterIndex = chapterIndex + 1;
-      const nextChapter = courseData.chapters[nextChapterIndex];
-      
-      // Mở rộng chapter tiếp theo nếu nó có bài học
-      if (nextChapter.lessons.length > 0) {
-        setActiveLesson(nextChapterIndex, 0);
-      } else {
-        // Nếu chapter tiếp theo không có bài học, tìm chapter tiếp theo có bài học
-        for (let i = nextChapterIndex + 1; i < courseData.chapters.length; i++) {
-          if (courseData.chapters[i].lessons.length > 0) {
-            setActiveLesson(i, 0);
-            break;
-          }
+    const { chapterIndex, lessonIndex } = findCurrentPosition();
+
+    if (chapterIndex !== -1 && lessonIndex !== -1) {
+        const currentChapter = courseData.chapters[chapterIndex];
+        
+        // Nếu không phải lesson cuối cùng trong chapter
+        if (lessonIndex < currentChapter.lessons.length - 1) {
+            setActiveLesson(chapterIndex, lessonIndex + 1);
+        } 
+        // Nếu là lesson cuối cùng và không phải chapter cuối cùng
+        else if (chapterIndex < courseData.chapters.length - 1) {
+            const nextChapterIndex = chapterIndex + 1;
+            const nextChapter = courseData.chapters[nextChapterIndex];
+            
+            // Mở rộng chapter tiếp theo nếu nó có bài học
+            if (nextChapter.lessons.length > 0) {
+                setActiveLesson(nextChapterIndex, 0);
+            } else {
+                // Nếu chapter tiếp theo không có bài học, tìm chapter tiếp theo có bài học
+                for (let i = nextChapterIndex + 1; i < courseData.chapters.length; i++) {
+                    if (courseData.chapters[i].lessons.length > 0) {
+                        setActiveLesson(i, 0);
+                        break;
+                    }
+                }
+            }
         }
-      }
+        // Ngược lại, đây là lesson cuối cùng của chapter cuối cùng, không làm gì cả
     }
-    // Ngược lại, đây là lesson cuối cùng của chapter cuối cùng, không làm gì cả
-  }
+};
+
+// Xử lý khi click vào một lesson
+const handleLessonClick = (chapterIndex, lessonIndex) => {
+    setActiveLesson(chapterIndex, lessonIndex);
 };
 
 const handleBackToCourses = () => {
@@ -232,25 +238,24 @@ const handleBackToCourses = () => {
 };
 
  // Xác định tiêu đề và URL video của bài học hiện tại
- const getCurrentLessonInfo = () => {
+const getCurrentLessonInfo = () => {
     const { chapterIndex, lessonIndex } = findCurrentPosition();
     
     if (chapterIndex !== -1 && lessonIndex !== -1) {
-      const lesson = courseData.chapters[chapterIndex].lessons[lessonIndex];
-      return {
-        title: lesson.title,
-        videoUrl: `https://example.com/videos/${lesson.id}` // Thay bằng URL thực tế
-      };
+        const lesson = courseData.chapters[chapterIndex].lessons[lessonIndex];
+        return {
+            title: lesson.title,
+            videoUrl: `https://example.com/videos/${lesson.id}` // Thay bằng URL thực tế
+        };
     }
     
     return {
-      title: "Bài học không tồn tại",
-      videoUrl: ""
+        title: "Bài học không tồn tại",
+        videoUrl: ""
     };
-  };
+};
   
-  const currentLesson = getCurrentLessonInfo();
-
+const currentLesson = getCurrentLessonInfo();
     return (
         <div className="learning-container">
             {/* Header */}
@@ -293,16 +298,17 @@ const handleBackToCourses = () => {
                 <div className="video-container">
                     <div className="video-player">
                         <iframe
-                        width="100%"
-                        height="100%"
-                        src={currentLesson.videoUrl}
-                        frameBorder="0"
-                        allowFullScreen
-                        title="Course video"
+                            width="100%"
+                            height="100%"
+                            src={currentLesson.videoUrl}
+                            frameBorder="0"
+                            allowFullScreen
+                            title="Course video"
                         ></iframe>
                     </div>
                     <div className="video-info">
                         <h2 className="video-title">{currentLesson.title}</h2>
+                        <CommentSection lessonId={currentLessonId} />
                     </div>
                 </div>
 
@@ -312,7 +318,7 @@ const handleBackToCourses = () => {
                         <h3>Nội dung khóa học</h3>
                     </div>
                     <div className="sidebar-content">
-                        {courseData.chapters.map(chapter => (
+                        {courseData.chapters.map((chapter, chapterIndex) => (
                             <div key={chapter.id} className="chapter-item">
                                 <div 
                                     className={`chapter-header ${chapter.expanded ? 'expanded' : ''}`}
@@ -332,10 +338,11 @@ const handleBackToCourses = () => {
                                 
                                 {chapter.expanded && (
                                     <div className="lessons-list">
-                                        {chapter.lessons.map(lesson => (
+                                        {chapter.lessons.map((lesson, lessonIndex) => (
                                             <div 
                                                 key={lesson.id}
                                                 className={`lesson-item ${lesson.active ? 'active' : ''}`}
+                                                onClick={() => handleLessonClick(chapterIndex, lessonIndex)}
                                             >
                                                 <div className="lesson-left">
                                                     {lesson.type === 'video' ? (

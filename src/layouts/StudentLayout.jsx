@@ -1,10 +1,10 @@
-import Header from '../components/Header';
+import StudentHeader from '../components/student/StudentHeader';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 
 const StudentLayout = ({ children }) => (
   <>
-    <Header />
+    <StudentHeader />
     <div className="d-flex">
       <Sidebar />
       {children}

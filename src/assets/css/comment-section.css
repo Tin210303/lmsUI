@@ -1,0 +1,340 @@
+.comment-section {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-top: 1px solid #e2e2e2;
+}
+
+.comment-section h2 {
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.comment-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.comment-input .avatar {
+    border-radius: 50%;
+    margin-right: 10px;
+    width: 40px;
+}
+
+.comment-input input {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.comment-count {
+    color: #333;
+    font-weight: 600;
+}
+
+.comment {
+    display: flex;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.comment.reply {
+    margin-left: 2rem;
+}
+
+.avatar-circle {
+    background-color: #ddd;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.comment-content {
+    flex: 1;
+}
+
+.comment-text {
+    color: #333;
+}
+
+.comment-text ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.comment-text li {
+    list-style-type: disc;
+}
+
+.comment-text b {
+    font-weight: bold;
+}
+
+.comment-text i {
+    font-style: italic;
+}
+
+.comment-text u {
+    text-decoration: underline;
+}
+
+.comment-header {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #333;
+    margin-bottom: 0.3rem;
+}
+
+.comment-header .time {
+    font-weight: normal;
+    color: #999;
+    margin-left: 10px;
+    font-size: 0.8rem;
+}
+
+.comment-actions {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #007bff;
+    cursor: pointer;
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.3rem;
+}
+
+.view-more-comments {
+    color: #007bff;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.view-more-comments:hover {
+    text-decoration: underline;
+}
+
+.announcement-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+}
+
+.editor {
+    position: relative;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #9b9b9b;
+}
+
+.editor.active {
+    border-bottom: 2px solid #1a73e8;
+}
+
+.editor::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 100%;
+    height: 2px;
+    background-color: #1a73e8;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease-in-out;
+}
+
+.editor.active::after {
+    transform: scaleX(1);
+}
+
+.editor-content {
+    min-height: 100px;
+    padding: 15px;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 14px;
+    overflow-y: auto;
+    font-weight: normal;
+    white-space: pre-wrap; 
+    word-wrap: break-word; 
+    word-break: break-word; 
+    overflow-x: hidden; 
+    max-width: 100%; 
+    line-height: 1.5; 
+    color: #333;
+}
+
+.editor-content ul {
+    padding-left: 14px;
+}
+
+.editor-content[placeholder]:empty:before {
+    content: attr(placeholder);
+    color: #999;
+    pointer-events: none;
+}
+
+.editor-toolbar {
+    display: flex;
+    padding: 10px 15px;
+}
+
+.toolbar-button.active {
+    background-color: #e6e6e6;
+    border-radius: 2px;
+}
+
+.toolbar-button {
+    width: 34px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    padding: 5px 10px;
+    transition: background-color 0.2s;
+}
+
+.toolbar-button:hover {
+    background-color: #f0f0f0;
+    border-radius: 50%;
+}
+
+.toolbar-button.active:hover {
+    background-color: #eaeaea;
+    border-radius: 2px;
+}
+
+.toolbar-button.italic {
+    font-style: italic;
+}
+
+.toolbar-button.underline {
+    text-decoration: underline;
+}
+
+.editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 15px;
+}
+
+.post-button {
+    padding: 8px 20px;
+    margin-left: 10px;
+    border: none;
+    background-color: #1a73e8;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.open-editor {
+    width: 100%;
+    cursor: pointer;
+}
+
+.announcement_header-input {
+    border: none;
+    width: 100%;
+    cursor: pointer;
+}
+
+.announcement_header-input:focus-visible {
+    outline: none;
+}
+
+.author-avatar {
+    width: 4rem !important;
+}
+
+/* CSS cho phần phản hồi */
+.reply-editor-container {
+    padding-left: 10px;
+    padding-top: 10px;
+    padding-bottom: 15px;
+    width: 100%;
+}
+
+.align-items-start {
+    align-items: flex-start;
+}
+
+.author-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.reply-content {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.reply-editor {
+    padding: 10px;
+    position: relative;
+}
+
+.reply-editor-content {
+    min-height: 80px;
+    outline: none;
+    padding-bottom: 40px; 
+    color: #333;
+}
+
+.reply-editor-content ul {
+    padding-left: 14px;
+}
+
+.mention {
+    color: #0084ff;
+    font-weight: 500;
+}
+
+.reply-editor-toolbar {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    display: flex;
+    gap: 5px;
+    background-color: #f8f9fa;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.reply-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+    background: #f8f9fa;
+    border-top: 1px solid #ddd;
+}
+
+.cancel-button {
+    background: none;
+    border: 1px solid #00549b;
+    color: #00549b;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+.cancel-button:hover {
+    background: #e9ecef;
+}
+
+.post-button:hover {
+    background: #0069d9;
+}
