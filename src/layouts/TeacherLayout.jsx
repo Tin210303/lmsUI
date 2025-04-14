@@ -1,10 +1,10 @@
-import Header from '../components/Header'; // Header riêng nếu có
-import TeacherSidebar from '../components/Sidebar';
+import TeacherHeader from '../components/teacher/TeacherHeader';
+import TeacherSidebar from '../components/teacher/TeacherSidebar';
 import Footer from '../components/Footer';
 
 const TeacherLayout = ({ children }) => (
   <>
-    <Header />
+    <TeacherHeader />
     <div className="d-flex">
       <TeacherSidebar />
       {children}

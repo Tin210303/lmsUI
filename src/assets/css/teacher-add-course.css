@@ -1,0 +1,82 @@
+.teacher-add-course-container {
+    margin: 0 auto;
+    padding: 20px 60px;
+    background-color: #fff;
+    border-radius: 8px;
+    width: 100%;
+}
+
+.teacher-add-course-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 60%;
+    padding-top: 20px;
+}
+
+.teacher-form-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.teacher-form-group label {
+    font-weight: bold;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    width: 30%;
+    padding-right: 16px;
+}
+
+.teacher-form-group input,
+.teacher-form-group select,
+.teacher-form-group textarea {
+    padding: 10px 10px 10px 16px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 16px;
+    width: 70%;
+    font-family: inherit;
+}
+
+.teacher-form-group-checkbox {
+    width: 8% !important;
+    margin-left: 8px;
+}
+
+.teacher-form-actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.teacher-confirm-button {
+    background-color: #0056b3;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.teacher-confirm-button:hover {
+    background-color: #007bff;
+}
+
+.teacher-cancel-button {
+    background-color: #c82333;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.teacher-cancel-button:hover {
+    background-color: #dc3545;
+} 

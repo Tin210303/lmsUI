@@ -1,124 +1,116 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/css/header.css';
 import logohusc from '../assets/imgs/Logo-ko-nen.png';
 import logo from '../assets/imgs/logo.png';
+import axios from 'axios';
 import { FcGoogle } from 'react-icons/fc';
+import { useAuth } from '../context/AuthContext';
 
 function Header() {
     const navigate = useNavigate();
+    const { login, logout, isAuthenticated } = useAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isFormValid, setIsFormValid] = useState(false);
     const [selectedRole, setSelectedRole] = useState(null);
+    const [error, setError] = useState('');
+    const [isFormValid, setIsFormValid] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Registration form states
     const [regEmail, setRegEmail] = useState('');
     const [regUsername, setRegUsername] = useState('');
     const [regPassword, setRegPassword] = useState('');
     const [isRegFormValid, setIsRegFormValid] = useState(false);
-    
-    // Check if both email and password have values for login
+
+    // Validate login form
     useEffect(() => {
         setIsFormValid(email.trim() !== '' && password.trim() !== '');
     }, [email, password]);
-    
-    // Check if all registration fields have values
+
+    // Validate registration form
     useEffect(() => {
         setIsRegFormValid(
             regEmail.trim() !== '' && 
             regUsername.trim() !== '' && 
-            regPassword.trim() !== '' 
+            regPassword.trim() !== ''
         );
     }, [regEmail, regUsername, regPassword]);
-    
-    const openLoginModal = () => {
-        setSelectedRole(null); // reset role selection
-        setShowLoginModal(true);
-        setShowRegisterModal(false);
-    };
-      
-    const openRegisterModal = () => {
-        setShowRegisterModal(true);
-        setShowLoginModal(false);
-    };
-    
-    const closeAllModals = () => {
-        setShowLoginModal(false);
-        setShowRegisterModal(false);
-        // Clear form data
+
+    const resetForm = useCallback(() => {
         setEmail('');
         setPassword('');
         setRegEmail('');
         setRegUsername('');
         setRegPassword('');
-    };
-    
-    // Xử lý đăng nhập
-    const handleLogin = (e) => {
-        e.preventDefault();
-        
-        // Ở đây bạn có thể thêm logic để gọi API đăng nhập
-        // Ví dụ:
-        // loginUser(email, password)
-        //   .then(response => {
-        //     // Lưu token vào localStorage
-        //     localStorage.setItem('token', response.token);
-        //     // Chuyển hướng đến trang chủ
-        //     navigate('/');
-        //   })
-        //   .catch(error => {
-        //     // Xử lý lỗi
-        //     alert('Đăng nhập thất bại: ' + error.message);
-        //   });
-        
-        // Mô phỏng đăng nhập thành công và chuyển hướng
-        console.log('Đăng nhập với:', email, password);
-        
-        // Lưu trạng thái đăng nhập vào localStorage (giả định)
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userEmail', email);
-        localStorage.setItem('role', selectedRole);
+        setError('');
+        setSelectedRole(null);
+    }, []);
 
-        
-        // Đóng modal
-        closeAllModals();
-        
-        navigate('/courses');
+    const closeAllModals = useCallback(() => {
+        setShowLoginModal(false);
+        setShowRegisterModal(false);
+        resetForm();
+    }, [resetForm]);
+
+    const openLoginModal = useCallback(() => {
+        setShowRegisterModal(false);
+        setShowLoginModal(true);
+        resetForm();
+    }, [resetForm]);
+
+    const openRegisterModal = useCallback(() => {
+        setShowLoginModal(false);
+        setShowRegisterModal(true);
+        resetForm();
+    }, [resetForm]);
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            const result = await login(email, password, selectedRole);
+            if (result.success) {
+                setShowLoginModal(false);
+                // Reset form
+                setEmail('');
+                setPassword('');
+                setSelectedRole('student');
+            } else {
+                setError(result.error);
+            }
+        } catch (err) {
+            setError('An unexpected error occurred. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
-    
-    // Xử lý đăng nhập bằng Email HUSC
+
     const handleLoginWithHusc = (e) => {
         e.preventDefault();
-        
-        // Mô phỏng đăng nhập thành công
-        console.log('Đăng nhập với Email HUSC');
-        
-        // Lưu trạng thái đăng nhập
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('isHuscUser', 'true');
-        localStorage.setItem('role', selectedRole);
-        
-        // Đóng modal
+        if (!selectedRole) {
+            setError('Vui lòng chọn vai trò đăng nhập');
+            return;
+        }
         closeAllModals();
-        
         navigate('/courses');
     };
-    
-    // Xử lý đăng ký
+
     const handleRegister = (e) => {
         e.preventDefault();
-        
-        // Xử lý logic đăng ký
-        console.log('Đăng ký với:', regUsername, regEmail, regPassword);
-        
-        // Thông báo đăng ký thành công và chuyển sang đăng nhập
         alert('Đăng ký thành công! Vui lòng đăng nhập.');
         openLoginModal();
     };
-    
+
+    const handleLogoutClick = () => {
+        logout();
+        navigate('/');
+    };
+
     return (
         <>
             <header className="header">
@@ -128,7 +120,11 @@ function Header() {
                     <a href="#about">Giới thiệu</a>
                     <a href="#contact">Liên hệ</a>
                 </nav>
-                <button className="login-btn" onClick={openLoginModal}>Đăng nhập</button>
+                {isAuthenticated ? (
+                    <button className="login-btn" onClick={handleLogoutClick}>Đăng xuất</button>
+                ) : (
+                    <button className="login-btn" onClick={openLoginModal}>Đăng nhập</button>
+                )}
             </header>
             
             {/* Login Modal */}
@@ -166,15 +162,12 @@ function Header() {
                                     Dành Cho {selectedRole === 'student' ? 'Sinh Viên' : 'Giảng Viên'}
                                 </h2>
 
-                                <form className="login-form" onSubmit={(e) => {
-                                    e.preventDefault();
-                                    console.log('Đăng nhập với:', email, password, selectedRole);
-                                    localStorage.setItem('isLoggedIn', 'true');
-                                    localStorage.setItem('userEmail', email);
-                                    localStorage.setItem('role', selectedRole);
-                                    closeAllModals();
-                                    navigate(selectedRole === 'teacher' ? '/teacher/courses' : '/courses'); // hoặc `/teacher/dashboard` nếu phân quyền
-                                }}>
+                                <form className="login-form" onSubmit={handleLogin}>
+                                    {error && (
+                                        <div className="alert alert-danger" role="alert">
+                                            {error}
+                                        </div>
+                                    )}
                                     <div className="form-group">
                                         <input
                                             type="email"
@@ -183,6 +176,7 @@ function Header() {
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             required
+                                            disabled={loading}
                                         />
                                     </div>
 
@@ -194,35 +188,37 @@ function Header() {
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
+                                            disabled={loading}
                                         />
                                     </div>
 
                                     <div className="form-checkbox">
-                                        <input type="checkbox" id="remember" />
+                                        <input type="checkbox" id="remember" disabled={loading} />
                                         <label htmlFor="remember">Ghi nhớ đăng nhập</label>
                                     </div>
 
-                                    <button
-                                        type="submit"
+                                    <button 
+                                        type="submit" 
                                         className={`login-submit-btn ${isFormValid ? 'active' : 'disabled'}`}
-                                        disabled={!isFormValid}
-                                        >
-                                        Đăng nhập
+                                        disabled={loading || !isFormValid}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Đang đăng nhập...
+                                            </>
+                                        ) : (
+                                            'Đăng nhập'
+                                        )}
                                     </button>
 
                                     <p>Hoặc</p>
 
                                     <button
+                                        type="button"
                                         className="login-submit-btn d-flex justify-center align-center"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            console.log('Đăng nhập với Email HUSC');
-                                            localStorage.setItem('isLoggedIn', 'true');
-                                            localStorage.setItem('isHuscUser', 'true');
-                                            localStorage.setItem('role', selectedRole);
-                                            closeAllModals();
-                                            navigate(selectedRole === 'teacher' ? '/teacher/dashboard' : '/courses'); // hoặc phân theo role
-                                        }}
+                                        onClick={handleLoginWithHusc}
+                                        disabled={loading}
                                     >
                                         <FcGoogle size={24} style={{ marginRight: '8px' }} />
                                         Đăng nhập với Email HUSC

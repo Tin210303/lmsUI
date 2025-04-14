@@ -15,17 +15,18 @@ import Footer from './components/Footer';
 import CoursesPage from './components/student/CoursesPage';
 import CourseDetailPage from './components/student/CourseDetailPage';
 import LearningPage from './components/student/LearningPage';
-// import ForumPage from './components/ForumPage';
-// import PostsPage from './components/PostsPage';
-// import TeacherDashboard from './components/teacher/TeacherDashboard';
+import TeacherDashboard from './components/teacher/TeacherDashboard';
+import TeacherAddCourse from './components/teacher/TeacherAddCourse';
+import TeacherCourseDetail from './components/teacher/TeacherCourseDetail';
+import TeacherAddLesson from './components/teacher/TeacherAddLesson';
 // import TeacherCourses from './components/teacher/TeacherCourses';
 
 import './App.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <ScrollOnTop />
         <Routes>
           {/* Trang chính (dùng layout chung hoặc sinh viên) */}
@@ -75,14 +76,35 @@ function App() {
           } />
 
           {/* Các route dành riêng cho giảng viên */}
-          {/* <Route path="/teacher/courses" element={
+          <Route path="/teacher/dashboard" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
-                <CoursesPage />
+                <TeacherDashboard />
               </TeacherLayout>
             </ProtectedRoute>
           } />
-          <Route path="/teacher/courses" element={
+          <Route path="/teacher/add-course" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherAddCourse />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/course/:id" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherCourseDetail />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/course/:courseId/chapter/:chapterId/add-lesson" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherAddLesson />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          {/* <Route path="/teacher/courses" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <TeacherCourses />
@@ -90,8 +112,8 @@ function App() {
             </ProtectedRoute>
           } /> */}
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

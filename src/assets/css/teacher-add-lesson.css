@@ -1,0 +1,81 @@
+.teacher-add-lesson-container {
+    margin: 0 auto;
+    padding: 20px 60px;
+    width: 100%;
+}
+
+.teacher-add-lesson-container h2 {
+    margin-bottom: 20px;
+}
+
+.teacher-add-lesson-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 60%;
+    padding-top: 20px;
+}
+
+.file-input-container {
+    flex: 2;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.file-input-container input {
+    width: 100%;
+}
+
+.file-icon {
+    position: absolute;
+    right: 10px;
+    font-size: 20px;
+}
+
+.required {
+    color: red;
+    margin-left: 3px;
+}
+
+.form-divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 10px 0;
+}
+
+.teacher-form-actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.confirm-button,
+.cancel-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.confirm-button {
+    background-color: #007bff;
+    color: white;
+}
+
+.cancel-button {
+    background-color: #dc3545;
+    color: white;
+}
+
+.add-question-button {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    padding: 8px 0;
+    font-size: 14px;
+    text-align: left;
+} 
