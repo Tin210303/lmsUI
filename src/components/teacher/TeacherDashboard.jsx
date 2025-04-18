@@ -1,142 +1,136 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Users, Eye } from 'lucide-react';
+import { Book, Users, User } from 'lucide-react';
+import axios from 'axios';
 import '../../assets/css/coursespage.css';
-
-const coursesData = [
-    {
-        id: 1,
-        title: "Kiến Thức Nhập Môn IT",
-        color: "linear-gradient(to right, #ff4b6a, #7b2fbf)",
-        subtitle: "Kiến thức nhập môn{}",
-        students: "133.889",
-        views: "9",
-        duration: "3h12p",
-        image: "cube",
-    },
-    {
-        id: 2,
-        title: "Lập trình C++ cơ bản, nâng cao",
-        color: "linear-gradient(to right, #00d2c1, #00b5e0)",
-        subtitle: "Từ cơ bản đến nâng cao",
-        students: "33.889",
-        views: "55",
-        duration: "10h18p",
-        image: "cpp",
-    },
-    {
-        id: 3,
-        title: "HTML CSS từ Zero đến Hero",
-        color: "linear-gradient(to right, #1d75fb, #3e60ff)",
-        subtitle: "từ zero đến hero",
-        students: "208.852",
-        views: "117",
-        duration: "29h5p",
-        image: "html",
-    },
-    {
-        id: 4,
-        title: "Responsive Với Grid System",
-        color: "linear-gradient(to right, #e94b9c, #a229c5)",
-        subtitle: "@web design",
-        students: "46.843",
-        views: "34",
-        duration: "6h31p",
-        image: "responsive",
-    },
-    {
-        id: 5,
-        title: "Lập Trình JavaScript Cơ Bản",
-        color: "linear-gradient(to right, #ffda65, #ffa05c)",
-        subtitle: "{.Cơ bản}",
-        students: "146.390",
-        views: "112",
-        duration: "24h15p",
-        image: "js-basic",
-    },
-    {
-        id: 6,
-        title: "Lập Trình JavaScript Nâng Cao",
-        color: "linear-gradient(to right, #ff7448, #ff5639)",
-        subtitle: "{.Nâng cao}",
-        students: "40.379",
-        views: "19",
-        duration: "8h41p",
-        image: "js-advanced",
-    },
-    {
-        id: 7,
-        title: "Làm việc với Terminal & Ubuntu",
-        color: "linear-gradient(to right, #c42f7c, #f16033)",
-        subtitle: "Windows Terminal",
-        students: "20.380",
-        views: "28",
-        duration: "4h59p",
-        image: "terminal",
-    },
-    {
-        id: 8,
-        title: "Xây Dựng Website với ReactJS",
-        color: "linear-gradient(to right, #172b4c, #2b4c78)",
-        subtitle: "Learn once, write anywhere",
-        students: "74.502",
-        views: "112",
-        duration: "27h32p",
-        image: "react",
-    },
-];
-
-const CourseImage = ({ courseId, bgColor, subtitle }) => {
-    const getImageContent = (id) => {
-        switch (id) {
-        case 1: return "⬛";
-        case 2: return "C++";
-        case 3: return "HTML";
-        case 4: return "CSS";
-        case 5: return "JS";
-        case 6: return "JS";
-        case 7: return "WSL";
-        case 8: return "⚛️";
-        default: return "";
-        }
-    };
-
-    return (
-        <div className="course-image" style={{ background: bgColor }}>
-            <div className="image-text">
-                <div style={{ fontSize: "28px", marginBottom: "5px" }}>
-                    {getImageContent(courseId)}
-                </div>
-                <div style={{ fontSize: "14px" }}>{subtitle}</div>
-            </div>
-        </div>
-    );
-};
 
 const CourseCard = ({ course }) => {
     const navigate = useNavigate();
+    const [students, setStudents] = useState([]);
+    const [lessonCount, setLessonCount] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [teacherName, setTeacherName] = useState(course.teacher?.fullName || 'N/A');
+    const [courseImage, setCourseImage] = useState(course.image || null);
+
+    // Tạo màu nền dựa trên ID khóa học (để luôn cố định cho mỗi khóa học)
+    const getConsistentColor = (id) => {
+        const colors = [
+            'linear-gradient(to right, #4b6cb7, #182848)',
+            'linear-gradient(to right, #1d75fb, #3e60ff)',
+            'linear-gradient(to right, #ff416c, #ff4b2b)',
+            'linear-gradient(to right, #11998e, #38ef7d)',
+            'linear-gradient(to right, #8e2de2, #4a00e0)',
+            'linear-gradient(to right, #fc4a1a, #f7b733)',
+            'linear-gradient(to right, #5433ff, #20bdff)',
+            'linear-gradient(to right, #2b5876, #4e4376)'
+        ];
+        // Tạo số từ các ký tự trong ID
+        const sum = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return colors[sum % colors.length];
+    };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                // Fetch students
+                const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse/${course.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                setStudents(studentsResponse.data.result || []);
+
+                // Fetch course details to get lesson count and teacher info
+                const courseDetailsResponse = await axios.get(`http://localhost:8080/lms/course/${course.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                // Count lessons from the course details
+                const courseDetails = courseDetailsResponse.data.result;
+                const lessons = courseDetails.lesson || [];
+                setLessonCount(lessons.length);
+                
+                // Update teacher name from course details
+                if (courseDetails.teacher && courseDetails.teacher.fullName) {
+                    setTeacherName(courseDetails.teacher.fullName);
+                }
+                
+                // Update course image if available
+                if (courseDetails.image) {
+                    setCourseImage(courseDetails.image);
+                }
+            } catch (err) {
+                console.error('Error fetching data:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [course.id]);
 
     const handleClick = () => {
-        navigate(`/teacher/course/${course.id}`);
+        navigate('/teacher/course', {
+            state: { courseId: course.id }
+        });
+    };
+
+    // Format dates
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
     };
 
     return (
         <div className="course-card" onClick={handleClick}>
-            <CourseImage courseId={course.id} bgColor={course.color} subtitle={course.subtitle} />
-            <h3 className="course-title">{course.title}</h3>
-            <p className="free-tag">Miễn phí</p>
+            <div className="course-image">
+                {courseImage ? (
+                    <img src={courseImage} alt={course.name} className="course-img" />
+                ) : (
+                    <div className="course-placeholder" style={{ background: getConsistentColor(course.id) }}>
+                        <div className="image-text">
+                            <div style={{ fontSize: "36px", fontWeight: "bold" }}>
+                                {course.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ fontSize: "14px", marginTop: "5px" }}>
+                                {course.name}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+            <div className="course-card-header">
+                <h3 className="course-title">{course.name}</h3>
+                <p className="course-dates">Thời hạn: {formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}</p>
+                <p className="course-major">Chuyên ngành: {course.major || 'Chưa có thông tin'}</p>
+                <div className="course-status">
+                    <span className={`status-badge ${course.status.toLowerCase()}`}>
+                        {course.status.toUpperCase() === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE'}
+                    </span>
+                </div>
+            </div>
             <div className="course-stats">
                 <div className="stat-item">
+                    <User size={16} />
+                    <span>{teacherName}</span>
+                </div>
+                <div className="stat-item">
                     <Users size={16} />
-                    <span>{course.students}</span>
+                    <span>{students.length}</span>
                 </div>
                 <div className="stat-item">
-                    <Eye size={16} />
-                    <span>{course.views}</span>
-                </div>
-                <div className="stat-item">
-                    <Clock size={16} />
-                    <span>{course.duration}</span>
+                    <Book size={16} />
+                    <span>{loading ? '...' : lessonCount} bài học</span>
                 </div>
             </div>
         </div>
@@ -145,9 +139,54 @@ const CourseCard = ({ course }) => {
 
 const TeacherDashboard = () => {
     const navigate = useNavigate();
+    const [courses, setCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const response = await axios.get('http://localhost:8080/lms/course/courseofteacher', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                setCourses(response.data.result || []);
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                console.error('Error fetching courses:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCourses();
+    }, []);
+
+    if (loading) {
+        return <div className="courses-container">
+            <div className="main-content">
+                <div>Đang tải dữ liệu...</div>
+            </div>
+        </div>;
+    }
+
+    if (error) {
+        return <div className="courses-container">
+            <div className="main-content">
+                <div>Có lỗi xảy ra: {error}</div>
+            </div>
+        </div>;
+    }
 
     return (
-        <div className="page-layout">
+        <div className="courses-container">
             <div className="main-content">
                 <div className="course-container">
                     <div className="course-header">
@@ -161,7 +200,7 @@ const TeacherDashboard = () => {
                         </button>
                     </div>
                     <div className="courses-grid">
-                        {coursesData.map(course => (
+                        {courses.map(course => (
                             <CourseCard key={course.id} course={course} />
                         ))}
                     </div>

@@ -1,125 +1,310 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import axios from 'axios';
 import '../../assets/css/teacher-course-detail.css';
-import { CircleGauge, Film, Clock, AlarmClock, FileText, Play, CircleHelp } from 'lucide-react';
-import { getCourseById, addChapter } from '../../database/courseData';
+import { CircleGauge, Film, Clock, AlarmClock, FileText, FileQuestion, File, Plus, SquareUser, GraduationCap, FolderPen } from 'lucide-react';
+import Alert from '../common/Alert';
 
 const TeacherCourseDetail = () => {
-    const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const { courseId } = location.state || {};
     const [course, setCourse] = useState(null);
-    const [expandedChapters, setExpandedChapters] = useState({1: true}); // Chapter 1 expanded by default
-    const [showChapterModal, setShowChapterModal] = useState(false);
-    const [newChapterTitle, setNewChapterTitle] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [expandedLessons, setExpandedLessons] = useState({});
+    const [showAddLessonModal, setShowAddLessonModal] = useState(false);
+    const [alert, setAlert] = useState(null);
+    const [newLesson, setNewLesson] = useState({
+        description: '',
+        order: 1
+    });
     
+    const showAlert = (type, title, message) => {
+        setAlert({ type, title, message });
+    };
+
     useEffect(() => {
-        const course = getCourseById(id);
-        if (course) {
-            setCourse(course);
-        } else {
-            console.error("Course not found");
-            // Could navigate back to dashboard or show error
-        }
-    }, [id]);
+        const fetchCourseDetail = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
 
-    const handleEditClick = () => {
-        // Navigate to edit page
-        console.log("Edit course", id);
+                if (!courseId) {
+                    throw new Error('Course ID not found');
+                }
+
+                const response = await axios.get(`http://localhost:8080/lms/course/${courseId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                setCourse(response.data.result);
+                
+                // Mở rộng chương có thứ tự nhỏ nhất
+                if (response.data.result.lesson?.length > 0) {
+                    const sortedLessons = [...response.data.result.lesson].sort((a, b) => a.order - b.order);
+                    const firstLessonId = sortedLessons[0].id;
+                    setExpandedLessons({ [firstLessonId]: true });
+                }
+            } catch (err) {
+                showAlert('error', 'Lỗi', err.response?.data?.message || err.message);
+                console.error("Error fetching course details:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCourseDetail();
+    }, [courseId]);
+
+    // Tạo màu nền dựa trên ID khóa học (để luôn cố định cho mỗi khóa học)
+    const getConsistentColor = (id) => {
+        const colors = [
+            'linear-gradient(to right, #4b6cb7, #182848)',
+            'linear-gradient(to right, #1d75fb, #3e60ff)',
+            'linear-gradient(to right, #ff416c, #ff4b2b)',
+            'linear-gradient(to right, #11998e, #38ef7d)',
+            'linear-gradient(to right, #8e2de2, #4a00e0)',
+            'linear-gradient(to right, #fc4a1a, #f7b733)',
+            'linear-gradient(to right, #5433ff, #20bdff)',
+            'linear-gradient(to right, #2b5876, #4e4376)'
+        ];
+        // Tạo số từ các ký tự trong ID
+        if (!id) return colors[0]; // Default color if id is missing
+        const sum = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return colors[sum % colors.length];
     };
 
-    const handleAddChapter = () => {
-        // Open modal to input chapter title
-        setNewChapterTitle('');
-        setShowChapterModal(true);
+    const handleManageCourse = () => {
+        navigate(`/teacher/course-management/${courseId}`, {
+            state: { courseId, courseName: course.name }
+        });
     };
 
-    const handleCreateChapter = () => {
-        if (!course || !newChapterTitle.trim()) return;
-        
-        // Use the centralized function to add a chapter
-        const newChapter = addChapter(id, newChapterTitle.trim());
-        
-        if (newChapter) {
-            // Update the expand state
-            setExpandedChapters(prev => ({
-                ...prev,
-                [newChapter.id]: true
-            }));
-            
-            // Close the modal
-            setShowChapterModal(false);
-        }
-    };
-
-    const handleAddLesson = (chapterId) => {
-        // Navigate to the add lesson page with course and chapter info
-        navigate(`/teacher/course/${id}/chapter/${chapterId}/add-lesson`);
-    };
-
-    const toggleChapter = (chapterId) => {
-        setExpandedChapters(prev => ({
+    const toggleLesson = (lessonId) => {
+        setExpandedLessons(prev => ({
             ...prev,
-            [chapterId]: !prev[chapterId]
+            [lessonId]: !prev[lessonId]
         }));
     };
 
-    if (!course) {
-        return <div>Loading...</div>;
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('vi-VN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    };
+
+    const handleAddLesson = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            // Tính order mới là max hiện tại + 1
+            const currentMaxOrder = Math.max(...course.lesson.map(l => l.order), 0);
+            const newOrder = currentMaxOrder + 1;
+
+            const response = await axios.post('http://localhost:8080/lms/lesson/create', {
+                courseId,
+                description: newLesson.description,
+                order: newOrder
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data.code === 0) {
+                // Refresh lại dữ liệu khóa học
+                const updatedCourse = await axios.get(`http://localhost:8080/lms/course/${courseId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                setCourse(updatedCourse.data.result);
+                setShowAddLessonModal(false);
+                setNewLesson({ description: '', order: 1 });
+                showAlert('success', 'Thành công', 'Thêm chương mới thành công!');
+            }
+        } catch (err) {
+            console.error("Error creating lesson:", err);
+            showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi thêm chương mới');
+        }
+    };
+
+    if (loading) {
+        return <div className="teacher-course-detail-container">
+            <div>Đang tải dữ liệu...</div>
+        </div>;
     }
+
+    if (error) {
+        return <div className="teacher-course-detail-container">
+            <div>Có lỗi xảy ra: {error}</div>
+        </div>;
+    }
+
+    if (!course) {
+        return <div className="teacher-course-detail-container">
+            <div>Không tìm thấy khóa học</div>
+        </div>;
+    }
+
+    // Sắp xếp bài học theo thứ tự
+    const sortedLessons = [...(course.lesson || [])].sort((a, b) => a.order - b.order);
+
+    // Tính tổng số chapter (bài học nhỏ)
+    const totalChapters = sortedLessons.reduce((sum, lesson) => sum + (lesson.chapter?.length || 0), 0);
 
     return (
         <div className="teacher-course-detail-container">
-            <h1 className="teacher-course-title">{course.title}</h1>
-            
+            {alert && (
+                <div className="alert-container">
+                    <Alert
+                        type={alert.type}
+                        title={alert.title}
+                        message={alert.message}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
+            <div className="course-detail-header">
+                <h1>{course.name}</h1>
+                <p className="course-description">{course.description}</p>
+            </div>
             <div className="teacher-course-content-wrapper">
                 <div className="teacher-course-content">
                     <div className="teacher-content-header">
                         <div className="teacher-content-header-top">
                             <h2>Nội dung khóa học</h2>
-                            <button className="teacher-add-chapter-button" onClick={handleAddChapter}>
-                                + Thêm chương
+                            <button className="teacher-add-chapter-button" onClick={() => setShowAddLessonModal(true)}>
+                                <Plus size={16} />
+                                <span style={{ marginLeft: '5px' }}>Thêm chương</span>
                             </button>
                         </div>
                         <div className="teacher-content-summary">
-                            {course.totalChapters} chương • {course.totalLessons} bài học • Thời lượng {course.totalDuration}
+                            {sortedLessons.length} chương • {totalChapters} bài học • {course.learningDurationType}
                         </div>
                     </div>
                     
                     <div className="teacher-chapters-list">
-                        {course.chapters.map((chapter) => (
-                            <div key={chapter.id} className="teacher-chapter-item">
-                                <div className="teacher-chapter-header" onClick={() => toggleChapter(chapter.id)}>
+                        {sortedLessons.map((lesson) => (
+                            <div key={lesson.id} className="teacher-chapter-item">
+                                <div className="teacher-chapter-header" onClick={() => toggleLesson(lesson.id)}>
                                     <div className="teacher-chapter-collapse">
-                                        {expandedChapters[chapter.id] ? "-" : "+"}
+                                        {expandedLessons[lesson.id] ? "-" : "+"}
                                     </div>
-                                    <div className="teacher-chapter-title">{chapter.id}. {chapter.title}</div>
-                                    <div className="teacher-chapter-lessons">{Array.isArray(chapter.lessons) ? chapter.lessons.length : 0} bài học</div>
+                                    <div className="teacher-chapter-title">Chương {lesson.order}: {lesson.description}</div>
+                                    <div className="teacher-chapter-lesson-count">
+                                        {(lesson.chapter?.length || 0)} bài học
+                                    </div>
                                 </div>
                                 
-                                {expandedChapters[chapter.id] && (
+                                {expandedLessons[lesson.id] && (
                                     <div className="teacher-chapter-content">
-                                        {chapter.lessons && chapter.lessons.length > 0 ? (
-                                            <div className="teacher-lesson-list">
-                                                {chapter.lessons.map((lesson, index) => (
-                                                    <div key={lesson.id} className="teacher-lesson-item">
+                                        {/* Chapters */}
+                                        {lesson.chapter && lesson.chapter.length > 0 && (
+                                            <div className="teacher-lesson-section">
+                                                <h4>Bài học</h4>
+                                                {lesson.chapter
+                                                    .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                                    .map((chapter) => (
+                                                    <div key={chapter.id} className="teacher-lesson-item">
                                                         <div className="teacher-lesson-icon">
-                                                            {lesson.type === 'video' && <Play size={16} />}
-                                                            {lesson.type === 'text' && <FileText size={16} />}
-                                                            {lesson.type === 'quiz' && <CircleHelp size={16} />}
+                                                            <FileText size={16} />
                                                         </div>
                                                         <div className="teacher-lesson-title">
-                                                            {index + 1}. {lesson.title}
-                                                        </div>
-                                                        <div className="teacher-lesson-duration">
-                                                            {lesson.duration}
+                                                            {chapter.name}
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
-                                        ) : null}
-                                        <div className="teacher-add-lesson">
-                                            <button className="teacher-add-lesson-button" onClick={() => handleAddLesson(chapter.id)}>
-                                                + Thêm bài học
+                                        )}
+
+                                        {/* Quiz */}
+                                        {lesson.lessonQuiz && lesson.lessonQuiz.length > 0 && (
+                                            <div className="teacher-lesson-section">
+                                                <h4>Bài kiểm tra</h4>
+                                                {lesson.lessonQuiz.map((quiz, idx) => (
+                                                    <div key={idx} className="teacher-lesson-item">
+                                                        <div className="teacher-lesson-icon">
+                                                            <FileQuestion size={16} />
+                                                        </div>
+                                                        <div className="teacher-lesson-title">
+                                                            {quiz.question}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Tài liệu học */}
+                                        {lesson.lessonMaterial && lesson.lessonMaterial.length > 0 && (
+                                            <div className="teacher-lesson-section">
+                                                <h4>Tài liệu học tập</h4>
+                                                {lesson.lessonMaterial.map((material, idx) => (
+                                                    <div key={idx} className="teacher-lesson-item">
+                                                        <div className="teacher-lesson-icon">
+                                                            <File size={16} />
+                                                        </div>
+                                                        <div className="teacher-lesson-title">
+                                                            {material.path.split('/').pop()}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="teacher-lesson-actions">
+                                            <button 
+                                                className="teacher-action-button material-button"
+                                                onClick={() => navigate('/teacher/add-material', {
+                                                    state: { 
+                                                        courseId,
+                                                        lessonId: lesson.id,
+                                                        lessonName: `Chương ${lesson.order}: ${lesson.description}`,
+                                                        type: 'material'
+                                                    }
+                                                })}
+                                            >
+                                                <FileText size={16} />
+                                                <span>Thêm tài liệu</span>
+                                            </button>
+                                            <button 
+                                                className="teacher-action-button quiz-button"
+                                                onClick={() => navigate('/teacher/add-quiz', {
+                                                    state: { 
+                                                        courseId,
+                                                        lessonId: lesson.id,
+                                                        lessonName: `Chương ${lesson.order}: ${lesson.description}`,
+                                                        type: 'quiz'
+                                                    }
+                                                })}
+                                            >
+                                                <FileQuestion size={16} />
+                                                <span>Thêm bài kiểm tra</span>
+                                            </button>
+                                            <button 
+                                                className="teacher-action-button content-button"
+                                                onClick={() => navigate('/teacher/add-lesson', {
+                                                    state: { 
+                                                        courseId,
+                                                        lessonId: lesson.id,
+                                                        lessonName: `Chương ${lesson.order}: ${lesson.description}`,
+                                                        type: 'content'
+                                                    }
+                                                })}
+                                            >
+                                                <Plus size={16} />
+                                                <span>Thêm bài học</span>
                                             </button>
                                         </div>
                                     </div>
@@ -130,57 +315,97 @@ const TeacherCourseDetail = () => {
                 </div>
                 
                 <div className="teacher-course-sidebar">
-                    <div className="teacher-course-image" style={{ background: course.color }}></div>
-                    
-                    <button className="teacher-edit-button" onClick={handleEditClick}>Chỉnh sửa</button>
-                    
+                    <div className="teacher-course-sidebar-image">
+                        {course.image ? (
+                            <img src={course.image} alt={course.name} className="teacher-course-sidebar-img" />
+                        ) : (
+                            <div className="course-placeholder" style={{ background: getConsistentColor(courseId) }}>
+                                <div className="image-text">
+                                    <div style={{ fontSize: "36px", fontWeight: "bold" }}>
+                                        {course.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div style={{ fontSize: "14px", marginTop: "5px" }}>
+                                        {course.name}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <button className="teacher-edit-button d-flex justify-center align-center" onClick={handleManageCourse}>
+                        <FolderPen size={16} />
+                        <span style={{marginLeft: '8px'}}>Quản lý khóa học</span>
+                    </button>
+
                     <div className="teacher-course-info">
+                        <div className="teacher-info-item">
+                            <SquareUser size={16} className='mr-16'/>
+                            <span className="teacher-info-text">Giảng viên: {course.teacher.fullName}</span>
+                        </div>
                         <div className="teacher-info-item">
                             <CircleGauge size={16} className='mr-16'/>
                             <span className="teacher-info-text">
-                                {course.isPrivate ? "Khóa học riêng cho sinh viên trong lớp" : "Khóa học chung"}
+                                {course.status === 'PUBLIC' ? "Khóa học chung" : "Khóa học riêng tư"}
                             </span>
                         </div>
                         <div className="teacher-info-item">
                             <Film size={16} className='mr-16'/>
-                            <span className="teacher-info-text">Tổng số {course.totalLessonsCount} bài học</span>
+                            <span className="teacher-info-text">Tổng số {course.lesson?.length || 0} chương</span>
                         </div>
                         <div className="teacher-info-item">
                             <Clock size={16} className='mr-16'/>
-                            <span className="teacher-info-text">Thời lượng {course.formattedDuration}</span>
+                            <span className="teacher-info-text">{course.learningDurationType}</span>
                         </div>
                         <div className="teacher-info-item">
                             <AlarmClock size={16} className='mr-16'/>
-                            <span className="teacher-info-text">Giới hạn {course.deadline}</span>
+                            <span className="teacher-info-text">
+                                Từ {formatDate(course.startDate)} 
+                                {course.endDate ? ` đến ${formatDate(course.endDate)}` : ''}
+                            </span>
+                        </div>
+                        <div className="teacher-info-item">
+                            <GraduationCap size={16} className='mr-16'/>
+                            <span className="teacher-info-text">Chuyên ngành: {course.major}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {showChapterModal && (
+            {/* Modal thêm chương mới */}
+            {showAddLessonModal && (
                 <div className="teacher-modal-overlay">
                     <div className="teacher-modal">
                         <h3>Thêm chương mới</h3>
                         <div className="teacher-modal-content">
-                            <label>Tiêu đề chương</label>
-                            <input 
-                                type="text" 
-                                value={newChapterTitle} 
-                                onChange={(e) => setNewChapterTitle(e.target.value)}
-                                placeholder="Nhập tiêu đề chương"
-                                autoFocus
-                            />
+                            <div className="form-group">
+                                <label>Tiêu đề chương</label>
+                                <input
+                                    type='text'
+                                    value={newLesson.description}
+                                    onChange={(e) => setNewLesson(prev => ({
+                                        ...prev,
+                                        description: e.target.value
+                                    }))}
+                                    rows={4}
+                                />
+                            </div>
                         </div>
                         <div className="teacher-modal-actions">
-                            <button onClick={() => setShowChapterModal(false)} className="teacher-modal-cancel">
+                            <button 
+                                onClick={() => {
+                                    setShowAddLessonModal(false);
+                                    setNewLesson({ description: '', order: 1 });
+                                }} 
+                                className="teacher-modal-cancel"
+                            >
                                 Hủy
                             </button>
                             <button 
-                                onClick={handleCreateChapter} 
+                                onClick={handleAddLesson}
                                 className="teacher-modal-confirm" 
-                                disabled={!newChapterTitle.trim()}
+                                disabled={!newLesson.description.trim()}
                             >
-                                Xác nhận
+                                Thêm chương
                             </button>
                         </div>
                     </div>

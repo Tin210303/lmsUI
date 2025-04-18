@@ -2,28 +2,50 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCourseById } from '../../services/courseService';
 import '../../assets/css/course-detail.css';
-import { Check, CirclePlay, CircleGauge, Film, Clock, AlarmClock, Plus, Minus } from 'lucide-react';
+import { Check, CirclePlay, Film, Clock, AlarmClock, Plus, Minus, SquareUser, GraduationCap } from 'lucide-react';
 
 const CourseDetailPage = () => {
-    const { id } = useParams();
+    const params = useParams();
     const navigate = useNavigate();
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
     const [openChapters, setOpenChapters] = useState({});
 
+    const getCourseId = () => {
+        if (params.slug) {
+            const courseId = localStorage.getItem(`course_${params.slug}`);
+            if (courseId) {
+                return courseId;
+            } else {
+                console.error('Không tìm thấy ID khóa học cho slug:', params.slug);
+                return null;
+            }
+        }
+        return params.id;
+    };
+
     useEffect(() => {
         const fetchCourse = async () => {
-            console.log('CourseDetailPage - Fetching course with ID:', id);
-            const courseData = await getCourseById(id);
+            const courseId = getCourseId();
+            console.log('CourseDetailPage - Fetching course with ID:', courseId);
+            
+            if (!courseId) {
+                setLoading(false);
+                return;
+            }
+            
+            const courseData = await getCourseById(courseId);
             console.log('CourseDetailPage - Course data received:', courseData);
             setCourse(courseData);
             if (courseData && courseData.lesson && courseData.lesson.length > 0) {
-                setOpenChapters({ [courseData.lesson[0].id || 0]: true });
+                const sortedLessons = [...courseData.lesson].sort((a, b) => a.order - b.order);
+                const firstLessonId = sortedLessons[0].id;
+                setOpenChapters({ [firstLessonId]: true });
             }
             setLoading(false);
         };
         fetchCourse();
-    }, [id]);
+    }, [params]);
 
     if (loading) {
         return <div style={{ padding: 32 }}>Đang tải...</div>;
@@ -41,7 +63,7 @@ const CourseDetailPage = () => {
     };
 
     const handleRegister = () => {
-        navigate(`/learning/${id}`);
+        navigate(`/learning/${course.id}`);
     };
 
     const formatDate = (dateString) => {
@@ -59,6 +81,26 @@ const CourseDetailPage = () => {
     }, 0);
     const displayLessonOrItemCount = totalLessons > 0 ? totalLessons : totalItemsFallback;
     const lessonOrItemText = totalLessons > 0 ? 'bài học' : 'mục';
+
+    // Tạo màu nền dựa trên ID khóa học (để luôn cố định cho mỗi khóa học)
+    const getConsistentColor = (id) => {
+        const colors = [
+            'linear-gradient(to right, #4b6cb7, #182848)',
+            'linear-gradient(to right, #1d75fb, #3e60ff)',
+            'linear-gradient(to right, #ff416c, #ff4b2b)',
+            'linear-gradient(to right, #11998e, #38ef7d)',
+            'linear-gradient(to right, #8e2de2, #4a00e0)',
+            'linear-gradient(to right, #fc4a1a, #f7b733)',
+            'linear-gradient(to right, #5433ff, #20bdff)',
+            'linear-gradient(to right, #2b5876, #4e4376)'
+        ];
+        if (!id) return colors[0]; // Default color if id is missing
+        const sum = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return colors[sum % colors.length];
+    };
+
+    // Sắp xếp bài học theo thứ tự
+    const sortedLessons = [...(course.lesson || [])].sort((a, b) => a.order - b.order);
 
     return (
         <div className="course-detail-container">
@@ -80,38 +122,37 @@ const CourseDetailPage = () => {
                 <div className="course-summary">
                     <h3>Nội dung khóa học</h3>
                     <p>
-                        <strong>{numChapters}</strong> chương · 
+                        <strong>{sortedLessons.length}</strong> chương · 
                         <strong>{displayLessonOrItemCount}</strong> {lessonOrItemText} · 
                         Thời gian học: <strong>{formatDate(course.startDate)} - {formatDate(course.endDate)}</strong>
                     </p>
                 </div>
 
                 <div className="course-content">
-                    {course.lesson.map((chapter, idx) => {
-                        const chapterId = chapter.id || idx;
-                        const isOpen = openChapters[chapterId];
+                    {sortedLessons.map((lesson, idx) => {
+                        const chapterId = lesson.id || idx;
                         return (
-                            <div key={chapterId} className="chapter">
+                            <div key={lesson.id} className="chapter">
                                 <div className="chapter-title" onClick={() => toggleChapter(chapterId)}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        {isOpen ? <Minus size={18} color='#066fbf' /> : <Plus size={18} color='#066fbf'/>}
-                                        <span style={{ fontWeight: '600', paddingBottom: '3px' }}>{idx + 1}. {chapter.description}</span>
+                                        {openChapters[lesson.id] ? <Minus size={18} color='#066fbf' /> : <Plus size={18} color='#066fbf'/>}
+                                        <span style={{ fontWeight: '600', paddingBottom: '3px' }}>{idx + 1}. {lesson.description}</span>
                                     </div>
                                     <span style={{ fontSize: '0.9rem' }}>
-                                        {chapter.chapter && chapter.chapter.length > 0
-                                            ? `${chapter.chapter.length} bài học`
-                                            : `${(chapter.lessonMaterial?.length || 0) + (chapter.lessonQuiz?.length || 0)} mục`}
+                                        {lesson.chapter && lesson.chapter.length > 0
+                                            ? `${lesson.chapter.length} bài học`
+                                            : `${(lesson.lessonMaterial?.length || 0) + (lesson.lessonQuiz?.length || 0)} mục`}
                                     </span>
                                 </div>
-                                {isOpen && (
+                                {openChapters[lesson.id] && (
                                     <ul className="lesson-list">
-                                        {chapter.chapter && chapter.chapter.length > 0 ? (
-                                            chapter.chapter.map((lesson, lessonIdx) => (
-                                                <li key={lesson.id || lessonIdx}>
+                                        {lesson.chapter && lesson.chapter.length > 0 ? (
+                                            lesson.chapter.map((chapter, chapterIdx) => (
+                                                <li key={chapter.id || chapterIdx}>
                                                     <div className='d-flex align-center'>
                                                         <CirclePlay size={16} color='#066fbf' opacity={0.4}/>
                                                         <span style={{marginLeft: '12px', paddingBottom: '3px', fontSize: '0.9rem'}}>
-                                                            {lessonIdx + 1}. {lesson.name || lesson.description || 'Bài học không tên'} 
+                                                            {chapterIdx + 1}. {chapter.name || chapter.description || 'Bài học không tên'} 
                                                         </span>
                                                     </div>
                                                 </li>
@@ -120,22 +161,22 @@ const CourseDetailPage = () => {
                                             <li><span style={{ marginLeft: '28px', fontSize: '0.9rem', fontStyle: 'italic' }}>Chưa có bài học cụ thể.</span></li>
                                         )}
                                         
-                                        {chapter.lessonMaterial && chapter.lessonMaterial.length > 0 && (
+                                        {lesson.lessonMaterial && lesson.lessonMaterial.length > 0 && (
                                             <li>
                                                 <div className='d-flex align-center'>
                                                     <CirclePlay size={16} color='#066fbf' opacity={0.4}/>
                                                     <span style={{marginLeft: '12px', paddingBottom: '3px', fontSize: '0.9rem'}}>
-                                                        Tài liệu chương ({chapter.lessonMaterial.length})
+                                                        Tài liệu chương ({lesson.lessonMaterial.length})
                                                     </span>
                                                 </div>
                                             </li>
                                         )}
-                                        {chapter.lessonQuiz && chapter.lessonQuiz.length > 0 && (
+                                        {lesson.lessonQuiz && lesson.lessonQuiz.length > 0 && (
                                             <li>
                                                 <div className='d-flex align-center'>
                                                     <CirclePlay size={16} color='#066fbf' opacity={0.4}/>
                                                     <span style={{marginLeft: '12px', paddingBottom: '3px', fontSize: '0.9rem'}}>
-                                                        Bài kiểm tra chương ({chapter.lessonQuiz.length})
+                                                        Bài kiểm tra chương ({lesson.lessonQuiz.length})
                                                     </span>
                                                 </div>
                                             </li>
@@ -149,25 +190,31 @@ const CourseDetailPage = () => {
             </div>
 
             <div className="right-column">
-                {course.videoPreview && (
-                    <div className="video-preview">
-                        <iframe width="100%" height="200" src={course.videoPreview} frameBorder="0" allowFullScreen></iframe>
-                    </div>
-                )}
+                <div className="course-thumbnail">
+                    {course.image ? (
+                        <img src={course.image} alt={course.name} className="course-thumbnail-img" />
+                    ) : (
+                        <div className="course-placeholder" style={{ background: getConsistentColor(course.id) }}>
+                            <div className="image-text">
+                                <div style={{ fontSize: "36px", fontWeight: "bold" }}>
+                                    {course.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div style={{ fontSize: "14px", marginTop: "5px" }}>
+                                    {course.name}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
                 <div className="price-box">
-                    <p className="free-label">{course.status === 'PUBLIC' ? 'Miễn phí' : 'Trả phí'}</p>
                     <button className="register-btn" onClick={handleRegister}>ĐĂNG KÝ HỌC</button>
                     <ul className="info-list">
-                        <li><CircleGauge size={16} className='mr-16'/> {course.major}</li>
+                        <li><SquareUser size={16} className='mr-16'/>Giảng viên: {course.teacher?.fullName || 'N/A'}</li>
+                        <li><GraduationCap size={16} className='mr-16'/>Chuyên ngành: {course.major}</li>
                         <li><Film size={16} className='mr-16'/> Tổng số {numChapters} chương / {displayLessonOrItemCount} {lessonOrItemText}</li>
-                        <li><Clock size={16} className='mr-16'/> Thời gian học: {formatDate(course.startDate)} - {formatDate(course.endDate)}</li>
                         <li><AlarmClock size={16} className='mr-16'/> {course.learningDurationType}</li>
+                        <li><Clock size={16} className='mr-16'/> Thời gian học: {formatDate(course.startDate)} - {formatDate(course.endDate)}</li>
                     </ul>
-                    <div className="teacher-info">
-                        <h4>Giảng viên</h4>
-                        <p>{course.teacher?.fullName || 'N/A'}</p>
-                        <p>{course.teacher?.email || 'N/A'}</p>
-                    </div>
                 </div>
             </div>
         </div>

@@ -1,0 +1,541 @@
+.course-management-container {
+    padding: 20px 60px;
+    width: 100%;
+}
+
+.course-management-header {
+    margin-bottom: 30px;
+}
+
+.course-management-header h1 {
+    color: #333;
+}
+
+.course-management-content {
+    display: flex;
+    gap: 40px;
+}
+
+.content-left {
+    flex: 2 1;
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.content-right {
+    flex: 1 1;
+}
+
+.admin-section {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-section h3 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.admin-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.admin-section li {
+    margin-bottom: 10px;
+}
+
+.admin-section a {
+    color: #333;
+    text-decoration: none;
+    display: block;
+    padding: 8px 0;
+    font-size: 16px;
+}
+
+.admin-section a:hover {
+    color: #1d4ed8;
+}
+
+.admin-section a.active {
+    color: #1d4ed8;
+    font-weight: bold;
+}
+
+.admin-section button.delete-link {
+    color: #ef4444;
+    border: none;
+    background: no-repeat;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.delete-link:hover {
+    text-decoration: underline;
+}
+
+/* Course Info Form */
+.course-info-form {
+    max-width: 800px;
+}
+
+.course-info-form h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.form-group-manage {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.form-group-manage label {
+    font-weight: bold;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    width: 30%;
+    padding-right: 24px;
+}
+
+.form-group-manage input,
+.form-group-manage select,
+.form-group-manage textarea {
+    padding: 10px 10px 10px 16px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 16px;
+    width: 70%;
+    font-family: inherit;
+}
+
+.form-group-manage textarea {
+    min-height: 100px;
+    border-radius: 10px;
+    resize: vertical;
+}
+
+.image-upload {
+    border: 2px dashed #ddd;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-confirm,
+.btn-cancel {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-confirm {
+    background-color: #2563eb;
+    color: white;
+}
+
+.btn-cancel {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* Members Section */
+.course-members {
+    margin-bottom: 30px;
+}
+
+.course-members h2,
+.course-registrations h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.members-section {
+    margin-bottom: 30px;
+}
+
+.members-section h3 {
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.member-item img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 20px;
+}
+
+.member-item span {
+    flex: 1;
+    font-size: 16px;
+    color: #333;
+}
+
+.teacher-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+}
+
+.teacher-item img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 20px;
+}
+
+.add-member-btn,
+.remove-member-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.add-member-btn {
+    color: #2563eb;
+}
+
+.remove-member-btn {
+    color: #ef4444;
+}
+
+/* Registrations Section */
+.registrations-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.registrations-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.registrations-table th,
+.registrations-table td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.registrations-table th {
+    font-weight: 600;
+    color: #666;
+}
+
+.student-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.student-info img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.student-info div {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.student-email {
+    color: #666;
+    font-size: 12px;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.accept-btn,
+.reject-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    height: 32px;
+}
+
+.accept-btn {
+    background-color: #22c55e;
+    color: white;
+}
+
+.reject-btn {
+    background-color: #ef4444;
+    color: white;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.error {
+    color: #ef4444;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Delete Confirmation Modal Styles */
+.delete-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.delete-modal-container {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 500px;
+    animation: slideIn 0.3s ease-in-out;
+}
+
+.delete-modal-container h2 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.delete-modal-container p {
+    color: #666;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.delete-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.btn-confirm-delete {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.btn-confirm-delete:hover {
+    background-color: #c82333;
+}
+
+.btn-cancel-delete {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.btn-cancel-delete:hover {
+    background-color: #5a6268;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Alert Styles */
+.alert-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.alert {
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: slideInRight 0.3s ease-out;
+    max-width: 400px;
+    position: relative;
+    overflow: hidden;
+}
+
+.alert::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+}
+
+.alert-success {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.alert-success::before {
+    background-color: #22c55e;
+}
+
+.alert-warning {
+    background-color: #fffbeb;
+    border: 1px solid #fef08a;
+    color: #854d0e;
+}
+
+.alert-warning::before {
+    background-color: #f59e0b;
+}
+
+.alert-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.alert-error::before {
+    background-color: #ef4444;
+}
+
+.alert-info {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+.alert-info::before {
+    background-color: #3b82f6;
+}
+
+.alert-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.alert-message {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.alert-close {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+
+/* Alert Animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.alert-exit {
+    animation: slideOutRight 0.3s ease-in forwards;
+} 

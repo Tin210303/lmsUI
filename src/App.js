@@ -19,6 +19,9 @@ import TeacherDashboard from './components/teacher/TeacherDashboard';
 import TeacherAddCourse from './components/teacher/TeacherAddCourse';
 import TeacherCourseDetail from './components/teacher/TeacherCourseDetail';
 import TeacherAddLesson from './components/teacher/TeacherAddLesson';
+import TeacherAddQuiz from './components/teacher/TeacherAddQuiz';
+import TeacherAddMaterial from './components/teacher/TeacherAddMaterial';
+import CourseManagementPage from './components/teacher/CourseManagementPage';
 // import TeacherCourses from './components/teacher/TeacherCourses';
 
 import './App.css';
@@ -49,6 +52,13 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/courses/:id" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentLayout>
+                <CourseDetailPage />
+              </StudentLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/courses/detail/:slug" element={
             <ProtectedRoute allowedRoles={['student']}>
               <StudentLayout>
                 <CourseDetailPage />
@@ -90,17 +100,38 @@ function App() {
               </TeacherLayout>
             </ProtectedRoute>
           } />
-          <Route path="/teacher/course/:id" element={
+          <Route path="/teacher/course" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <TeacherCourseDetail />
               </TeacherLayout>
             </ProtectedRoute>
           } />
-          <Route path="/teacher/course/:courseId/chapter/:chapterId/add-lesson" element={
+          <Route path="/teacher/add-lesson" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <TeacherAddLesson />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/add-quiz" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherAddQuiz />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/add-material" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherAddMaterial />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/course-management/:courseId" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <CourseManagementPage />
               </TeacherLayout>
             </ProtectedRoute>
           } />

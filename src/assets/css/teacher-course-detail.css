@@ -4,8 +4,10 @@
     font-family: inherit;
 }
 
-.teacher-course-title {
-    margin-bottom: 20px;
+.teacher-course-description {
+    margin: 12px 0 20px 0;
+    color: #555;
+    font-size: 14px;
 }
 
 .teacher-course-content-wrapper {
@@ -47,10 +49,18 @@
     background-color: #0056b3;
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: 12px 20px;
     border-radius: 20px;
     cursor: pointer;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.teacher-add-chapter-button:hover {
+    background-color: #1658e9;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .teacher-chapters-list {
@@ -59,7 +69,7 @@
 
 .teacher-chapter-item {
     border: 1px solid #e5e5e5;
-    margin-bottom: 12px;
+    margin-top: 12px;
     border-radius: 8px;
 }
 
@@ -86,9 +96,18 @@
     font-weight: 500;
 }
 
-.teacher-chapter-lessons {
+.teacher-chapter-lesson-count {
     font-size: 14px;
     color: #666;
+    margin-left: 15px;
+    white-space: nowrap;
+}
+
+.teacher-chapter-content {
+    padding: 0 20px;
+    background-color: #fff;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
 }
 
 .teacher-add-lesson {
@@ -113,6 +132,49 @@
     width: 100%;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    height: fit-content;
+    align-self: flex-start;
+    margin-top: -4rem;
+    position: sticky;
+    top: 6rem;
+}
+
+.teacher-course-sidebar-image {
+    height: 200px;
+    background-color: #f0f0f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.teacher-course-sidebar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.course-placeholder {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+}
+
+.image-text {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+.teacher-lesson-section h4{
+    padding: 12px 0;
 }
 
 .teacher-course-image {
@@ -132,19 +194,25 @@
 }
 
 .teacher-edit-button {
-    width: 120px;
+    width: 160px;
     background-color: #0056b3;
     color: white;
     border: none;
-    padding: 8px 16px;
-    margin: 0 auto;
+    padding: 12px;
+    margin: 24px auto;
     border-radius: 20px;
     cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.teacher-edit-button:hover {
+    background-color: #1658e9;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .teacher-course-info {
     background-color: #fff;
-    padding: 20px;
+    padding: 0 20px 12px 20px;
     margin: 0 auto;
     border-bottom-right-radius: 8px;
     border-bottom-left-radius: 8px;
@@ -176,6 +244,7 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    animation: fadeIn 0.3s ease-in-out;
 }
 
 .teacher-modal {
@@ -184,6 +253,7 @@
     width: 400px;
     padding: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-in-out;
 }
 
 .teacher-modal h3 {
@@ -208,6 +278,8 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 16px;
+    color: #333;
+    font-family: inherit;
 }
 
 .teacher-modal-actions {
@@ -243,7 +315,7 @@
 .teacher-lesson-item {
     display: flex;
     align-items: center;
-    padding: 12px 20px 12px 50px;
+    padding: 12px 8px;
     transition: background-color 0.2s;
     cursor: pointer;
     border-bottom: 1px solid #f5f5f5;
@@ -276,4 +348,227 @@
 
 .quiz-icon {
     color: #007bff;
+}
+
+.teacher-lesson-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    padding: 10px;
+    border-top: 1px solid #eee;
+}
+
+.teacher-action-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background: white;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.teacher-action-button:hover {
+    background-color: #f8f9fa;
+}
+
+.teacher-action-button span {
+    white-space: nowrap;
+}
+
+.material-button {
+    color: #0056b3;
+    border-color: #0056b3;
+}
+
+.material-button:hover {
+    background-color: rgba(0, 86, 179, 0.1);
+}
+
+.quiz-button {
+    color: #28a745;
+    border-color: #28a745;
+}
+
+.quiz-button:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.content-button {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.content-button:hover {
+    background-color: rgba(108, 117, 125, 0.1);
+}
+
+.teacher-add-content-button {
+    background: none;
+    border: none;
+    color: #0056b3;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.teacher-add-content-button:hover {
+    background-color: rgba(0, 86, 179, 0.1);
+}
+
+.teacher-add-content-button i {
+    font-size: 12px;
+}
+
+.disabled-input {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Course Header */
+.course-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.header-left {
+    flex: 1;
+}
+
+.header-right {
+    display: flex;
+    gap: 12px;
+}
+
+/* Delete Button */
+.delete-course-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.delete-course-button:hover {
+    background: #dc2626;
+}
+
+.delete-course-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Delete Confirmation Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.delete-confirm-modal {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.delete-confirm-modal h3 {
+    margin: 0 0 12px;
+    color: #1f2937;
+    font-size: 18px;
+}
+
+.delete-confirm-modal p {
+    margin: 0 0 20px;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.cancel-button {
+    padding: 8px 16px;
+    background: #f3f4f6;
+    color: #374151;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-button:hover {
+    background: #e5e7eb;
+}
+
+.delete-button {
+    padding: 8px 16px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.delete-button:hover {
+    background: #dc2626;
+} 
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 } 

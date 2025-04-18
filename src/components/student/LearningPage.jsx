@@ -1,379 +1,252 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { ChevronLeft, ChevronRight, BookOpen, HelpCircle, MessageSquare, FileText, Download, Menu } from 'lucide-react';
 import logo from '../../assets/imgs/logo.png';
 import '../../assets/css/learning-page.css';
 import CommentSection from './CommentSection';
+import LearningContent from './LearningContent';
 
 const LearningPage = () => {
 const { id } = useParams();
 const navigate = useNavigate();
-
-// Dữ liệu mẫu cho khóa học
-const [courseData, setCourseData] = useState({
-    title: "Lập Trình JavaScript Cơ Bản",
-    progress: 95,
-    totalLessons: 205,
-    completedLessons: 195,
-    chapters: [
-    {
-        id: 1,
-        title: "Giới thiệu",
-        totalLessons: 3,
-        duration: "07:28",
-        expanded: true,
-        lessons: [
-            { id: 1, title: "Lời khuyên trước khóa học", time: "04:20", type: "video", completed: true, active: true },
-            { id: 2, title: "Cài đặt môi trường", time: "02:08", type: "video", completed: true },
-            { id: 3, title: "Tham gia cộng đồng F8 trên Discord", time: "01:00", type: "document", completed: true }
-        ]
-    },
-    {
-        id: 2,
-        title: "Biến, comments, built-in",
-        totalLessons: 10,
-        duration: "31:03",
-        expanded: false,
-        lessons: [
-            { id: 1, title: "Lời khuyên trước khóa học", time: "04:20", type: "video", completed: false },
-            { id: 2, title: "Cài đặt môi trường", time: "02:08", type: "video", completed: false },
-            { id: 3, title: "Tham gia cộng đồng F8 trên Discord", time: "01:00", type: "document", completed: false }
-        ]
-    },
-    {
-        id: 3,
-        title: "Toán tử, kiểu dữ liệu",
-        totalLessons: 26,
-        duration: "01:51:16",
-        expanded: false,
-        lessons: []
-    },
-    {
-        id: 4,
-        title: "Làm việc với hàm",
-        totalLessons: 15,
-        duration: "53:57",
-        expanded: false,
-        lessons: []
-    },
-    {
-        id: 5,
-        title: "Làm việc với chuỗi",
-        totalLessons: 6,
-        duration: "41:18",
-        expanded: false,
-        lessons: []
-    },
-    {
-        id: 6,
-        title: "Làm việc với số",
-        totalLessons: 5,
-        duration: "26:02",
-        expanded: false,
-        lessons: []
-    },
-    {
-        id: 7,
-        title: "Làm việc với mảng",
-        totalLessons: 7,
-        duration: "44:05",
-        expanded: false,
-        lessons: []
-    }
-    ]
-})
-
-// State để theo dõi chapter và lesson hiện tại
-const [currentChapterId, setCurrentChapterId] = useState(1);
-const [currentLessonId, setCurrentLessonId] = useState(1);
+    const [courseData, setCourseData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [currentChapterId, setCurrentChapterId] = useState(null);
+    const [currentLessonId, setCurrentLessonId] = useState(null);
 const [currentChapter, setCurrentChapter] = useState('');
-
-// State để đóng mở sidebar
 const [sidebarVisible, setSidebarVisible] = useState(true);
+    const [currentContent, setCurrentContent] = useState(null);
 
-// Bắt các biến được active khi chạy lần đầu
+    // Fetch course data from API
 useEffect(() => {
-    const { chapterIndex, lessonIndex } = findCurrentPosition();
-    if (chapterIndex !== -1 && lessonIndex !== -1) {
-        const chapter = courseData.chapters[chapterIndex];
-        const lesson = chapter.lessons[lessonIndex];
-
-        setCurrentChapterId(chapter.id);
-        setCurrentLessonId(lesson.id);
-        setCurrentChapter(chapter.title);
-    }
-}, [courseData]);
-
-// Hàm tìm vị trí của lesson hiện tại
-const findCurrentPosition = () => {
-  let chapterIndex = -1;
-  let lessonIndex = -1;
-  
-  courseData.chapters.forEach((chapter, chapIdx) => {
-    const foundLessonIdx = chapter.lessons.findIndex(lesson => lesson.active);
-    if (foundLessonIdx !== -1) {
-      chapterIndex = chapIdx;
-      lessonIndex = foundLessonIdx;
-    }
-  });
-  
-  return { chapterIndex, lessonIndex };
-};
-
-// Hàm chuyển trạng thái active cho lesson mới
-const setActiveLesson = (chapterIndex, lessonIndex) => {
-    const updatedChapters = courseData.chapters.map((chapter, chapIdx) => {
-        const updatedLessons = chapter.lessons.map((lesson, lesIdx) => {
-            return {
-                ...lesson,
-                active: chapIdx === chapterIndex && lesIdx === lessonIndex
-            };
-        });
-        
-        return {
-            ...chapter,
-            expanded: chapIdx === chapterIndex ? true : chapter.expanded,
-            lessons: updatedLessons
-        };
-    });
-
-    setCourseData(prev => ({
-        ...prev,
-        chapters: updatedChapters
-    }));
-
-    // Cập nhật ID chapter và lesson hiện tại
-    if (chapterIndex >= 0 && lessonIndex >= 0) {
-        setCurrentChapterId(courseData.chapters[chapterIndex].id);
-        setCurrentLessonId(courseData.chapters[chapterIndex].lessons[lessonIndex].id);
-        setCurrentChapter(courseData.chapters[chapterIndex].title)
-    }
-};
-
-// Xử lý đóng/mở chapter
-const handleToggleChapter = (chapterId) => {
-    const updatedChapters = courseData.chapters.map(chapter => {
-        if (chapter.id === chapterId) {
-            return {
-                ...chapter,
-                expanded: !chapter.expanded
-            };
-        }
-        return chapter;
-    });
-
-    setCourseData(prev => ({
-        ...prev,
-        chapters: updatedChapters
-    }));
-};
-
-// Xứ lý đóng/mở sidebar
-const handleToggleSidebar = () => {
-    setSidebarVisible(prev => !prev);
-}; 
-
-// Xử lý chuyển đến bài học trước
-const handlePreviousLesson = () => {
-    const { chapterIndex, lessonIndex } = findCurrentPosition();
-
-    if (chapterIndex !== -1 && lessonIndex !== -1) {
-        // Nếu không phải lesson đầu tiên trong chapter
-        if (lessonIndex > 0) {
-            setActiveLesson(chapterIndex, lessonIndex - 1);
-        } 
-        // Nếu là lesson đầu tiên và không phải chapter đầu tiên
-        else if (chapterIndex > 0) {
-            const prevChapterIndex = chapterIndex - 1;
-            const prevChapter = courseData.chapters[prevChapterIndex];
-            const prevLessonIndex = prevChapter.lessons.length - 1;
-            
-            if (prevLessonIndex >= 0) {
-                setActiveLesson(prevChapterIndex, prevLessonIndex);
-            }
-        }
-        // Ngược lại, đây là lesson đầu tiên của chapter đầu tiên, không làm gì cả
-    }
-};
-
-// Xử lý chuyển đến bài học tiếp theo
-const handleNextLesson = () => {
-    const { chapterIndex, lessonIndex } = findCurrentPosition();
-
-    if (chapterIndex !== -1 && lessonIndex !== -1) {
-        const currentChapter = courseData.chapters[chapterIndex];
-        
-        // Nếu không phải lesson cuối cùng trong chapter
-        if (lessonIndex < currentChapter.lessons.length - 1) {
-            setActiveLesson(chapterIndex, lessonIndex + 1);
-        } 
-        // Nếu là lesson cuối cùng và không phải chapter cuối cùng
-        else if (chapterIndex < courseData.chapters.length - 1) {
-            const nextChapterIndex = chapterIndex + 1;
-            const nextChapter = courseData.chapters[nextChapterIndex];
-            
-            // Mở rộng chapter tiếp theo nếu nó có bài học
-            if (nextChapter.lessons.length > 0) {
-                setActiveLesson(nextChapterIndex, 0);
-            } else {
-                // Nếu chapter tiếp theo không có bài học, tìm chapter tiếp theo có bài học
-                for (let i = nextChapterIndex + 1; i < courseData.chapters.length; i++) {
-                    if (courseData.chapters[i].lessons.length > 0) {
-                        setActiveLesson(i, 0);
-                        break;
+        const fetchCourseData = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await axios.get(`http://localhost:8080/lms/course/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                setCourseData(response.data.result);
+                // Set initial active chapter and lesson
+                if (response.data.result.lesson && response.data.result.lesson.length > 0) {
+                    const firstLesson = response.data.result.lesson[0];
+                    setCurrentChapterId(firstLesson.id);
+                    setCurrentChapter(firstLesson.description);
+                    
+                    // If there are chapters, set the first chapter as active
+                    if (firstLesson.chapter && firstLesson.chapter.length > 0) {
+                        setCurrentLessonId(firstLesson.chapter[0].id);
                     }
                 }
+                setLoading(false);
+            } catch (err) {
+                setError(err.message);
+                setLoading(false);
             }
-        }
-        // Ngược lại, đây là lesson cuối cùng của chapter cuối cùng, không làm gì cả
-    }
-};
+        };
 
-// Xử lý khi click vào một lesson
-const handleLessonClick = (chapterIndex, lessonIndex) => {
-    setActiveLesson(chapterIndex, lessonIndex);
+        fetchCourseData();
+    }, [id]);
+
+    const handleToggleChapter = (chapterId) => {
+        setCurrentChapterId(currentChapterId === chapterId ? null : chapterId);
+    };
+
+    const handleLessonClick = (chapterId, lessonId, chapterTitle) => {
+        setCurrentChapterId(chapterId);
+        setCurrentLessonId(lessonId);
+        setCurrentChapter(chapterTitle);
 };
 
 const handleBackToCourses = () => {
     navigate('/courses');
 };
 
- // Xác định tiêu đề và URL video của bài học hiện tại
-const getCurrentLessonInfo = () => {
-    const { chapterIndex, lessonIndex } = findCurrentPosition();
-    
-    if (chapterIndex !== -1 && lessonIndex !== -1) {
-        const lesson = courseData.chapters[chapterIndex].lessons[lessonIndex];
-        return {
-            title: lesson.title,
-            videoUrl: `https://example.com/videos/${lesson.id}` // Thay bằng URL thực tế
-        };
-    }
-    
-    return {
-        title: "Bài học không tồn tại",
-        videoUrl: ""
+    const handlePrevious = () => {
+        if (!courseData?.lesson || !currentChapterId) return;
+        
+        // Tìm lesson hiện tại
+        const currentLesson = courseData.lesson.find(l => l.id === currentChapterId);
+        if (!currentLesson?.chapter) return;
+
+        // Tìm index của chapter hiện tại trong lesson
+        const currentChapterIndex = currentLesson.chapter.findIndex(c => c.id === currentLessonId);
+        if (currentChapterIndex > 0) {
+            // Lấy chapter trước đó trong cùng lesson
+            const prevChapter = currentLesson.chapter[currentChapterIndex - 1];
+            setCurrentLessonId(prevChapter.id);
+            setCurrentContent(prevChapter);
+        }
     };
-};
-  
-const currentLesson = getCurrentLessonInfo();
+
+    const handleNext = () => {
+        if (!courseData?.lesson || !currentChapterId) return;
+        
+        // Tìm lesson hiện tại
+        const currentLesson = courseData.lesson.find(l => l.id === currentChapterId);
+        if (!currentLesson?.chapter) return;
+
+        // Tìm index của chapter hiện tại trong lesson
+        const currentChapterIndex = currentLesson.chapter.findIndex(c => c.id === currentLessonId);
+        if (currentChapterIndex < currentLesson.chapter.length - 1) {
+            // Lấy chapter tiếp theo trong cùng lesson
+            const nextChapter = currentLesson.chapter[currentChapterIndex + 1];
+            setCurrentLessonId(nextChapter.id);
+            setCurrentContent(nextChapter);
+        }
+    };
+
+    const handleDownload = () => {
+        if (currentContent?.type === 'material') {
+            // Implement download functionality
+            console.log('Download clicked');
+        }
+    };
+
+    const handleComment = () => {
+        // Implement comment functionality
+        console.log('Comment clicked');
+    };
+
+    const handleHelp = () => {
+        // Implement help functionality
+        console.log('Help clicked');
+    };
+
+    const handleNotes = () => {
+        // Implement notes functionality
+        console.log('Notes clicked');
+    };
+
+    const toggleSidebar = () => {
+        setSidebarVisible(!sidebarVisible);
+    };
+
+    if (loading) return <div>Đang tải...</div>;
+    if (error) return <div>Có lỗi xảy ra: {error}</div>;
+    if (!courseData) return <div>Không tìm thấy khóa học</div>;
+
+    // Calculate total lessons and completed lessons
+    const totalLessons = courseData.lesson.reduce((total, chapter) => 
+        total + (chapter.chapter ? chapter.chapter.length : 0), 0);
+    const completedLessons = 0; // This should be updated based on your actual data
+    const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
     return (
         <div className="learning-container">
             {/* Header */}
             <header className="learning-header">
                 <div className="header-left">
                     <button onClick={handleBackToCourses} className="back-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M15 18l-6-6 6-6" />
-                        </svg>
+                        <ChevronLeft size={20} />
                     </button>
                     <div className="course-logo-title">
-                        <img src={logo} style={{width: '5rem'}} />
-                        <h1 className="course-learning-title">{courseData.title}</h1>
+                        <img src={logo} alt="Logo" className="header-logo" />
+                        <h1 className="learning-course-title">{courseData.name}</h1>
                     </div>
                 </div>
                 <div className="header-right">
                     <div className="progress-info">
-                        <span className="progress-percent">{courseData.progress}%</span>
-                        <span className="progress-text">{courseData.completedLessons}/{courseData.totalLessons} bài học</span>
+                        <span className="progress-percent">{progress}%</span>
+                        <span className="progress-text">{completedLessons}/{totalLessons} bài học</span>
                     </div>
-                    <button className="header-button note-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                        </svg>
+                    <button className="header-button">
+                        <BookOpen size={16} />
                         <span>Ghi chú</span>
                     </button>
-                    <button className="header-button help-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                        </svg>
+                    <button className="header-button">
+                        <HelpCircle size={16} />
                         <span>Hướng dẫn</span>
                     </button>
                 </div>
             </header>
 
             {/* Main content */}
-            <div className={`learning-main ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
-                {/* Video area */}
-                <div className="video-container">
-                    <div className="video-player">
-                        <iframe
-                            width="100%"
-                            height="100%"
-                            src={currentLesson.videoUrl}
-                            frameBorder="0"
-                            allowFullScreen
-                            title="Course video"
-                        ></iframe>
+            <div className="learning-content">
+                {/* Left content area */}
+                <div className="content-area">
+                    {currentLessonId && courseData.lesson.map(chapter => 
+                        chapter.chapter?.find(lesson => lesson.id === currentLessonId)
+                    ).filter(Boolean)[0] ? (
+                        <LearningContent 
+                            currentLesson={courseData.lesson.map(chapter => 
+                                chapter.chapter?.find(lesson => lesson.id === currentLessonId)
+                            ).filter(Boolean)[0]}
+                            content={currentContent}
+                            onDownload={handleDownload}
+                        />
+                    ) : (
+                        <div className="content-placeholder">
+                            <h3>Vui lòng chọn một bài học để xem nội dung</h3>
                     </div>
-                    <div className="video-info">
-                        <h2 className="video-title">{currentLesson.title}</h2>
-                        <CommentSection lessonId={currentLessonId} />
-                    </div>
+                    )}
+                    {/* <CommentSection lessonId={currentLessonId} /> */}
                 </div>
 
-                {/* Sidebar course content */}
-                <div className="sidebar-container">
+                {/* Right sidebar */}
+                <div className={`course-sidebar ${!sidebarVisible ? 'hidden' : ''}`}>
                     <div className="sidebar-header">
                         <h3>Nội dung khóa học</h3>
                     </div>
-                    <div className="sidebar-content">
-                        {courseData.chapters.map((chapter, chapterIndex) => (
+                    <div className="chapters-list">
+                        {courseData.lesson
+                            .sort((a, b) => a.order - b.order)
+                            .map((chapter) => (
                             <div key={chapter.id} className="chapter-item">
                                 <div 
-                                    className={`chapter-header ${chapter.expanded ? 'expanded' : ''}`}
+                                    className={`chapter-header ${currentChapterId === chapter.id ? 'active' : ''}`}
                                     onClick={() => handleToggleChapter(chapter.id)}
                                 >
-                                    <div className="chapter-learning-title">
-                                        <span className="chapter-number">{chapter.id}.</span>
-                                        <span className="chapter-name">{chapter.title}</span>
+                                        <div className="learning-chapter-title">
+                                            <span className="chapter-number">{chapter.order}.</span>
+                                            <span className="chapter-name">{chapter.description}</span>
                                     </div>
                                     <div className="chapter-meta">
-                                        <span>{chapter.totalLessons}/{chapter.totalLessons} | {chapter.duration}</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`chevron-icon ${chapter.expanded ? 'rotated' : ''}`}>
-                                            <path d="M6 9l6 6 6-6" />
-                                        </svg>
+                                            <span>{chapter.chapter?.length || 0}/{chapter.chapter?.length || 0}</span>
+                                            <span className="duration">{chapter.duration || '00:00'}</span>
                                     </div>
                                 </div>
                                 
-                                {chapter.expanded && (
-                                    <div className="lessons-list">
-                                        {chapter.lessons.map((lesson, lessonIndex) => (
+                                {currentChapterId === chapter.id && (
+                                    <div className="chapter-content">
+                                        {/* Lessons */}
+                                        {chapter.chapter && 
+                                            chapter.chapter
+                                                .sort((a, b) => a.order - b.order)
+                                                .map((lesson) => (
                                             <div 
                                                 key={lesson.id}
-                                                className={`lesson-item ${lesson.active ? 'active' : ''}`}
-                                                onClick={() => handleLessonClick(chapterIndex, lessonIndex)}
+                                                className={`lesson-item ${currentLessonId === lesson.id ? 'active' : ''}`}
+                                                onClick={() => handleLessonClick(chapter.id, lesson.id, chapter.description)}
                                             >
-                                                <div className="lesson-left">
-                                                    {lesson.type === 'video' ? (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lesson-icon ${lesson.completed ? 'completed' : ''}`}>
-                                                            <circle cx="12" cy="12" r="10"></circle>
-                                                            <polygon points="10 8 16 12 10 16 10 8"></polygon>
-                                                        </svg>
-                                                    ) : (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lesson-icon ${lesson.completed ? 'completed' : ''}`}>
-                                                            <circle cx="12" cy="12" r="10"></circle>
-                                                            <line x1="12" y1="8" x2="12" y2="16"></line>
-                                                            <line x1="8" y1="12" x2="16" y2="12"></line>
-                                                        </svg>
-                                                    )}
+                                                <div className="lesson-info">
+                                                    <FileText size={16} className="lesson-icon" />
                                                     <div className="lesson-title">
-                                                        <span className="lesson-number">{lesson.id}.</span>
-                                                        <span className="lesson-name">{lesson.title}</span>
-                                                        {lesson.completed && (
-                                                            <span className="lesson-completed-badge">✓</span>
-                                                        )}
+                                                        <span className="learning-lesson-number">{lesson.order}.</span>
+                                                        <span className="learning-lesson-name">{lesson.name}</span>
                                                     </div>
                                                 </div>
-                                                <div className="lesson-duration">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <circle cx="12" cy="12" r="10"></circle>
-                                                        <polyline points="12 6 12 12 16 14"></polyline>
-                                                    </svg>
-                                                    {lesson.time}
-                                                </div>
+                                                <span className="lesson-duration">00:00</span>
                                             </div>
                                         ))}
+
+                                        {/* Materials */}
+                                        {chapter.lessonMaterial && chapter.lessonMaterial.length > 0 && (
+                                            <div className="section-header">
+                                                <span>Tài liệu học tập ({chapter.lessonMaterial.length})</span>
+                                            </div>
+                                        )}
+
+                                        {/* Quizzes */}
+                                        {chapter.lessonQuiz && chapter.lessonQuiz.length > 0 && (
+                                            <div className="section-header">
+                                                <span>Bài kiểm tra ({chapter.lessonQuiz.length})</span>
+                                        </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -381,41 +254,54 @@ const currentLesson = getCurrentLessonInfo();
                     </div>
                 </div>
             </div>
-            <div className='learning-footer'>
-                <div className="navigation-buttons">
-                    <button onClick={handlePreviousLesson} className="prev-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M15 18l-6-6 6-6" />
-                        </svg>
-                        BÀI TRƯỚC
+
+            {/* Footer Navigation */}
+            <footer className="learning-footer">
+                <div className="footer-left">
+                    <button 
+                        className="footer-button"
+                        onClick={handlePrevious}
+                        disabled={
+                            !currentChapterId || 
+                            !currentLessonId || 
+                            courseData?.lesson
+                                ?.find(l => l.id === currentChapterId)
+                                ?.chapter?.[0]?.id === currentLessonId
+                        }
+                    >
+                        <ChevronLeft size={16} />
+                        Bài trước
                     </button>
-                    <button onClick={handleNextLesson} className="next-button">
-                        BÀI TIẾP THEO
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 18l6-6-6-6" />
-                        </svg>
+                    <button 
+                        className="footer-button"
+                        onClick={handleNext}
+                        disabled={
+                            !currentChapterId || 
+                            !currentLessonId || 
+                            courseData?.lesson
+                                ?.find(l => l.id === currentChapterId)
+                                ?.chapter?.slice(-1)[0]?.id === currentLessonId
+                        }
+                    >
+                        Bài tiếp theo
+                        <ChevronRight size={16} />
                     </button>
                 </div>
-                <div className="chapter-footer">
-                    <div style={{fontWeight: 600}}>{currentChapterId}. {currentChapter}</div>
-                    <button onClick={handleToggleSidebar} className="toggle-sidebar-button">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className={`icon ${sidebarVisible ? 'rotate-180' : ''}`}
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <polyline points="15 18 9 12 15 6" />
-                        </svg>
+                <div className="footer-right">
+                    <div className="current-lesson-info">
+                        {currentLessonId && courseData?.lesson?.map(chapter => 
+                            chapter.chapter?.find(lesson => lesson.id === currentLessonId)
+                        ).filter(Boolean)[0]?.name || 'Chọn bài học'}
+                    </div>
+                    <button 
+                        className="footer-button"
+                        onClick={toggleSidebar}
+                    >
+                        <Menu size={16} />
+                        {sidebarVisible ? 'Ẩn mục lục' : 'Hiện mục lục'}
                     </button>
                 </div>
-            </div>
+            </footer>
         </div>
     );
 };

@@ -21,8 +21,8 @@ function Header() {
 
     // Registration form states
     const [regEmail, setRegEmail] = useState('');
-    const [regUsername, setRegUsername] = useState('');
     const [regPassword, setRegPassword] = useState('');
+    const [regFullName, setRegFullName] = useState('');
     const [isRegFormValid, setIsRegFormValid] = useState(false);
 
     // Validate login form
@@ -32,19 +32,27 @@ function Header() {
 
     // Validate registration form
     useEffect(() => {
-        setIsRegFormValid(
-            regEmail.trim() !== '' && 
-            regUsername.trim() !== '' && 
-            regPassword.trim() !== ''
-        );
-    }, [regEmail, regUsername, regPassword]);
+        if (selectedRole === 'student') {
+            setIsRegFormValid(
+                regEmail.trim() !== '' && 
+                regPassword.trim() !== '' &&
+                regFullName.trim() !== ''
+            );
+        } else if (selectedRole === 'teacher') {
+            setIsRegFormValid(
+                regEmail.trim() !== '' && 
+                regPassword.trim() !== '' &&
+                regFullName.trim() !== ''
+            );
+        }
+    }, [regEmail, regPassword, regFullName, selectedRole]);
 
     const resetForm = useCallback(() => {
         setEmail('');
         setPassword('');
         setRegEmail('');
-        setRegUsername('');
         setRegPassword('');
+        setRegFullName('');
         setError('');
         setSelectedRole(null);
     }, []);
@@ -61,11 +69,21 @@ function Header() {
         resetForm();
     }, [resetForm]);
 
-    const openRegisterModal = useCallback(() => {
+    const switchToRegister = useCallback(() => {
         setShowLoginModal(false);
         setShowRegisterModal(true);
-        resetForm();
-    }, [resetForm]);
+        setEmail('');
+        setPassword('');
+        setError('');
+    }, []);
+
+    const switchToLogin = useCallback(() => {
+        setShowRegisterModal(false);
+        setShowLoginModal(true);
+        setRegEmail('');
+        setRegPassword('');
+        setError('');
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -100,10 +118,35 @@ function Header() {
         navigate('/courses');
     };
 
-    const handleRegister = (e) => {
+    const handleRegister = async (e) => {
         e.preventDefault();
-        alert('Đăng ký thành công! Vui lòng đăng nhập.');
-        openLoginModal();
+        setError('');
+        setLoading(true);
+
+        try {
+            const registerData = {
+                email: regEmail,
+                password: regPassword,
+                fullName: regFullName
+            };
+
+            const apiUrl = selectedRole === 'student' 
+                ? 'http://localhost:8080/lms/student/create'
+                : 'http://localhost:8080/lms/teacher/create';
+
+            const response = await axios.post(apiUrl, registerData);
+
+            if (response.data.result.id) {
+                alert('Đăng ký thành công! Vui lòng đăng nhập.');
+                openLoginModal();
+            } else {
+                setError(response.data.error || 'Đăng ký thất bại. Vui lòng thử lại.');
+            }
+        } catch (err) {
+            setError('Đã xảy ra lỗi. Vui lòng thử lại sau.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleLogoutClick = () => {
@@ -225,7 +268,10 @@ function Header() {
                                     </button>
 
                                     <div className="form-footer">
-                                        <p>Bạn chưa có tài khoản? <a href="#" className="register-link" onClick={(e) => { e.preventDefault(); openRegisterModal(); }}>Đăng ký</a></p>
+                                        <p>Bạn chưa có tài khoản? <a href="#" className="register-link" onClick={(e) => { 
+                                            e.preventDefault(); 
+                                            switchToRegister();
+                                        }}>Đăng ký {selectedRole === 'student' ? 'Sinh viên' : 'Giảng viên'}</a></p>
                                     </div>
 
                                     <div className="terms">
@@ -252,16 +298,16 @@ function Header() {
                                 <img src={logohusc} className='login-logo' alt="Logo"/>
                             </div>
                             
-                            <h2 className="modal-title">Đăng Ký Tài Khoản</h2>
+                            <h2 className="modal-title">Đăng Ký Tài Khoản {selectedRole === 'student' ? 'Sinh Viên' : 'Giảng Viên'}</h2>
                             
                             <form className="login-form" onSubmit={handleRegister}>
                                 <div className="form-group">
                                     <input 
                                         type="text" 
                                         className='form-group-login'
-                                        placeholder="Họ và tên của bạn" 
-                                        value={regUsername}
-                                        onChange={(e) => setRegUsername(e.target.value)}
+                                        placeholder="Họ và tên" 
+                                        value={regFullName}
+                                        onChange={(e) => setRegFullName(e.target.value)}
                                         required
                                     />
                                 </div>
@@ -291,9 +337,9 @@ function Header() {
                                 <button 
                                     type="submit"
                                     className={`login-submit-btn ${isRegFormValid ? 'active' : 'disabled'}`}
-                                    disabled={!isRegFormValid}
+                                    disabled={!isRegFormValid || loading}
                                 >
-                                    Đăng ký
+                                    {loading ? 'Đang đăng ký...' : 'Đăng ký'}
                                 </button>
 
                                 <p>Hoặc</p>
@@ -307,7 +353,10 @@ function Header() {
                                 </button>
                                 
                                 <div className="form-footer">
-                                    <p>Bạn đã có tài khoản? <a href="#" className="register-link" onClick={(e) => {e.preventDefault(); openLoginModal();}}>Đăng nhập</a></p>
+                                    <p>Bạn đã có tài khoản? <a href="#" className="register-link" onClick={(e) => { 
+                                        e.preventDefault(); 
+                                        switchToLogin();
+                                    }}>Đăng nhập {selectedRole === 'student' ? 'Sinh viên' : 'Giảng viên'}</a></p>
                                 </div>
                                 
                                 <div className="terms">

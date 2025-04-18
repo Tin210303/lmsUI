@@ -3,18 +3,19 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 32px;
-    border-bottom: 1px solid #efefef;
+    padding: 10px 40px;
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
     position: sticky;
     top: 0;
-    background-color: #fff;
     z-index: 100;
 }
 
-.logo {
-    font-size: 24px;
+.logo a {
+    text-decoration: none;
+    color: #333;
     font-weight: bold;
-    color: #2b6cb0;
+    font-size: 1.2rem;
 }
 
 .logo img {
@@ -257,5 +258,141 @@
 
 .role-btn:hover {
     opacity: 0.85;
+}
+
+.profile-section {
+    position: relative; /* Needed for absolute positioning of dropdown */
+    display: flex;
+    align-items: center;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 10px;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #eee;
+}
+
+.profile-info span {
+    font-weight: 500;
+    color: #333;
+}
+
+/* Dropdown styles */
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 10px); /* Position below avatar + gap */
+    right: 0;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #eee;
+    width: 200px; /* Adjust width as needed */
+    z-index: 110;
+    overflow: hidden;
+    padding: 5px 0;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item svg {
+    color: #666;
+}
+
+.logout-button {
+    color: #dc3545; /* Red color for logout */
+}
+
+.logout-button svg {
+    color: #dc3545;
+}
+
+/* Styles for StudentHeader specifically */
+.left-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.left-section .logo {
+    height: 35px;
+}
+
+.left-section .title {
+    font-weight: bold;
+    color: #555;
+    font-size: 1rem;
+}
+
+.search-box {
+    flex-grow: 1;
+    max-width: 500px;
+    position: relative;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 15px 8px 40px; /* Add padding for icon */
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    background-color: #f5f5f5;
+}
+
+.search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #777;
+}
+
+.right-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.my-courses {
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.my-courses:hover {
+    color: #0056b3;
+}
+
+.bell-icon {
+    color: #555;
+    cursor: pointer;
+}
+
+.bell-icon svg {
+    display: block; /* Prevent extra space below svg */
 }
 

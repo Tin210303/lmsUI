@@ -1,14 +1,49 @@
-import React from 'react';
-import '../../assets/css/student-header.css';
+import React, { useState, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import '../../assets/css/header.css';
+import { User, LogOut } from 'lucide-react';
 import {Search} from 'lucide-react'
 import logo from '../../assets/imgs/logo.png';
 import avatar from '../../logo.svg';
 
-const StudentHeader = () => {
+const TeacherHeader = () => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [isDropdownOpen, setDropdownOpen] = useState(false);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
+
+    const toggleDropdown = () => {
+        setDropdownOpen(!isDropdownOpen);
+    };
+
+    React.useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (event.target.closest('.profile-section')) {
+                return;
+            }
+            setDropdownOpen(false);
+        };
+
+        if (isDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isDropdownOpen]);
+
     return (
-        <header className="student-header">
+        <header className="header">
             <div className="left-section">
-                <img src={logo} alt="LMS Logo" className="logo" />
+                <Link to="/teacher/dashboard"><img src={logo} alt="LMS Logo" className="logo" /></Link>
                 <span className="title">Hệ Thống Học Tập Trực Tuyến</span>
             </div>
 
@@ -21,9 +56,8 @@ const StudentHeader = () => {
                     placeholder="Tìm kiếm khóa học, bài viết, video, ..."
                 />
             </div>
-
-            <div className="right-section">
-                <span className="my-courses">Quản lý khóa học</span>
+            <div className='right-section'>
+                <Link to="/teacher/dashboard" className="my-courses">Quản lý khóa học</Link>
                 <div className="bell-icon">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -36,10 +70,33 @@ const StudentHeader = () => {
                         <path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-2.8-1.7-5.1-4.3-5.8V4a1.7 1.7 0 0 0-3.4 0v1.2C7.7 5.9 6 8.2 6 11v5l-2 2v1h16v-1l-2-2z" />
                     </svg>
                 </div>
-                <img src={avatar} alt="Avatar" className="avatar" />
+                {user && (
+                    <div className="profile-section">
+                        <div className="profile-info" onClick={toggleDropdown} style={{ cursor: 'pointer' }}>
+                            <img 
+                                src={user.avatar || '/path/to/default-avatar.png'}
+                                alt="Ava" 
+                                className="avatar"
+                            />
+                            <span>{user.fullName}</span>
+                        </div>
+                        {isDropdownOpen && (
+                            <div className="profile-dropdown">
+                                <Link to="/teacher/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                                    <User size={16} />
+                                    <span>Thông tin cá nhân</span>
+                                </Link>
+                                <button onClick={handleLogout} className="dropdown-item logout-button">
+                                    <LogOut size={16} />
+                                    <span>Đăng Xuất</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </header>
     );
 };
 
-export default StudentHeader;
+export default TeacherHeader;
