@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Book, Users, User } from 'lucide-react';
 import axios from 'axios';
 
-const CourseCard = ({ course }) => {
+const CourseCard = ({ course, isEnrolled = false }) => {
     const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -54,8 +54,9 @@ const CourseCard = ({ course }) => {
         // Tạo slug từ tên khóa học
         const slug = createSlug(course.name);
 
-        // Lưu ID khóa học vào localStorage với slug làm khóa
+        // Lưu ID khóa học và trạng thái đăng ký vào localStorage với slug làm khóa
         localStorage.setItem(`course_${slug}`, course.id);
+        localStorage.setItem(`course_${slug}_enrolled`, isEnrolled);
         
         // Điều hướng sử dụng slug thay vì ID
         console.log('Navigating to course with slug:', slug);

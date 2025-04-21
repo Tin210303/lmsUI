@@ -22,6 +22,7 @@ import TeacherAddLesson from './components/teacher/TeacherAddLesson';
 import TeacherAddQuiz from './components/teacher/TeacherAddQuiz';
 import TeacherAddMaterial from './components/teacher/TeacherAddMaterial';
 import CourseManagementPage from './components/teacher/CourseManagementPage';
+import AddStudentsPage from './components/teacher/AddStudentsPage';
 // import TeacherCourses from './components/teacher/TeacherCourses';
 
 import './App.css';
@@ -132,6 +133,13 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <CourseManagementPage />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/course/:courseId/add-students" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <AddStudentsPage />
               </TeacherLayout>
             </ProtectedRoute>
           } />

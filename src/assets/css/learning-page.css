@@ -322,17 +322,18 @@ body {
 }
 
 .download-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    display: flex;
     padding: 12px 24px;
     background: #0066cc;
     color: white;
+    text-decoration: none;
+    border-radius: 30px;
+    transition: background-color 0.2s;
+    align-items: center;
+    gap: 8px;
     border: none;
-    border-radius: 6px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
 }
 
 .download-button:hover {
@@ -592,20 +593,6 @@ body {
     color: #333;
 }
 
-.download-button {
-    display: flex;
-    padding: 12px 24px;
-    background: #0066cc;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    transition: background-color 0.2s;
-}
-
-.download-button:hover {
-    background: #0052a3;
-}
-
 .loading-spinner {
     display: flex;
     justify-content: center;
@@ -779,33 +766,36 @@ body {
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: 20px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
-    border: 1px solid #e5e7eb;
-    background: #fff;
+    border: none;
     color: #374151;
 }
 
-.footer-button:hover {
-    background: #f3f4f6;
+.footer-prev-button {
+    background-color: #fff;
+    border: 1px solid #ddd;
 }
 
-.footer-button.primary {
-    background: #2563eb;
+.footer-prev-button:hover {
+    background-color: #ddd;
+}
+
+.footer-next-button {
     color: #fff;
-    border: none;
-}
-
-.footer-button.primary:hover {
-    background: #1d4ed8;
+    background: linear-gradient(to right, #06c, #20bdff);
 }
 
 .footer-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.footer-button:disabled:hover {
+    background-color: #fff;
 }
 
 .footer-button svg {

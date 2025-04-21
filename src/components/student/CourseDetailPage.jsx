@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCourseById } from '../../services/courseService';
+import axios from 'axios';
 import '../../assets/css/course-detail.css';
 import { Check, CirclePlay, Film, Clock, AlarmClock, Plus, Minus, SquareUser, GraduationCap } from 'lucide-react';
+import Alert from '../common/Alert';
 
 const CourseDetailPage = () => {
     const params = useParams();
@@ -10,10 +12,82 @@ const CourseDetailPage = () => {
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
     const [openChapters, setOpenChapters] = useState({});
+    const [isEnrolled, setIsEnrolled] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [isPending, setIsPending] = useState(false);
+    const [pendingCourses, setPendingCourses] = useState([]);
+    const [studentId, setStudentId] = useState(null);
+    const [alert, setAlert] = useState(null);
+
+    const showAlert = (type, title, message) => {
+        setAlert({ type, title, message });
+    };
+    
+    // Hàm lấy thông tin sinh viên
+    const fetchStudentInfo = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            const response = await axios.get('http://localhost:8080/lms/student/myinfo', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                setStudentId(response.data.result.id);
+            }
+        } catch (error) {
+            console.error('Error fetching student info:', error);
+        }
+    };
+
+    // Hàm lấy danh sách khóa học đang chờ duyệt
+    const fetchPendingCourses = async (studentId) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            const response = await axios.get(`http://localhost:8080/lms/joinclass/courserequest/${studentId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                setPendingCourses(response.data.result || []);
+            }
+        } catch (error) {
+            console.error('Error fetching pending courses:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchStudentInfo();
+    }, []);
+
+    useEffect(() => {
+        if (studentId) {
+            fetchPendingCourses(studentId);
+        }
+    }, [studentId]);
+
+    // Hàm tạo slug từ tên khóa học (không thêm timestamp)
+    const createSlug = (name) => {
+        let str = name.toLowerCase();
+        str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        str = str.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+        return str;
+    };
 
     const getCourseId = () => {
         if (params.slug) {
             const courseId = localStorage.getItem(`course_${params.slug}`);
+            const enrolled = localStorage.getItem(`course_${params.slug}_enrolled`) === 'true';
+            const pending = localStorage.getItem(`course_${params.slug}_pending`) === 'true';
+            setIsEnrolled(enrolled);
+            setIsPending(pending);
             if (courseId) {
                 return courseId;
             } else {
@@ -37,6 +111,18 @@ const CourseDetailPage = () => {
             const courseData = await getCourseById(courseId);
             console.log('CourseDetailPage - Course data received:', courseData);
             setCourse(courseData);
+
+            // Kiểm tra xem khóa học có trong danh sách đang chờ duyệt không
+            if (courseData && pendingCourses.length > 0) {
+                console.log('Pending courses:', pendingCourses);
+                const isCoursePending = pendingCourses.some(pendingCourse => 
+                    pendingCourse.id === courseData.id || 
+                    pendingCourse.id === courseData.id.toString()
+                );
+                console.log('Is course pending:', isCoursePending);
+                setIsPending(isCoursePending);
+            }
+
             if (courseData && courseData.lesson && courseData.lesson.length > 0) {
                 const sortedLessons = [...courseData.lesson].sort((a, b) => a.order - b.order);
                 const firstLessonId = sortedLessons[0].id;
@@ -45,7 +131,7 @@ const CourseDetailPage = () => {
             setLoading(false);
         };
         fetchCourse();
-    }, [params]);
+    }, [params, pendingCourses]);
 
     if (loading) {
         return <div style={{ padding: 32 }}>Đang tải...</div>;
@@ -62,8 +148,44 @@ const CourseDetailPage = () => {
         }));
     };
 
-    const handleRegister = () => {
-        navigate(`/learning/${course.id}`);
+    const handleRegister = async () => {
+        if (isEnrolled) {
+            navigate(`/learning/${course.id}`);
+        } else {
+            try {
+                setIsRegistering(true);
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const formData = new FormData();
+                formData.append('courseId', course.id.toString());
+
+                const response = await axios.post('http://localhost:8080/lms/joinclass/pending', formData, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                if (response.data && response.data.code === 0) {
+                    // Cập nhật danh sách khóa học đang chờ duyệt
+                    if (studentId) {
+                        await fetchPendingCourses(studentId);
+                    }
+                    showAlert('success', 'Thành công', 'Đăng ký khóa học thành công! Vui lòng chờ giảng viên phê duyệt.');
+                } else {
+                    throw new Error(response.data?.message || 'Đăng ký khóa học thất bại');
+                }
+            } catch (error) {
+                console.error('Error registering for course:', error);
+                console.error('Error response:', error.response?.data);
+                showAlert('success', 'Thành công', 'Có lỗi xảy ra khi đăng ký khóa học. Vui lòng thử lại sau.');
+            } finally {
+                setIsRegistering(false);
+            }
+        }
     };
 
     const formatDate = (dateString) => {
@@ -104,6 +226,16 @@ const CourseDetailPage = () => {
 
     return (
         <div className="course-detail-container">
+            {alert && (
+                <div className="alert-container">
+                    <Alert
+                        type={alert.type}
+                        title={alert.title}
+                        message={alert.message}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
             <div className="left-column">
                 <h1 className="course-detail-title">{course.name}</h1>
                 <p className="course-description">{course.description}</p>
@@ -207,7 +339,15 @@ const CourseDetailPage = () => {
                     )}
                 </div>
                 <div className="price-box">
-                    <button className="register-btn" onClick={handleRegister}>ĐĂNG KÝ HỌC</button>
+                    <button 
+                        className="register-btn" 
+                        onClick={handleRegister}
+                        disabled={isRegistering || isPending}
+                    >
+                        {isEnrolled ? 'TIẾP TỤC HỌC' : 
+                         isPending ? 'ĐANG CHỜ DUYỆT' : 
+                         isRegistering ? 'ĐANG ĐĂNG KÝ...' : 'ĐĂNG KÝ HỌC'}
+                    </button>
                     <ul className="info-list">
                         <li><SquareUser size={16} className='mr-16'/>Giảng viên: {course.teacher?.fullName || 'N/A'}</li>
                         <li><GraduationCap size={16} className='mr-16'/>Chuyên ngành: {course.major}</li>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../../assets/css/course-management.css';
-import { Trash2 } from 'lucide-react';
+import { Trash2, UserPlus } from 'lucide-react';
 import logo from '../../logo.svg';
 import Alert from '../common/Alert';
 
@@ -259,7 +259,12 @@ const CourseManagementPage = () => {
                 </div>
                 
                 <div className="members-section">
-                    <h3>Sinh Viên</h3>
+                    <h3 className="course-section-title">
+                        Sinh Viên
+                        <button className="add-student-btn" onClick={() => navigate(`/teacher/course/${courseId}/add-students`)}>
+                            <UserPlus size={20} enableBackground={0}/>
+                        </button>
+                    </h3>
                     {students.map(student => (
                         <div key={student.id} className="member-item">
                             <div className='d-flex'>

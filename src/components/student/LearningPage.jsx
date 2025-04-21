@@ -259,7 +259,7 @@ const handleBackToCourses = () => {
             <footer className="learning-footer">
                 <div className="footer-left">
                     <button 
-                        className="footer-button"
+                        className="footer-button footer-prev-button"
                         onClick={handlePrevious}
                         disabled={
                             !currentChapterId || 
@@ -273,7 +273,7 @@ const handleBackToCourses = () => {
                         Bài trước
                     </button>
                     <button 
-                        className="footer-button"
+                        className="footer-button footer-next-button"
                         onClick={handleNext}
                         disabled={
                             !currentChapterId || 

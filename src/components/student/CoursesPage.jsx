@@ -61,7 +61,7 @@ const CoursesPage = () => {
                 ) : (
                     <div className="courses-grid">
                         {myCourses.map(course => (
-                            <CourseCard key={course.id} course={course} />
+                            <CourseCard key={course.id} course={course} isEnrolled={true} />
                         ))}
                     </div>
                 )}
@@ -80,7 +80,7 @@ const CoursesPage = () => {
                 ) : (
                     <div className="courses-grid">
                         {otherCourses.map(course => (
-                            <CourseCard key={course.id} course={course} />
+                            <CourseCard key={course.id} course={course} isEnrolled={false} />
                         ))}
                     </div>
                 )}
