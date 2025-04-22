@@ -11,16 +11,16 @@ import LearningContent from './LearningContent';
     // Định nghĩa API_BASE_URL
     const API_BASE_URL = 'http://localhost:8080/lms';
 
-const LearningPage = () => {
-const { id } = useParams();
-const navigate = useNavigate();
+    const LearningPage = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
     const [courseData, setCourseData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentChapterId, setCurrentChapterId] = useState(null);
     const [currentLessonId, setCurrentLessonId] = useState(null);
-const [currentChapter, setCurrentChapter] = useState('');
-const [sidebarVisible, setSidebarVisible] = useState(true);
+    const [currentChapter, setCurrentChapter] = useState('');
+    const [sidebarVisible, setSidebarVisible] = useState(true);
     const [currentContent, setCurrentContent] = useState(null);
     const [currentQuizId, setCurrentQuizId] = useState(null);
     const [chapterCompleted, setChapterCompleted] = useState(false);
@@ -41,7 +41,7 @@ const [sidebarVisible, setSidebarVisible] = useState(true);
     const sidebarRef = useRef(null);
 
     // Fetch course data from API
-useEffect(() => {
+    useEffect(() => {
         const fetchCourseData = async () => {
             try {
                 const token = localStorage.getItem('authToken');
