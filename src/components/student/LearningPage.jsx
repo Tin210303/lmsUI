@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, BookOpen, HelpCircle, MessageSquare, FileText, Download, Menu, Lock, CircleCheck } from 'lucide-react';
 import logo from '../../assets/imgs/logo.png';
 import '../../assets/css/learning-page.css';
 import CommentSection from './CommentSection';
 import LearningContent from './LearningContent';
+
+    // Định nghĩa API_BASE_URL
+    const API_BASE_URL = 'http://localhost:8080/lms';
 
 const LearningPage = () => {
 const { id } = useParams();
@@ -18,8 +22,10 @@ const navigate = useNavigate();
 const [currentChapter, setCurrentChapter] = useState('');
 const [sidebarVisible, setSidebarVisible] = useState(true);
     const [currentContent, setCurrentContent] = useState(null);
+    const [currentQuizId, setCurrentQuizId] = useState(null);
     const [chapterCompleted, setChapterCompleted] = useState(false);
     const [completedChapters, setCompletedChapters] = useState([]);
+    const [completedLessonIds, setCompletedLessonIds] = useState([]);
     const [downloadLoading, setDownloadLoading] = useState(false);
     const [quizAnswers, setQuizAnswers] = useState({});
     const [completedQuizzes, setCompletedQuizzes] = useState([]);
@@ -39,7 +45,7 @@ useEffect(() => {
         const fetchCourseData = async () => {
             try {
                 const token = localStorage.getItem('authToken');
-                const response = await axios.get(`http://localhost:8080/lms/course/${id}`, {
+                const response = await axios.get(`${API_BASE_URL}/course/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -89,6 +95,13 @@ useEffect(() => {
                             // Kiểm tra trạng thái hoàn thành của chapter
                             await checkChapterCompletion(firstIncompleteChapter.chapterId);
                             
+                            // Khởi tạo lesson progress cho lesson hiện tại 
+                            console.log(`Initializing progress for lesson: ${firstIncompleteChapter.lessonId}`);
+                            const isLessonCompleted = await checkLessonCompletion(firstIncompleteChapter.lessonId);
+                            if (!isLessonCompleted) {
+                                await initLessonProgress(firstIncompleteChapter.lessonId);
+                            }
+                            
                             // Cuộn đến chapter sau khi render hoàn tất
                             setTimeout(() => {
                                 scrollToCurrentChapter(firstIncompleteChapter.lessonId, firstIncompleteChapter.chapterId);
@@ -105,6 +118,13 @@ useEffect(() => {
                                 await initChapterProgress(firstChapterId);
                             } else {
                                 console.log("First chapter is already completed, skipping initialization");
+                            }
+                            
+                            // Khởi tạo lesson progress cho lesson đầu tiên
+                            console.log(`Initializing progress for first lesson: ${firstLesson.id}`);
+                            const isLessonCompleted = await checkLessonCompletion(firstLesson.id);
+                            if (!isLessonCompleted) {
+                                await initLessonProgress(firstLesson.id);
                             }
                             
                             setCurrentLessonId(firstChapterId);
@@ -156,7 +176,7 @@ useEffect(() => {
         try {
             const checkPromises = allChapterIds.map(async (chapterId) => {
                 try {
-                    const response = await axios.get(`http://localhost:8080/lms/lessonchapterprogress/getprogress/${chapterId}`, {
+                    const response = await axios.get(`${API_BASE_URL}/lessonchapterprogress/getprogress/${chapterId}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -236,7 +256,7 @@ useEffect(() => {
             
             // Kiểm tra xem lesson trước đó đã hoàn thành các chapter và làm bài kiểm tra chưa
             const previousLessonId = previousLesson.id;
-            const previousLessonCompleted = isLessonCompleted(previousLessonId);
+            const previousLessonCompleted = isAllChaptersCompleted(previousLessonId);
             
             // Nếu lesson trước không có bài kiểm tra
             if (!previousLesson.lessonQuiz || previousLesson.lessonQuiz.length === 0) {
@@ -273,7 +293,7 @@ useEffect(() => {
             
             console.log('Initializing progress for chapter:', chapterId);
             
-            const response = await axios.post(`http://localhost:8080/lms/lessonchapterprogress/savechapterprogress/${chapterId}`, null, {
+            const response = await axios.post(`${API_BASE_URL}/lessonchapterprogress/savechapterprogress/${chapterId}`, null, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -310,7 +330,7 @@ useEffect(() => {
             
             console.log('Checking completion for chapter:', chapterId);
             
-            const response = await axios.get(`http://localhost:8080/lms/lessonchapterprogress/getprogress/${chapterId}`, {
+            const response = await axios.get(`${API_BASE_URL}/lessonchapterprogress/getprogress/${chapterId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -355,7 +375,7 @@ useEffect(() => {
             
             console.log('Sending request to complete chapter:', chapterId);
             
-            const response = await axios.put(`http://localhost:8080/lms/lessonchapterprogress/completechapter/${chapterId}`, null, {
+            const response = await axios.put(`${API_BASE_URL}/lessonchapterprogress/completechapter/${chapterId}`, null, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -432,7 +452,7 @@ useEffect(() => {
             }
         }
         
-        // Chỉ khởi tạo chapter progress nếu chapter chưa hoàn thành
+        // Chỉ khởi tạo chapter progress nếu chưa hoàn thành, không khởi tạo lesson progress
         if (!completedChapters.includes(lessonId)) {
             console.log(`Chapter ${lessonId} not in completed list, initializing progress`);
             await initChapterProgress(lessonId);
@@ -442,11 +462,11 @@ useEffect(() => {
         
         // Luôn kiểm tra trạng thái hoàn thành
         await checkChapterCompletion(lessonId);
-    };
+};
 
-    const handleBackToCourses = () => {
-        navigate('/courses');
-    };
+const handleBackToCourses = () => {
+    navigate('/courses');
+};
 
     const handlePrevious = () => {
         if (!courseData?.lesson || !currentChapterId || !currentLessonId) return;
@@ -551,37 +571,81 @@ useEffect(() => {
             // Luôn kiểm tra trạng thái hoàn thành
             checkChapterCompletion(nextChapter.id);
         } 
-        // Nếu đây là chapter cuối cùng nhưng không phải lesson cuối cùng
-        else if (currentLessonIndex < sortedLessons.length - 1) {
-            // Lấy lesson tiếp theo
-            const nextLesson = sortedLessons[currentLessonIndex + 1];
+        // Nếu đây là chapter cuối cùng của lesson hiện tại
+        else {
+            // Kiểm tra xem lesson hiện tại có bài kiểm tra không
+            const hasQuiz = currentLesson.lessonQuiz && currentLesson.lessonQuiz.length > 0;
             
-            // Kiểm tra nếu lesson tiếp theo có chapter
-            if (nextLesson.chapter && nextLesson.chapter.length > 0) {
-                // Sắp xếp các chapter trong lesson tiếp theo
-                const sortedNextChapters = [...nextLesson.chapter].sort((a, b) => a.order - b.order);
+            // Kiểm tra xem tất cả bài kiểm tra đã hoàn thành chưa
+            let allQuizzesCompleted = true;
+            if (hasQuiz) {
+                allQuizzesCompleted = currentLesson.lessonQuiz.every((quiz, index) => 
+                    completedQuizzes.includes(`quiz-${currentLesson.id}-${index}`)
+                );
+            }
+            
+            // Nếu có bài kiểm tra và chưa hoàn thành tất cả
+            if (hasQuiz && !allQuizzesCompleted) {
+                // Chuyển đến bài kiểm tra đầu tiên
+                handleQuizClick(currentLesson.id, 0, currentLesson.lessonQuiz[0]);
                 
-                // Lấy chapter đầu tiên của lesson tiếp theo
-                const firstChapterOfNextLesson = sortedNextChapters[0];
+                // Hiển thị thông báo cho người dùng
+                toast.info('Bạn cần hoàn thành bài kiểm tra trước khi chuyển sang bài học tiếp theo');
+            }
+            // Nếu không có bài kiểm tra hoặc đã hoàn thành tất cả bài kiểm tra, chuyển đến lesson tiếp theo
+            else if (currentLessonIndex < sortedLessons.length - 1) {
+                // Lấy lesson tiếp theo
+                const nextLesson = sortedLessons[currentLessonIndex + 1];
                 
-                // Cập nhật state với lesson và chapter mới
-                setCurrentChapterId(nextLesson.id);
-                setCurrentLessonId(firstChapterOfNextLesson.id);
-                setCurrentChapter(nextLesson.description);
-                setCurrentContent(firstChapterOfNextLesson);
+                // Khởi tạo lesson progress cho lesson tiếp theo
+                const initNextLessonProgress = async () => {
+                    try {
+                        // Kiểm tra xem lesson đã có progress chưa
+                        console.log(`Checking completion for next lesson: ${nextLesson.id}`);
+                        const isLessonCompleted = await checkLessonCompletion(nextLesson.id);
+                        
+                        // Nếu chưa hoàn thành hoặc chưa có progress, khởi tạo mới
+                        if (!isLessonCompleted) {
+                            console.log(`Initializing progress for next lesson: ${nextLesson.id}`);
+                            await initLessonProgress(nextLesson.id);
+                        } else {
+                            console.log(`Next lesson ${nextLesson.id} is already completed or has progress`);
+                        }
+                    } catch (err) {
+                        console.error('Error initializing next lesson progress:', err);
+                    }
+                };
                 
-                // Chỉ khởi tạo chapter progress nếu chapter chưa hoàn thành
-                if (!completedChapters.includes(firstChapterOfNextLesson.id)) {
-                    initChapterProgress(firstChapterOfNextLesson.id);
+                // Khởi tạo lesson progress cho lesson tiếp theo
+                initNextLessonProgress();
+                
+                // Kiểm tra nếu lesson tiếp theo có chapter
+                if (nextLesson.chapter && nextLesson.chapter.length > 0) {
+                    // Sắp xếp các chapter trong lesson tiếp theo
+                    const sortedNextChapters = [...nextLesson.chapter].sort((a, b) => a.order - b.order);
+                    
+                    // Lấy chapter đầu tiên của lesson tiếp theo
+                    const firstChapterOfNextLesson = sortedNextChapters[0];
+                    
+                    // Cập nhật state với lesson và chapter mới
+                    setCurrentChapterId(nextLesson.id);
+                    setCurrentLessonId(firstChapterOfNextLesson.id);
+                    setCurrentChapter(nextLesson.description);
+                    setCurrentContent(firstChapterOfNextLesson);
+                    
+                    // Chỉ khởi tạo chapter progress nếu chapter chưa hoàn thành
+                    if (!completedChapters.includes(firstChapterOfNextLesson.id)) {
+                        initChapterProgress(firstChapterOfNextLesson.id);
+                    }
+                    
+                    // Luôn kiểm tra trạng thái hoàn thành
+                    checkChapterCompletion(firstChapterOfNextLesson.id);
+                    
+                    // Cuộn đến chapter mới
+                    setTimeout(() => {
+                        scrollToCurrentChapter(nextLesson.id, firstChapterOfNextLesson.id);
+                    }, 300);
                 }
-                
-                // Luôn kiểm tra trạng thái hoàn thành
-                checkChapterCompletion(firstChapterOfNextLesson.id);
-                
-                // Cuộn đến chapter mới
-                setTimeout(() => {
-                    scrollToCurrentChapter(nextLesson.id, firstChapterOfNextLesson.id);
-                }, 300);
             }
         }
     };
@@ -710,6 +774,10 @@ useEffect(() => {
             return;
         }
         
+        // Thiết lập quizId hiện tại từ quiz được chọn
+        const quizId = quiz?.id || `quiz-${lessonId}-${index}`;
+        setCurrentQuizId(quizId);
+        
         // Tạo danh sách tất cả các câu hỏi từ lessonQuiz
         const quizQuestions = lesson.lessonQuiz.map((quizItem, idx) => ({
             ...quizItem,
@@ -730,7 +798,8 @@ useEffect(() => {
             type: 'quiz',
             isQuiz: true,
             lessonId: lessonId,
-            allCompleted: allCompleted
+            allCompleted: allCompleted,
+            id: quizId // Thêm id của quiz vào currentContent
         });
         
         // Lấy các câu trả lời đã lưu trước đó (nếu có)
@@ -766,65 +835,131 @@ useEffect(() => {
         }));
     };
     
-    // Xử lý khi người dùng nộp bài kiểm tra
-    const handleQuizSubmit = (lessonId) => {
-        // Kiểm tra xem tất cả các câu hỏi đã được trả lời chưa
-        const allAnswered = allQuizQuestions.every(question => 
-            quizAnswers[question.quizId] !== undefined
-        );
-        
-        if (!allAnswered) {
-            alert('Vui lòng trả lời tất cả các câu hỏi trước khi nộp bài!');
-            return;
-        }
-        
-        // Kiểm tra từng câu trả lời
-        let allCorrect = true;
-        const resultDetails = allQuizQuestions.map(question => {
-            const userAnswer = quizAnswers[question.quizId];
-            const isCorrect = userAnswer === question.answer;
-            
-            if (!isCorrect) {
-                allCorrect = false;
+    // Hàm gọi API để đánh dấu lesson đã hoàn thành
+    const completeLesson = async (lessonId) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                console.error("No token found when completing lesson");
+                return null;
             }
             
-            return {
-                quizId: question.quizId,
-                isCorrect: isCorrect
-            };
-        });
-        
-        // Hiển thị kết quả tổng hợp
-        setQuizResult({
-            allCorrect,
-            details: resultDetails,
-            message: allCorrect 
-                ? 'Chúc mừng! Bạn đã hoàn thành tất cả các câu hỏi đúng.' 
-                : 'Rất tiếc! Một số câu trả lời của bạn chưa chính xác. Vui lòng thử lại.'
-        });
-        
-        // Đánh dấu đã nộp bài
-        setQuizSubmitted(true);
-        
-        // Nếu đúng hết, đánh dấu tất cả bài kiểm tra đã hoàn thành
-        if (allCorrect) {
-            const newCompletedQuizzes = [...completedQuizzes];
+            console.log('Sending request to complete lesson:', lessonId);
             
-            allQuizQuestions.forEach(question => {
-                if (!completedQuizzes.includes(question.quizId)) {
-                    newCompletedQuizzes.push(question.quizId);
+            const response = await axios.put(`${API_BASE_URL}/lessonprogress/completelesson/${lessonId}`, null, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
-            // Cập nhật state
-            setCompletedQuizzes(newCompletedQuizzes);
+            console.log('Complete lesson API response:', response.data);
             
-            // Lưu trạng thái vào localStorage
-            try {
-                localStorage.setItem('completedQuizzes', JSON.stringify(newCompletedQuizzes));
-            } catch (err) {
-                console.error('Error saving completed quizzes to localStorage:', err);
+            // Kiểm tra kết quả từ API
+            if (response.data && response.data.code === 0) {
+                console.log('Lesson successfully marked as completed');
+                
+                // Cập nhật danh sách lesson đã hoàn thành
+                setCompletedLessonIds(prev => {
+                    if (prev.includes(lessonId)) {
+                        return prev;
+                    }
+                    return [...prev, lessonId];
+                });
+                
+                toast.success('Đã hoàn thành bài học!');
+                return response.data;
+            } else {
+                const errorMsg = response.data?.message || 'Unknown error when completing lesson';
+                console.error('Failed to complete lesson:', errorMsg);
+                toast.error(`Không thể hoàn thành bài học. Lỗi: ${errorMsg}`);
+                return null;
             }
+        } catch (err) {
+            console.error('Error completing lesson:', err);
+            toast.error('Có lỗi xảy ra khi đánh dấu hoàn thành bài học. Vui lòng thử lại sau.');
+            return null;
+        }
+    };
+
+    // Thêm hàm xử lý nộp bài kiểm tra
+    const handleQuizSubmit = async () => {
+        try {
+            // Kiểm tra xem đã trả lời hết các câu hỏi chưa
+            const unansweredQuestions = Object.entries(quizAnswers).filter(([_, answer]) => answer === null);
+            
+            if (unansweredQuestions.length > 0) {
+                toast.warning(`Bạn cần trả lời tất cả ${allQuizQuestions.length} câu hỏi trước khi nộp bài`);
+                return;
+            }
+            
+            // Kiểm tra kết quả
+            let correctAnswers = 0;
+            const results = {};
+            
+            allQuizQuestions.forEach(question => {
+                // Sử dụng quizId hoặc id tuỳ theo cấu trúc dữ liệu
+                const questionId = question.id || question.quizId;
+                const correctAnswer = question.correctAnswer || question.answer;
+                const userAnswer = quizAnswers[questionId];
+                
+                const isCorrect = userAnswer === correctAnswer;
+                results[questionId] = isCorrect;
+                if (isCorrect) correctAnswers++;
+            });
+            
+            const score = (correctAnswers / allQuizQuestions.length) * 100;
+            
+            // Lưu kết quả vào state
+            setQuizResult({
+                score,
+                results,
+                correctAnswers,
+                totalQuestions: allQuizQuestions.length,
+                isPassed: score === 100,
+                allCorrect: score === 100, // Để tương thích với code cũ
+                message: score === 100 
+                    ? 'Chúc mừng! Bạn đã hoàn thành tất cả các câu hỏi đúng.' 
+                    : 'Rất tiếc! Một số câu trả lời của bạn chưa chính xác. Vui lòng thử lại.'
+            });
+            
+            setQuizSubmitted(true);
+            
+            // Nếu đạt 100%, cập nhật tiến độ
+            if (score === 100) {
+                const token = localStorage.getItem('authToken');
+                
+                // Thêm quiz vào danh sách đã hoàn thành
+                if (currentQuizId) {
+                    setCompletedQuizzes(prev => [...prev, currentQuizId]);
+                    
+                    // Cập nhật tiến độ học tập lên server
+                    try {
+                        await axios.post(`${API_BASE_URL}/progress/quizzes/${currentQuizId}`, {}, {
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            }
+                        });
+                    } catch (err) {
+                        console.error("Error updating quiz progress:", err);
+                    }
+                }
+                
+                // Kiểm tra nếu tất cả các chapter trong lesson đã hoàn thành
+                const allCompleted = isAllChaptersCompleted(currentChapterId);
+                
+                // Nếu tất cả chapter đã hoàn thành và bài kiểm tra cũng đã hoàn thành,
+                // đánh dấu lesson là đã hoàn thành
+                if (allCompleted) {
+                    await completeLesson(currentChapterId);
+                }
+                
+                toast.success('Hoàn thành bài kiểm tra thành công!');
+            } else {
+                toast.warning('Bạn cần trả lời đúng 100% câu hỏi để hoàn thành bài kiểm tra');
+            }
+        } catch (error) {
+            console.error('Error submitting quiz:', error);
+            toast.error('Đã xảy ra lỗi khi nộp bài kiểm tra');
         }
     };
     
@@ -1053,8 +1188,53 @@ useEffect(() => {
         }
     };
 
+    // Kiểm tra trạng thái hoàn thành của lesson
+    const checkLessonCompletion = async (lessonId) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                console.error("No token found when checking lesson completion");
+                return false;
+            }
+            
+            console.log('Checking completion for lesson:', lessonId);
+            
+            const response = await axios.get(`${API_BASE_URL}/lessonprogress/getprogress/${lessonId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            console.log('Lesson completion response:', response.data);
+            
+            // Kiểm tra kết quả từ API và xác định trạng thái hoàn thành
+            if (response.data && response.data.result) {
+                const isCompleted = response.data.result.isCompleted === true;
+                console.log(`Lesson ${lessonId} completion status:`, isCompleted);
+                
+                // Cập nhật danh sách các lesson đã hoàn thành
+                if (isCompleted) {
+                    setCompletedLessonIds(prev => {
+                        if (prev.includes(lessonId)) {
+                            return prev;
+                        }
+                        return [...prev, lessonId];
+                    });
+                }
+                
+                return isCompleted;
+            } else {
+                console.log(`Lesson ${lessonId} is not completed or no data found`);
+                return false;
+            }
+        } catch (err) {
+            console.error('Error checking lesson completion:', err);
+            return false;
+        }
+    };
+
     // Kiểm tra xem tất cả các chapter trong lesson đã hoàn thành chưa
-    const isLessonCompleted = (lessonId) => {
+    const isAllChaptersCompleted = (lessonId) => {
         // Lấy lesson cần kiểm tra
         const lesson = courseData?.lesson?.find(l => l.id === lessonId);
         if (!lesson?.chapter || lesson.chapter.length === 0) return true; // Nếu không có chapter nào thì coi như đã hoàn thành
@@ -1066,11 +1246,11 @@ useEffect(() => {
         
         return allChaptersCompleted;
     };
-    
+
     // Kiểm tra xem bài kiểm tra có được phép làm hay không
     const isQuizAccessible = (lessonId) => {
         // Kiểm tra xem tất cả các chapter trong lesson đã hoàn thành chưa
-        return isLessonCompleted(lessonId);
+        return isAllChaptersCompleted(lessonId);
     };
 
     // Hook để load danh sách bài kiểm tra đã hoàn thành từ localStorage khi component mount
@@ -1085,6 +1265,76 @@ useEffect(() => {
         }
     }, []);
 
+    // Hàm gọi API để khởi tạo lesson progress
+    const initLessonProgress = async (lessonId) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                console.error("No token found when initializing lesson");
+                return null;
+            }
+            
+            console.log('Initializing progress for lesson:', lessonId);
+            
+            const response = await axios.post(`${API_BASE_URL}/lessonprogress/savelessonprogress/${lessonId}`, null, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            console.log('Lesson progress initialized:', response.data);
+            return response.data;
+        } catch (err) {
+            console.error('Error initializing lesson progress:', err);
+            return null;
+        }
+    };
+
+    // Kiểm tra tất cả các lesson trong khóa học để xác định lesson đã hoàn thành
+    useEffect(() => {
+        const checkAllLessonsCompletion = async () => {
+            if (!courseData?.lesson || courseData.lesson.length === 0) {
+                console.log("No lessons found in course data");
+                return;
+            }
+            
+            console.log("Checking completion status for all lessons");
+            
+            const allLessonIds = courseData.lesson.map(lesson => lesson.id);
+            console.log(`Found ${allLessonIds.length} lessons to check`);
+            
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                console.error("No token found when checking all lessons");
+                return;
+            }
+            
+            try {
+                const completedIds = [];
+                
+                for (const lessonId of allLessonIds) {
+                    const isCompleted = await checkLessonCompletion(lessonId);
+                    if (isCompleted) {
+                        completedIds.push(lessonId);
+                    }
+                }
+                
+                console.log(`Found ${completedIds.length} completed lessons:`, completedIds);
+                
+                // Cập nhật state với danh sách lesson đã hoàn thành
+                if (completedIds.length > 0) {
+                    setCompletedLessonIds(completedIds);
+                }
+            } catch (err) {
+                console.error('Error checking all lessons completion:', err);
+            }
+        };
+        
+        if (courseData) {
+            checkAllLessonsCompletion();
+        }
+    }, [courseData]);
+
     if (loading) return <div>Đang tải...</div>;
     if (error) return <div>Có lỗi xảy ra: {error}</div>;
     if (!courseData) return <div>Không tìm thấy khóa học</div>;
@@ -1092,8 +1342,15 @@ useEffect(() => {
     // Calculate total lessons and completed lessons
     const totalLessons = courseData.lesson.reduce((total, chapter) => 
         total + (chapter.chapter ? chapter.chapter.length : 0), 0);
-    const completedLessons = completedChapters.length; // Số chapter đã hoàn thành
+
+    // Tính toán số chapter đã hoàn thành
+    const completedLessons = completedChapters.length;
+
+    // Tính toán tỷ lệ phần trăm hoàn thành khóa học
     const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+    // Tính số lesson đã hoàn thành
+    const completedLessonCount = completedLessonIds.length;
 
     // Kiểm tra xem chapter hiện tại có phải là chapter cuối cùng của lesson cuối cùng không
     const isLastChapterOfLastLesson = (lessonId, chapterId) => {
@@ -1341,9 +1598,8 @@ useEffect(() => {
                                     <div className="quiz-actions">
                                         {!quizSubmitted ? (
                                             <button 
-                                                className="submit-quiz-button"
-                                                onClick={() => handleQuizSubmit(currentContent.lessonId)}
-                                                disabled={allQuizQuestions.some(q => !quizAnswers[q.quizId])}
+                                                className="btn btn-primary" 
+                                                onClick={handleQuizSubmit}
                                             >
                                                 Nộp bài
                                             </button>

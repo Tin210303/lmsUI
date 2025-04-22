@@ -388,11 +388,151 @@
 }
 
 .bell-icon {
-    color: #555;
+    position: relative;
+    cursor: pointer;
+    margin-right: 15px;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #f44336;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: -100px;
+    width: 350px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.notification-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.notification-action {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+}
+
+.notification-action:hover {
+    color: #2b6cb0;
+}
+
+.notification-list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.notification-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f4f4f4;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: background-color 0.2s;
     cursor: pointer;
 }
 
-.bell-icon svg {
-    display: block; /* Prevent extra space below svg */
+.notification-item:hover {
+    background-color: #f9f9f9;
 }
 
+.notification-icon {
+    background-color: #e6f7ff;
+    color: #1890ff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.notification-message {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.notification-time {
+    font-size: 11px;
+    color: #999;
+    margin-top: 5px;
+}
+
+.notification-unread {
+    background-color: #f0f8ff;
+}
+
+.notification-unread .notification-title {
+    font-weight: 600;
+}
+
+.notification-empty {
+    padding: 30px 15px;
+    text-align: center;
+    color: #999;
+}
+
+.notification-footer {
+    padding: 12px 15px;
+    text-align: center;
+    border-top: 1px solid #eee;
+}
+
+.notification-footer a {
+    color: #2b6cb0;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.notification-footer a:hover {
+    text-decoration: underline;
+}
