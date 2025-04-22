@@ -5,7 +5,7 @@ import { Document, Page } from '@react-pdf/renderer';
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
 
-const LearningContent = ({ currentLesson }) => {
+const LearningContent = ({ currentLesson, onVideoEnded, onDownload }) => {
     const token = localStorage.getItem('authToken');
     const [mediaUrl, setMediaUrl] = useState(null);
     const [fileContent, setFileContent] = useState(null);
@@ -297,6 +297,14 @@ const LearningContent = ({ currentLesson }) => {
                                 controls 
                                 className="video-player"
                                 key={mediaUrl}
+                                onEnded={(e) => {
+                                    console.log('Video ended event triggered');
+                                    if (typeof onVideoEnded === 'function') {
+                                        onVideoEnded();
+                                    } else {
+                                        console.error('onVideoEnded is not a function or not provided');
+                                    }
+                                }}
                             >
                                 <source 
                                     src={mediaUrl}

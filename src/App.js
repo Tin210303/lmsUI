@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ScrollOnTop from './setting/ScrollOnTop';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import StudentLayout from './layouts/StudentLayout';
 import TeacherLayout from './layouts/TeacherLayout';
@@ -32,6 +34,7 @@ function App() {
     <Router>
       <AuthProvider>
         <ScrollOnTop />
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
         <Routes>
           {/* Trang chính (dùng layout chung hoặc sinh viên) */}
           <Route path="/" element={
