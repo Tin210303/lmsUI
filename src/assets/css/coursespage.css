@@ -297,3 +297,77 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Thêm CSS cho trạng thái đang tải ảnh */
+.image-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 200px;
+    background-color: #f0f0f0;
+    color: #666;
+    font-size: 14px;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+    position: relative;
+}
+
+.image-loading::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-top-color: #0066cc;
+    border-radius: 50%;
+    position: absolute;
+    top: calc(50% - 20px);
+    left: calc(50% - 10px);
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Thêm CSS cho trạng thái đang tải ảnh */
+.image-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 200px;
+    background-color: #f0f0f0;
+    color: #666;
+    font-size: 14px;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+    position: relative;
+}
+
+.image-loading::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-top-color: #0066cc;
+    border-radius: 50%;
+    position: absolute;
+    top: calc(50% - 20px);
+    left: calc(50% - 10px);
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

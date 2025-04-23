@@ -64,7 +64,9 @@ const CourseCard = ({ course }) => {
                 
                 // Update course image if available
                 if (courseDetails.image) {
-                    setCourseImage(courseDetails.image);
+                    // Tạo URL đầy đủ từ tên file ảnh
+                    const imageUrl = `http://localhost:8080/lms/course/image/${courseDetails.image}`;
+                    setCourseImage(imageUrl);
                 }
             } catch (err) {
                 console.error('Error fetching data:', err);

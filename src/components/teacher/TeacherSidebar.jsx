@@ -1,7 +1,7 @@
 import React from 'react';
 import '../../assets/css/sidebar.css';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BookOpenCheck, MessageSquareText} from 'lucide-react';
+import { BookOpenCheck, MessageSquareText, Newspaper} from 'lucide-react';
 
 const Sidebar = () => {
     const navigate = useNavigate();
@@ -10,6 +10,7 @@ const Sidebar = () => {
     const navItems = [
         { key: 'courses', label: 'Khóa học', icon: <BookOpenCheck size={20} />, path: '/teacher/dashboard' },
         { key: 'forum', label: 'Diễn đàn', icon: <MessageSquareText size={20} />, path: '/teacher/forum' },
+        { key: 'posts', label: 'Tài liệu', icon: <Newspaper size={20} />, path: '/teacher/documents' },
     ];
 
     return (

@@ -8,19 +8,19 @@ import '../../assets/css/learning-page.css';
 import CommentSection from './CommentSection';
 import LearningContent from './LearningContent';
 
-    // Định nghĩa API_BASE_URL
-    const API_BASE_URL = 'http://localhost:8080/lms';
+// Định nghĩa API_BASE_URL
+const API_BASE_URL = 'http://localhost:8080/lms';
 
-    const LearningPage = () => {
-    const { id } = useParams();
-    const navigate = useNavigate();
+const LearningPage = () => {
+const { id } = useParams();
+const navigate = useNavigate();
     const [courseData, setCourseData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentChapterId, setCurrentChapterId] = useState(null);
     const [currentLessonId, setCurrentLessonId] = useState(null);
-    const [currentChapter, setCurrentChapter] = useState('');
-    const [sidebarVisible, setSidebarVisible] = useState(true);
+const [currentChapter, setCurrentChapter] = useState('');
+const [sidebarVisible, setSidebarVisible] = useState(true);
     const [currentContent, setCurrentContent] = useState(null);
     const [currentQuizId, setCurrentQuizId] = useState(null);
     const [chapterCompleted, setChapterCompleted] = useState(false);
@@ -41,7 +41,7 @@ import LearningContent from './LearningContent';
     const sidebarRef = useRef(null);
 
     // Fetch course data from API
-    useEffect(() => {
+useEffect(() => {
         const fetchCourseData = async () => {
             try {
                 const token = localStorage.getItem('authToken');
@@ -291,28 +291,56 @@ import LearningContent from './LearningContent';
                 return null;
             }
             
-            console.log('Initializing progress for chapter:', chapterId);
+            console.log('Checking if chapter progress exists:', chapterId);
             
-            const response = await axios.post(`${API_BASE_URL}/lessonchapterprogress/savechapterprogress/${chapterId}`, null, {
+            // Trước tiên, kiểm tra xem chapter progress đã tồn tại chưa
+            const progressResponse = await axios.get(`${API_BASE_URL}/lessonchapterprogress/getprogress/${chapterId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             
-            console.log('Chapter progress initialized:', response.data);
+            console.log('Chapter progress check response:', progressResponse.data);
             
-            // Chỉ cập nhật nếu response.data.result tồn tại và có isCompleted = true
-            if (response.data && response.data.result && response.data.result.isCompleted === true) {
-                setCompletedChapters(prev => {
-                    // Kiểm tra nếu chapterId đã tồn tại trong danh sách
-                    if (prev.includes(chapterId)) {
-                        return prev;
+            // Nếu không có kết quả hoặc isCompleted là null, mới khởi tạo progress
+            if (!progressResponse.data.result || progressResponse.data.result.isCompleted === null) {
+                console.log('Initializing progress for chapter:', chapterId);
+                
+                const response = await axios.post(`${API_BASE_URL}/lessonchapterprogress/savechapterprogress/${chapterId}`, null, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
-                    return [...prev, chapterId];
                 });
+                
+                console.log('Chapter progress initialized:', response.data);
+                
+                // Chỉ cập nhật nếu response.data.result tồn tại và có isCompleted = true
+                if (response.data && response.data.result && response.data.result.isCompleted === true) {
+                    setCompletedChapters(prev => {
+                        // Kiểm tra nếu chapterId đã tồn tại trong danh sách
+                        if (prev.includes(chapterId)) {
+                            return prev;
+                        }
+                        return [...prev, chapterId];
+                    });
+                }
+                
+                return response.data;
+            } else {
+                console.log(`Chapter ${chapterId} progress already exists with isCompleted=${progressResponse.data.result.isCompleted}, skipping initialization`);
+                
+                // Nếu isCompleted là true, cập nhật danh sách chapter đã hoàn thành
+                if (progressResponse.data.result.isCompleted === true) {
+                    setCompletedChapters(prev => {
+                        if (prev.includes(chapterId)) {
+                            return prev;
+                        }
+                        return [...prev, chapterId];
+                    });
+                }
+                
+                return progressResponse.data;
             }
-            
-            return response.data;
         } catch (err) {
             console.error('Error initializing chapter progress:', err);
             return null;
@@ -1268,22 +1296,67 @@ const handleBackToCourses = () => {
     // Hàm gọi API để khởi tạo lesson progress
     const initLessonProgress = async (lessonId) => {
         try {
+            // Kiểm tra nếu lesson đã hoàn thành thì không cần khởi tạo
+            if (completedLessonIds.includes(lessonId)) {
+                console.log(`Lesson ${lessonId} already completed, skipping initialization`);
+                return { result: { isCompleted: true } };
+            }
+            
             const token = localStorage.getItem('authToken');
             if (!token) {
                 console.error("No token found when initializing lesson");
                 return null;
             }
             
-            console.log('Initializing progress for lesson:', lessonId);
+            console.log('Checking if lesson progress exists:', lessonId);
             
-            const response = await axios.post(`${API_BASE_URL}/lessonprogress/savelessonprogress/${lessonId}`, null, {
+            // Trước tiên, kiểm tra xem lesson progress đã tồn tại chưa
+            const progressResponse = await axios.get(`${API_BASE_URL}/lessonprogress/getprogress/${lessonId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             
-            console.log('Lesson progress initialized:', response.data);
-            return response.data;
+            console.log('Lesson progress check response:', progressResponse.data);
+            
+            // Nếu không có kết quả hoặc isCompleted là null, mới khởi tạo progress
+            if (!progressResponse.data.result || progressResponse.data.result.isCompleted === null) {
+                console.log('Initializing progress for lesson:', lessonId);
+                
+                const response = await axios.post(`${API_BASE_URL}/lessonprogress/savelessonprogress/${lessonId}`, null, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                console.log('Lesson progress initialized:', response.data);
+                
+                // Chỉ cập nhật nếu response.data.result tồn tại và có isCompleted = true
+                if (response.data && response.data.result && response.data.result.isCompleted === true) {
+                    setCompletedLessonIds(prev => {
+                        if (prev.includes(lessonId)) {
+                            return prev;
+                        }
+                        return [...prev, lessonId];
+                    });
+                }
+                
+                return response.data;
+            } else {
+                console.log(`Lesson ${lessonId} progress already exists with isCompleted=${progressResponse.data.result.isCompleted}, skipping initialization`);
+                
+                // Nếu isCompleted là true, cập nhật danh sách lesson đã hoàn thành
+                if (progressResponse.data.result.isCompleted === true) {
+                    setCompletedLessonIds(prev => {
+                        if (prev.includes(lessonId)) {
+                            return prev;
+                        }
+                        return [...prev, lessonId];
+                    });
+                }
+                
+                return progressResponse.data;
+            }
         } catch (err) {
             console.error('Error initializing lesson progress:', err);
             return null;
@@ -1443,21 +1516,13 @@ const handleBackToCourses = () => {
                         />
                     ) : currentContent?.lessonType === 'material' ? (
                         <div className="material-content">
-                            <h2>{currentContent.name}</h2>
-                            <div className="file-wrapper">
-                                <div className="file-header">
+                            <div className="file-material-wrapper">
+                                <div className="file-material-header">
                                     <div className="learning-file-info">
                                         <FileText size={24} />
                                         <h3>{currentContent.name}</h3>
                                     </div>
                                     <div className="file-actions">
-                                        <button 
-                                            className="view-button"
-                                            onClick={() => window.open(`http://localhost:8080${currentContent.path}`, '_blank')}
-                                        >
-                                            <BookOpen size={16} />
-                                            Xem tài liệu
-                                        </button>
                                         <button 
                                             className="download-button"
                                             onClick={() => handleDownload(currentContent)}
@@ -1467,62 +1532,6 @@ const handleBackToCourses = () => {
                                             {downloadLoading ? 'Đang tải...' : 'Tải xuống'}
                                         </button>
                                     </div>
-                                </div>
-                                <div className="material-body">
-                                    {currentContent.fileType === 'pdf' && (
-                                        <div className="pdf-preview">
-                                            <div className="file-actions pdf-actions">
-                                                <button 
-                                                    className="download-button"
-                                                    onClick={() => handleDownload(currentContent)}
-                                                    disabled={downloadLoading}
-                                                >
-                                                    <Download size={16} />
-                                                    {downloadLoading ? 'Đang tải...' : 'Tải xuống'}
-                                                </button>
-                                            </div>
-                                            <iframe 
-                                                src={`http://localhost:8080${currentContent.path}#toolbar=0`} 
-                                                title={currentContent.name}
-                                                width="100%"
-                                                height="600px"
-                                                style={{border: 'none'}}
-                                            />
-                                        </div>
-                                    )}
-                                    {currentContent.fileType === 'image' && (
-                                        <div className="image-preview">
-                                            <img 
-                                                src={`http://localhost:8080${currentContent.path}`} 
-                                                alt={currentContent.name} 
-                                                style={{maxWidth: '100%'}}
-                                            />
-                                        </div>
-                                    )}
-                                    {['document', 'spreadsheet', 'presentation', 'unknown'].includes(currentContent.fileType) && (
-                                        <div className="file-info">
-                                            <p>Tài liệu này không hỗ trợ xem trực tiếp. Vui lòng tải xuống hoặc mở trong tab mới để xem.</p>
-                                            <div className="file-buttons">
-                                                <a 
-                                                    href={`http://localhost:8080${currentContent.path}`} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer" 
-                                                    className="material-link"
-                                                >
-                                                    <BookOpen size={16} />
-                                                    Mở trong tab mới
-                                                </a>
-                                                <button 
-                                                    className="material-download"
-                                                    onClick={() => handleDownload(currentContent)}
-                                                    disabled={downloadLoading}
-                                                >
-                                                    <Download size={16} />
-                                                    {downloadLoading ? 'Đang tải...' : 'Tải xuống'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1582,9 +1591,6 @@ const handleBackToCourses = () => {
                                                         );
                                                     })}
                                                 </div>
-                                                {qIndex < allQuizQuestions.length - 1 && (
-                                                    <hr className="quiz-divider" />
-                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -1713,7 +1719,7 @@ const handleBackToCourses = () => {
                                         {/* Materials */}
                                         {chapter.lessonMaterial && chapter.lessonMaterial.length > 0 && (
                                             <>
-                                            <div className="section-header">
+                                            <div className="section-learning-header">
                                                 <span>Tài liệu học tập ({chapter.lessonMaterial.length})</span>
                                             </div>
                                                 <div className="materials-list">
@@ -1756,7 +1762,7 @@ const handleBackToCourses = () => {
                                         {/* Quizzes */}
                                         {chapter.lessonQuiz && chapter.lessonQuiz.length > 0 && (
                                             <>
-                                            <div className="section-header">
+                                            <div className="section-learning-header">
                                                 <span>Bài kiểm tra ({chapter.lessonQuiz.length})</span>
                                         </div>
                                                 <div className="quiz-list">

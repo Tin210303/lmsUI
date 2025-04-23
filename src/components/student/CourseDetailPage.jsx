@@ -279,7 +279,9 @@ const CourseDetailPage = () => {
                                 {openChapters[lesson.id] && (
                                     <ul className="lesson-list">
                                         {lesson.chapter && lesson.chapter.length > 0 ? (
-                                            lesson.chapter.map((chapter, chapterIdx) => (
+                                            [...lesson.chapter]
+                                                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                                .map((chapter, chapterIdx) => (
                                                 <li key={chapter.id || chapterIdx}>
                                                     <div className='d-flex align-center'>
                                                         <CirclePlay size={16} color='#066fbf' opacity={0.4}/>

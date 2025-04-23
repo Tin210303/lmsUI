@@ -10,6 +10,8 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     const [lessonCount, setLessonCount] = useState(course?.lessonCount || '0');
     const [teacherName, setTeacherName] = useState(course.teacher?.fullName || 'N/A');
     const [studentCount, setStudentCount] = useState(course?.studentCount || '0');
+    const [courseImage, setCourseImage] = useState(null);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -26,7 +28,11 @@ const CourseCard = ({ course, isEnrolled = false }) => {
                 });
                 setStudents(studentsResponse.data.result || []);
 
-                
+                if (course.image) {
+                    // Tạo URL đầy đủ từ tên file ảnh
+                    const imageUrl = `http://localhost:8080/lms/course/image/${course.image}`;
+                    setCourseImage(imageUrl);
+                }
             } catch (err) {
                 console.error('Error fetching data:', err);
             } finally {
@@ -93,8 +99,8 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     return (
         <div className="course-card" onClick={handleClick}>
             <div className="course-image">
-                {course.image ? (
-                    <img src={course.image} alt={course.name} className="course-img" />
+                {courseImage ? (
+                    <img src={courseImage} alt={course.name} className="course-img" />
                 ) : (
                     <div className="course-placeholder" style={{ background: getConsistentColor(course.id) }}>
                         <div className="image-text">
