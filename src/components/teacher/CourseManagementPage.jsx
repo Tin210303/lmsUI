@@ -8,7 +8,6 @@ import Alert from '../common/Alert';
 
 const CourseManagementPage = () => {
     const { courseId } = useParams();
-    console.log(courseId);
     
     const location = useLocation();
     const navigate = useNavigate();
@@ -19,6 +18,7 @@ const CourseManagementPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
 
     // Form states
     const [formData, setFormData] = useState({
@@ -173,6 +173,35 @@ const CourseManagementPage = () => {
         }
     };
 
+    const handleRemoveStudent = async (studentId, courseId) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+            const formData = new FormData();
+            formData.append('courseId', courseId);
+            formData.append('studentId', studentId);
+
+            const response = await axios.request({
+                url: 'http://localhost:8080/lms/studentcourse/delete',
+                method: 'delete',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                },
+                data: formData
+            });
+
+            if (response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã xóa sinh viên khỏi khóa học.');
+                fetchData();
+            }
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || 'Có lỗi xảy ra khi xóa sinh viên khỏi khóa học.';
+            showAlert('error', 'Lỗi', errorMsg);
+            console.error('Error removing student:', err);
+        }
+    };
+
     const renderCourseInfo = () => (
         <div className="course-info-form">
             <h2>Thông tin khóa học</h2>
@@ -274,7 +303,9 @@ const CourseManagementPage = () => {
                                     <div className="student-email">{student.email}</div>
                                 </div>
                             </div>
-                            <button className="remove-member-btn"><Trash2 size={16}/></button>
+                            <button className="remove-member-btn" onClick={() => handleRemoveStudent(student.id, courseId)}>
+                                <Trash2 size={16}/>
+                            </button>
                         </div>
                     ))}
                 </div>

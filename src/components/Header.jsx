@@ -40,7 +40,7 @@ function Header() {
                 setLoadingMajors(true);
                 const response = await axios.get('http://localhost:8080/lms/major');
                 
-                if (response.data && response.data.code === 0 && Array.isArray(response.data.result)) {
+                if (response.data && response.data.code === 0) {
                     console.log('Danh sách chuyên ngành:', response.data.result);
                     setMajors(response.data.result);
                 } else {
@@ -255,7 +255,7 @@ function Header() {
 
             const response = await axios.post(apiUrl, registerData);
 
-            if (response.data && response.data.code === 1000) {
+            if (response.data && response.data.code === 0) {
                 alert('Đăng ký thành công! Vui lòng đăng nhập.');
                 openLoginModal();
             } else {

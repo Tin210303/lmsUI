@@ -96,6 +96,13 @@ const CourseCard = ({ course, isEnrolled = false }) => {
         });
     };
 
+    // Cắt ngắn tên giảng viên nếu quá dài
+    const truncateTeacherName = (name, maxLength = 11) => {
+        if (!name) return 'Giảng viên';
+        if (name.length <= maxLength) return name;
+        return name.substring(0, maxLength) + '..';
+    };
+
     return (
         <div className="course-card" onClick={handleClick}>
             <div className="course-image">
@@ -127,11 +134,11 @@ const CourseCard = ({ course, isEnrolled = false }) => {
                 </div>
             </div>
             <div className="course-stats">
-                <div className="stat-item">
+                <div className="stat-item" title={teacherName}>
                     <User size={16} />
-                    <span>{teacherName}</span>
+                    <span>{truncateTeacherName(teacherName)}</span>
                 </div>
-                <div className="stat-item">
+                <div className="stat-item" title={`${studentCount} sinh viên`}>
                     <Users size={16} />
                     <span>{studentCount}</span>
                 </div>

@@ -17,6 +17,7 @@ import Footer from './components/Footer';
 import CoursesPage from './components/student/CoursesPage';
 import CourseDetailPage from './components/student/CourseDetailPage';
 import LearningPage from './components/student/LearningPage';
+import ChatboxPage from './components/student/ChatboxPage';
 import TeacherDashboard from './components/teacher/TeacherDashboard';
 import TeacherAddCourse from './components/teacher/TeacherAddCourse';
 import TeacherCourseDetail from './components/teacher/TeacherCourseDetail';
@@ -72,6 +73,13 @@ function App() {
           <Route path="/learning/:id" element={
             <ProtectedRoute allowedRoles={['student']}>
                 <LearningPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentLayout>
+                <ChatboxPage />
+              </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/forum" element={

@@ -1491,11 +1491,11 @@ const handleBackToCourses = () => {
                     </div>
                     <button className="header-button">
                         <BookOpen size={16} />
-                        <span>Ghi chú</span>
+                        <span>Lịch sử hỏi đáp</span>
                     </button>
                     <button className="header-button">
                         <HelpCircle size={16} />
-                        <span>Hướng dẫn</span>
+                        <span>Hỏi Đáp</span>
                     </button>
                 </div>
             </header>
