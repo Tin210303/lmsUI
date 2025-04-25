@@ -1,0 +1,252 @@
+/* CSS cho StudentInfo component */
+.student-info-container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: inherit;
+}
+
+/* Student Profile Section */
+.student-profile {
+    display: flex;
+    margin-bottom: 40px;
+}
+
+.avatar-container {
+    margin-right: 30px;
+}
+
+.avatar-circle {
+    width: 160px;
+    height: 160px;
+    overflow: hidden;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.avatar-circle:hover {
+    opacity: 0.9;
+}
+
+.avatar-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.student-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.my-info-student-name {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.my-info-student-email, .my-info-student-major, .my-info-student-joined {
+    margin: 4px 0;
+    color: #555;
+    font-size: 16px;
+}
+
+.student-joined {
+    margin-top: 5px;
+    color: #777;
+}
+
+/* Avatar Modal */
+.avatar-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.avatar-modal {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 550px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.avatar-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.avatar-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.avatar-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.avatar-modal-close:hover {
+    color: #333;
+}
+
+.avatar-modal-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.avatar-modal-description {
+    text-align: center;
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.avatar-preview {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.upload-avatar-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 10px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+    margin-bottom: 10px;
+}
+
+.upload-avatar-button:hover {
+    background-color: #e0e0e0;
+}
+
+.save-avatar-button {
+    background-color: #066fbf;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+    margin-top: 10px;
+}
+
+.save-avatar-button:hover {
+    background-color: #0558a0;
+}
+
+.save-avatar-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Enrolled Courses Section */
+.myinfo-course-section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    padding-left: 10px;
+}
+
+.course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+/* Loading and Error states */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    font-size: 18px;
+    color: #666;
+}
+
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    font-size: 18px;
+    color: #e74c3c;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.no-courses-message {
+    text-align: center;
+    padding: 40px 0;
+    color: #666;
+    font-size: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .student-profile {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .avatar-container {
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+    
+    .course-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+    
+    .avatar-modal {
+        width: 95%;
+        max-width: 400px;
+    }
+    
+    .avatar-preview {
+        width: 150px;
+        height: 150px;
+    }
+}

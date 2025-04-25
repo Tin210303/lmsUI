@@ -256,7 +256,7 @@ const CourseDetailPage = () => {
                     <p>
                         <strong>{sortedLessons.length}</strong> chương · 
                         <strong>{displayLessonOrItemCount}</strong> {lessonOrItemText} · 
-                        Thời gian học: <strong>{formatDate(course.startDate)} - {formatDate(course.endDate)}</strong>
+                        Thời gian học: <strong>{formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}</strong>
                     </p>
                 </div>
 
@@ -351,11 +351,11 @@ const CourseDetailPage = () => {
                          isRegistering ? 'ĐANG ĐĂNG KÝ...' : 'ĐĂNG KÝ HỌC'}
                     </button>
                     <ul className="info-list">
-                        <li><SquareUser size={16} className='mr-16'/>Giảng viên: {course.teacher?.fullName || 'N/A'}</li>
+                        <li><SquareUser size={16} className='mr-16'/>Giảng viên: {course.teacher?.fullName || 'Người dạy học'}</li>
                         <li><GraduationCap size={16} className='mr-16'/>Chuyên ngành: {course.major}</li>
                         <li><Film size={16} className='mr-16'/> Tổng số {numChapters} chương / {displayLessonOrItemCount} {lessonOrItemText}</li>
                         <li><AlarmClock size={16} className='mr-16'/> {course.learningDurationType}</li>
-                        <li><Clock size={16} className='mr-16'/> Thời gian học: {formatDate(course.startDate)} - {formatDate(course.endDate)}</li>
+                        <li><Clock size={16} className='mr-16'/> Thời gian học: {formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}</li>
                     </ul>
                 </div>
             </div>
