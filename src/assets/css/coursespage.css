@@ -253,49 +253,48 @@
 /* Styling cho trang Courses */
 
 .section-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 20px;
-  border-left: 4px solid #066fbf;
-  padding-left: 10px;
+font-size: 24px;
+font-weight: 600;
+color: #333;
+border-left: 4px solid #066fbf;
+padding-left: 10px;
 }
 
 .my-courses-section, .popular-courses-section {
-  margin-bottom: 40px;
+margin-bottom: 40px;
 }
 
 .popular-courses-section .section-title {
-  border-left-color: #ff7a45;
+border-left-color: #ff7a45;
 }
 
 .empty-message {
-  background-color: #f5f5f5;
-  padding: 15px 20px;
-  border-radius: 8px;
-  color: #666;
-  font-style: italic;
-  text-align: center;
+background-color: #f5f5f5;
+padding: 15px 20px;
+border-radius: 8px;
+color: #666;
+font-style: italic;
+text-align: center;
 }
 
 /* Divider giữa các section */
 .section-divider {
-  height: 1px;
-  background-color: #eaeaea;
-  margin: 30px 0;
+height: 1px;
+background-color: #eaeaea;
+margin: 30px 0;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .courses-grid {
+.courses-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  }
+}
 }
 
 @media (max-width: 480px) {
-  .courses-grid {
+.courses-grid {
     grid-template-columns: 1fr;
-  }
+}
 }
 
 /* Thêm CSS cho trạng thái đang tải ảnh */
@@ -370,4 +369,145 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Section header with count */
+.courses-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.course-count {
+    font-size: 0.9rem;
+    color: #666;
+    background-color: #f5f5f5;
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-weight: 500;
+}
+
+/* Pagination styling */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    gap: 10px;
+}
+
+.pagination-btn {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #333;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+    color: white;
+    border-color: #0056b3;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    padding: 8px 12px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+/* Loading spinner */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 4px solid #0056b3;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments for pagination */
+@media (max-width: 768px) {
+    .pagination {
+        flex-wrap: wrap;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .course-count {
+        align-self: flex-start;
+    }
+}
+
+/* Load more button styles */
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    margin: 30px 0 20px;
+}
+
+.load-more-btn {
+    padding: 10px 24px;
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.load-more-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+    color: white;
+    border-color: #0056b3;
+}
+
+.load-more-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.spinner-border-sm {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 2px solid #fff;
+    animation: spin 0.8s linear infinite;
 }

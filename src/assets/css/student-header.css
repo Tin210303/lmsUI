@@ -27,15 +27,26 @@
     white-space: nowrap;
 }
 
-.search-box {
+.student-header-search-box {
     position: relative;
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    margin: 10px 0;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 20px;
 }
 
-.search-box input {
+.student-header-search-inputs {
+    display: flex;
+    border-radius: 30px;
+    padding: 6px;
+}
+
+.student-header-search-input-group {
+    position: relative;
+    flex: 1 1;
+    margin-right: 8px;
+}
+
+.student-header-search-box input {
     width: 100%;
     max-width: 400px;
     padding: 8px 16px 8px 40px; 
@@ -47,14 +58,15 @@
     font-family: inherit;
 }
 
-.search-icon {
+.student-header-search-icon {
     position: absolute;
-    left: 30%;
+    left: 12px;
     top: 50%;
-    transform: translateY(-40%);
-    pointer-events: none;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    z-index: 2;
 }
-
 
 .right-section {
     display: flex;

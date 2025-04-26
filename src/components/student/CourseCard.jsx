@@ -7,41 +7,43 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
+    console.log(course);
+    
     const [lessonCount, setLessonCount] = useState(course?.lessonCount || '0');
     const [teacherName, setTeacherName] = useState(course.teacher?.fullName || 'N/A');
     const [studentCount, setStudentCount] = useState(course?.studentCount || '0');
     const [courseImage, setCourseImage] = useState(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
+    // useEffect(() => {
+    //     const fetchData = async () => {
+    //         try {
+    //             const token = localStorage.getItem('authToken');
+    //             if (!token) {
+    //                 throw new Error('No authentication token found');
+    //             }
 
-                // Fetch students
-                const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse/${course.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                setStudents(studentsResponse.data.result || []);
+    //             // Fetch students
+    //             const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse/${course.id}`, {
+    //                 headers: {
+    //                     'Authorization': `Bearer ${token}`
+    //                 }
+    //             });
+    //             setStudents(studentsResponse.data.result || []);
 
-                if (course.image) {
-                    // Tạo URL đầy đủ từ tên file ảnh
-                    const imageUrl = `http://localhost:8080/lms/course/image/${course.image}`;
-                    setCourseImage(imageUrl);
-                }
-            } catch (err) {
-                console.error('Error fetching data:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    //             if (course.image) {
+    //                 // Tạo URL đầy đủ từ tên file ảnh
+    //                 const imageUrl = `http://localhost:8080/lms/course/image/${course.image}`;
+    //                 setCourseImage(imageUrl);
+    //             }
+    //         } catch (err) {
+    //             console.error('Error fetching data:', err);
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
 
-        fetchData();
-    }, [course.id]);
+    //     fetchData();
+    // }, [course.id]);
 
     // Hàm tạo slug từ tên khóa học
     const createSlug = (name) => {
@@ -144,7 +146,7 @@ const CourseCard = ({ course, isEnrolled = false }) => {
                 </div>
                 <div className="stat-item">
                     <Book size={16} />
-                    <span>{loading ? '...' : lessonCount} bài học</span>
+                    <span>{lessonCount} bài học</span>
                 </div>
             </div>
         </div>

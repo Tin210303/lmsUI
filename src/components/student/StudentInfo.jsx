@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../../assets/css/student-info.css';
 import axios from 'axios';
 import { getMyCourses } from '../../services/courseService';
+import { useAuth } from '../../context/AuthContext';
 import CourseCard from './CourseCard';
 import { X, Upload, Backpack } from 'lucide-react';
 
@@ -21,6 +22,25 @@ const StudentInfo = () => {
     const [selectedAvatar, setSelectedAvatar] = useState(null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState(null);
+    const { authToken } = useAuth();
+
+    const [loadingCourse, setLoadingCourse] = useState({
+        myCourses: true,
+        allCourses: true
+    });
+
+    const [loadingMore, setLoadingMore] = useState({
+        myCourses: false,
+        allCourses: false
+    });
+
+    // Pagination state for my courses
+    const [myCoursesPage, setMyCoursesPage] = useState({
+        pageNumber: 0,
+        pageSize: 8,
+        totalPages: 0,
+        totalElements: 0
+    });
 
     useEffect(() => {
         const fetchStudentInfo = async () => {
@@ -59,10 +79,6 @@ const StudentInfo = () => {
                     }
                 }
 
-                // Fetch enrolled courses
-                const coursesData = await getMyCourses();
-                setCourses(coursesData || []);
-
             } catch (err) {
                 console.error('Error fetching student data:', err);
                 setError('Failed to load student information. Please try again later.');
@@ -70,9 +86,28 @@ const StudentInfo = () => {
                 setLoading(false);
             }
         };
+        const fetchInitialMyCourses = async () => {
+            try {
+                setLoadingCourse(prev => ({ ...prev, myCourses: true }));
+                const data = await getMyCourses(0, myCoursesPage.pageSize);
+                console.log('Fetched initial my courses:', data);
+                setCourses(data.content || []);
+                setMyCoursesPage(prev => ({
+                    ...prev,
+                    pageNumber: 0, // Đảm bảo reset về trang đầu tiên
+                    totalPages: data.totalPages || 1,
+                    totalElements: data.totalElements || 0
+                }));
+                setLoadingCourse(prev => ({ ...prev, myCourses: false }));
+            } catch (error) {
+                console.error('Error fetching initial my courses:', error);
+                setLoadingCourse(prev => ({ ...prev, myCourses: false }));
+            }
+        };
 
+        fetchInitialMyCourses()
         fetchStudentInfo();
-    }, []);
+    }, [authToken]);
 
     const fetchAvatar = async (avatarPath) => {
         if (!avatarPath) return;
@@ -168,6 +203,35 @@ const StudentInfo = () => {
         }
     };
 
+    // Load more my courses
+    const loadMoreMyCourses = async () => {
+        if (myCoursesPage.pageNumber >= myCoursesPage.totalPages - 1) return;
+        
+        setLoadingMore(prev => ({ ...prev, myCourses: true }));
+        
+        try {
+            const nextPage = myCoursesPage.pageNumber + 1;
+            console.log('Loading more my courses, page:', nextPage);
+            const data = await getMyCourses(nextPage, myCoursesPage.pageSize);
+            
+            if (data.content && data.content.length > 0) {
+                console.log('Appending new my courses:', data.content.length);
+                // Append new courses to existing list
+                setCourses(prev => [...prev, ...data.content]);
+                
+                // Update pagination state
+                setCourses(prev => ({
+                    ...prev,
+                    pageNumber: nextPage,
+                }));
+            }
+        } catch (error) {
+            console.error('Error loading more my courses:', error);
+        } finally {
+            setLoadingMore(prev => ({ ...prev, myCourses: false }));
+        }
+    };
+
     if (loading) {
         return <div className="loading-container">Đang tải thông tin sinh viên...</div>;
     }
@@ -211,15 +275,33 @@ const StudentInfo = () => {
                     <h3 className="myinfo-course-section-title">Khóa học đã đăng ký ({courses.length})</h3>
                 </div>
                 {courses.length > 0 ? (
-                    <div className="course-grid">
-                        {courses.map(course => (
-                            <CourseCard 
-                                key={course.id} 
-                                course={course} 
-                                isEnrolled={true}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="course-grid">
+                            {courses.map(course => (
+                                <CourseCard key={course.id} course={course} isEnrolled={true} />
+                            ))}
+                        </div>
+
+                        {/* See More Button for My Courses */}
+                        {myCoursesPage.pageNumber < myCoursesPage.totalPages - 1 && (
+                            <div className="load-more-container">
+                                <button 
+                                    className="load-more-btn" 
+                                    onClick={loadMoreMyCourses}
+                                    disabled={loadingMore.myCourses}
+                                >
+                                    {loadingMore.myCourses ? (
+                                        <>
+                                            <span className="spinner-border-sm"></span>
+                                            Đang tải...
+                                        </>
+                                    ) : (
+                                        'Xem thêm khóa học'
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <p className="no-courses-message">Bạn chưa đăng ký khóa học nào.</p>
                 )}

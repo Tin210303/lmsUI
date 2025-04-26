@@ -61,7 +61,7 @@ export const getCourseById = async (courseId) => {
     }
 };
 
-export const getAllCourses = async () => {
+export const getAllCourses = async (pageNumber = 0, pageSize = 8) => {
     try {
         // Lấy token từ localStorage và kiểm tra
         let token = localStorage.getItem('authToken');
@@ -76,12 +76,18 @@ export const getAllCourses = async () => {
         if (!token) {
             console.error('Token không tồn tại, cần đăng nhập lại');
             window.location.href = '/'; // Chuyển về trang chủ nếu không có token
-            return [];
+            return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
         }
         
         console.log('Using token for courses:', token.substring(0, 15) + '...');
+        console.log('Pagination params for all courses: pageNumber=', pageNumber, 'pageSize=', pageSize);
         
+        // Gọi API với các tham số phân trang
         const response = await axios.get(`${API_URL}/course`, {
+            params: {
+                pageNumber: pageNumber,
+                pageSize: pageSize
+            },
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -91,10 +97,28 @@ export const getAllCourses = async () => {
         
         console.log('All courses API response:', response.data);
         
-        if (response.data.code === 0 && Array.isArray(response.data.result)) {
-            return response.data.result;
+        // Xử lý kết quả và thông tin phân trang
+        if (response.data.code === 0) {
+            if (response.data.result && Array.isArray(response.data.result.content)) {
+                // Cấu trúc API trả về thông tin phân trang chuẩn
+                return {
+                    content: response.data.result.content,
+                    totalPages: response.data.result.page.totalPages || 1,
+                    totalElements: response.data.result.page.totalElements || response.data.result.content.length,
+                    pageNumber: response.data.result.page.number || 0
+                };
+            } else if (Array.isArray(response.data.result)) {
+                // Cấu trúc API trả về mảng đơn giản, không có thông tin phân trang
+                return {
+                    content: response.data.result,
+                    totalPages: 1,
+                    totalElements: response.data.result.length,
+                    pageNumber: 0
+                };
+            }
         }
-        return [];
+        
+        return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
     } catch (error) {
         console.error('Error fetching courses:', error);
         
@@ -111,11 +135,89 @@ export const getAllCourses = async () => {
         }
         
         console.error('Error details:', error.response?.data || error.message);
-        return [];
+        return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
     }
 };
 
-export const getMyCourses = async () => {
+export const getCoursesMajorFirst = async (pageNumber = 0, pageSize = 8) => {
+    try {
+        // Lấy token từ localStorage và kiểm tra
+        let token = localStorage.getItem('authToken');
+        
+        // Kiểm tra nếu đang trong môi trường development và không có token
+        if (!token && process.env.NODE_ENV === 'development') {
+            // Sử dụng token mẫu từ screenshot trước đó
+            token = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsZXRpZW5AdGVhY2hlci5jb20iLCJyb2xlIjoiVEVBQ0hFUiIsImlhdCI6MTY3MjUwMzYwMCwiZXhwIjoxNjcyNTA3MjAwfQ.5eH5rcXitROX9QvvhXkQcxoKEU-QTHT8NVEIERoG5MI';
+            console.warn('Đang sử dụng token mẫu cho môi trường development');
+        }
+        
+        if (!token) {
+            console.error('Token không tồn tại, cần đăng nhập lại');
+            window.location.href = '/'; // Chuyển về trang chủ nếu không có token
+            return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
+        }
+        
+        console.log('Using token for courses:', token.substring(0, 15) + '...');
+        console.log('Pagination params for all courses: pageNumber=', pageNumber, 'pageSize=', pageSize);
+        
+        // Gọi API với các tham số phân trang
+        const response = await axios.get(`${API_URL}/course/courseofmajorfirst`, {
+            params: {
+                pageNumber: pageNumber,
+                pageSize: pageSize
+            },
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        console.log('All courses API response:', response.data);
+        
+        // Xử lý kết quả và thông tin phân trang
+        if (response.data.code === 0) {
+            if (response.data.result && Array.isArray(response.data.result.content)) {
+                // Cấu trúc API trả về thông tin phân trang chuẩn
+                return {
+                    content: response.data.result.content,
+                    totalPages: response.data.result.page.totalPages || 1,
+                    totalElements: response.data.result.page.totalElements || response.data.result.content.length,
+                    pageNumber: response.data.result.page.number || 0
+                };
+            } else if (Array.isArray(response.data.result)) {
+                // Cấu trúc API trả về mảng đơn giản, không có thông tin phân trang
+                return {
+                    content: response.data.result,
+                    totalPages: 1,
+                    totalElements: response.data.result.length,
+                    pageNumber: 0
+                };
+            }
+        }
+        
+        return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
+    } catch (error) {
+        console.error('Error fetching courses:', error);
+        
+        // Xử lý lỗi 401 Unauthorized (token hết hạn)
+        if (error.response && error.response.status === 401) {
+            console.error('Token đã hết hạn hoặc không hợp lệ, cần đăng nhập lại');
+            // Xóa dữ liệu đăng nhập và chuyển về trang chủ
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenExpiry');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('role');
+            window.location.href = '/';
+        }
+        
+        console.error('Error details:', error.response?.data || error.message);
+        return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
+    }
+};
+
+export const getMyCourses = async (pageNumber = 0, pageSize = 10) => {
     try {
         // Lấy token từ localStorage và kiểm tra
         let token = localStorage.getItem('authToken');
@@ -129,12 +231,22 @@ export const getMyCourses = async () => {
         if (!token) {
             console.error('getMyCourses: Token không tồn tại, cần đăng nhập lại');
             window.location.href = '/';
-            return [];
+            return { content: [], totalPages: 0, totalElements: 0 };
         }
 
         console.log('Fetching my courses with token:', token.substring(0, 15) + '...');
+        console.log('Pagination params: pageNumber=', pageNumber, 'pageSize=', pageSize);
+
+        // Create FormData object for sending pageNumber and pageSize
+        const formData = new FormData();
+        formData.append('pageNumber', pageNumber);
+        formData.append('pageSize', pageSize);
 
         const response = await axios.get(`${API_URL}/studentcourse/mycourse`, {
+            params: {
+                pageNumber: pageNumber,
+                pageSize: pageSize
+            },
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -144,11 +256,27 @@ export const getMyCourses = async () => {
 
         console.log('My courses API response:', response.data);
 
-        // Giả sử API trả về cấu trúc tương tự: { code: 0, result: [...] }
-        if (response.data.code === 0 && Array.isArray(response.data.result)) {
-            return response.data.result;
+        // Return both the courses array and pagination info
+        if (response.data.code === 0) {
+            if (response.data.result && Array.isArray(response.data.result.content)) {
+                return {
+                    content: response.data.result.content,
+                    totalPages: response.data.result.page.totalPages || 1,
+                    totalElements: response.data.result.page.totalElements || response.data.result.content.length,
+                    pageNumber: response.data.result.page.number || 0
+                };
+            } else if (Array.isArray(response.data.result)) {
+                // Fallback for API that doesn't return pagination info
+                return {
+                    content: response.data.result,
+                    totalPages: 1,
+                    totalElements: response.data.result.length,
+                    pageNumber: 0
+                };
+            }
         }
-        return [];
+        
+        return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
     } catch (error) {
         console.error('Error fetching my courses:', error);
 
@@ -164,6 +292,6 @@ export const getMyCourses = async () => {
         }
 
         console.error('getMyCourses Error details:', error.response?.data || error.message);
-        return [];
+        return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
     }
 }; 
