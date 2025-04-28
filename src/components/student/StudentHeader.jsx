@@ -161,7 +161,7 @@ const StudentHeader = () => {
             // Tạo form data theo yêu cầu của backend
             console.log(`Tìm kiếm với: courseName=${courseName}, teacherName=${teacherName}, pageNumber=${pageNumber}, pageSize=${pageSize}`);
             
-            const response = await axios.post(`${API_BASE_URL}/lms/course/search`, null, {
+            const response = await axios.get(`${API_BASE_URL}/lms/course/search`, {
                 params: {
                     courseName: courseName || '',
                     teacherName: teacherName || '',
@@ -357,38 +357,16 @@ const StudentHeader = () => {
                         
                         const courseDetail = courseDetailResponse.data.result;
                         
-                        // Get lessons and chapters for the course
-                        const lessons = courseDetail.lesson || [];
-                        let totalChapters = 0;
-                        let completedChapters = 0;
-                        
-                        // Count chapters and check completion status
-                        for (const lesson of lessons) {
-                            const chapters = lesson.chapter || [];
-                            totalChapters += chapters.length;
-                            
-                            for (const chapter of chapters) {
-                                try {
-                                    const progressResponse = await axios.get(`${API_BASE_URL}/lms/lessonchapterprogress/getprogress/${chapter.id}`, {
-                                        headers: {
-                                            'Authorization': `Bearer ${token}`
-                                        }
-                                    });
-                                    
-                                    // If progress exists and is completed, increment counter
-                                    if (progressResponse.data.result && progressResponse.data.result.isCompleted) {
-                                        completedChapters++;
-                                    }
-                                } catch (error) {
-                                    console.error(`Lỗi khi lấy tiến trình cho chương ${chapter.id}:`, error);
-                                }
-                            }
-                        }
-                        
                         // Calculate progress percentage
-                        const progressPercentage = totalChapters > 0
-                            ? Math.round((completedChapters / totalChapters) * 100)
-                            : 0;
+                        const progressResponse = await axios.get(`${API_BASE_URL}/lms/lessonchapterprogress/getpercent`, {
+                            params: {
+                                courseId: course.id,
+                            },
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+
+                        const progressPercentage = progressResponse.data.result
+                        
                         
                         // Format last studied date if available
                         let lastStudiedInfo = "Chưa bắt đầu học";
@@ -404,13 +382,13 @@ const StudentHeader = () => {
                             } else if (diffDays === 1) {
                                 lastStudiedInfo = "Học hôm qua";
                             } else if (diffDays < 30) {
-                                lastStudiedInfo = `Học cách đây ${diffDays} ngày`;
+                                lastStudiedInfo = `Học cách đây ${diffDays} ngày trước`;
                             } else if (diffDays < 365) {
                                 const months = Math.floor(diffDays / 30);
-                                lastStudiedInfo = `Học cách đây ${months} tháng`;
+                                lastStudiedInfo = `Học cách đây ${months} tháng trước`;
                             } else {
                                 const years = Math.floor(diffDays / 365);
-                                lastStudiedInfo = `Học cách đây ${years} năm`;
+                                lastStudiedInfo = `Học cách đây ${years} năm trước`;
                             }
                         }
                         
@@ -845,10 +823,10 @@ const StudentHeader = () => {
                 <div className="student-header-search-inputs">
                     <div className="student-header-search-input-group">
                         <span className="student-header-search-icon">
-                            <Search size={18} color='#787878'/>
-                        </span>
-                        <input
-                            type="text"
+                    <Search size={18} color='#787878'/>
+                </span>
+                <input
+                    type="text"
                             placeholder="Tên khóa học..."
                             value={searchQueryCourse}
                             onChange={handleSearchCourseChange}
@@ -971,7 +949,7 @@ const StudentHeader = () => {
                             {avatarUrl ? (
                                 <img src={avatarUrl} alt="Avatar" className='avatar'/>
                             ) : (
-                                <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                <svg className='avatar' width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="100" cy="100" r="100" fill="#ff4757" />
                                     <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
                                     <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />

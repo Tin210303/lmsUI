@@ -1,16 +1,69 @@
 import React, { useState, useEffect } from 'react';
+import { getTeacherCourses } from '../../services/courseService';
+import { useAuth } from '../../context/AuthContext';
+import '../../assets/css/coursespage.css';
 import { useNavigate } from 'react-router-dom';
 import { Book, Users, User } from 'lucide-react';
-import axios from 'axios';
-import '../../assets/css/coursespage.css';
 
-const CourseCard = ({ course }) => {
+const CourseCard = ({ course, isEnrolled = false }) => {
     const navigate = useNavigate();
     const [students, setStudents] = useState([]);
-    const [lessonCount, setLessonCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    
+    const [lessonCount, setLessonCount] = useState(course?.lessonCount || '0');
     const [teacherName, setTeacherName] = useState(course.teacher?.fullName || 'N/A');
-    const [courseImage, setCourseImage] = useState(course.image || null);
+    const [studentCount, setStudentCount] = useState(course?.studentCount || '0');
+    const [courseImage, setCourseImage] = useState(null);
+
+    // useEffect(() => {
+    //     const fetchData = async () => {
+    //         try {
+    //             const token = localStorage.getItem('authToken');
+    //             if (!token) {
+    //                 throw new Error('No authentication token found');
+    //             }
+
+    //             // Fetch students
+    //             const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse/${course.id}`, {
+    //                 headers: {
+    //                     'Authorization': `Bearer ${token}`
+    //                 }
+    //             });
+    //             setStudents(studentsResponse.data.result || []);
+
+    //             if (course.image) {
+    //                 // Tạo URL đầy đủ từ tên file ảnh
+    //                 const imageUrl = `http://localhost:8080/lms/course/image/${course.image}`;
+    //                 setCourseImage(imageUrl);
+    //             }
+    //         } catch (err) {
+    //             console.error('Error fetching data:', err);
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
+
+    //     fetchData();
+    // }, [course.id]);
+
+    // Hàm tạo slug từ tên khóa học
+    const createSlug = (name) => {
+        // Chuyển tiếng Việt có dấu thành không dấu
+        let str = name.toLowerCase();
+        str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        
+        // Thay thế ký tự đặc biệt và dấu cách bằng dấu gạch ngang
+        str = str.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+        
+        // Thêm thời gian hiện tại để đảm bảo slug là duy nhất
+        return str + '-' + Date.now();
+    };
+
+    const handleClick = () => {
+        navigate('/teacher/course', {
+            state: { courseId: course.id }
+        });
+    };
 
     // Tạo màu nền dựa trên ID khóa học (để luôn cố định cho mỗi khóa học)
     const getConsistentColor = (id) => {
@@ -24,73 +77,26 @@ const CourseCard = ({ course }) => {
             'linear-gradient(to right, #5433ff, #20bdff)',
             'linear-gradient(to right, #2b5876, #4e4376)'
         ];
-        // Tạo số từ các ký tự trong ID
+        if (!id) return colors[0]; 
         const sum = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         return colors[sum % colors.length];
     };
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
-
-                // Fetch students
-                const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse/${course.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                setStudents(studentsResponse.data.result || []);
-
-                // Fetch course details to get lesson count and teacher info
-                const courseDetailsResponse = await axios.get(`http://localhost:8080/lms/course/${course.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                // Count lessons from the course details
-                const courseDetails = courseDetailsResponse.data.result;
-                const lessons = courseDetails.lesson || [];
-                setLessonCount(lessons.length);
-                
-                // Update teacher name from course details
-                if (courseDetails.teacher && courseDetails.teacher.fullName) {
-                    setTeacherName(courseDetails.teacher.fullName);
-                }
-                
-                // Update course image if available
-                if (courseDetails.image) {
-                    // Tạo URL đầy đủ từ tên file ảnh
-                    const imageUrl = `http://localhost:8080/lms/course/image/${courseDetails.image}`;
-                    setCourseImage(imageUrl);
-                }
-            } catch (err) {
-                console.error('Error fetching data:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [course.id]);
-
-    const handleClick = () => {
-        navigate('/teacher/course', {
-            state: { courseId: course.id }
-        });
-    };
-
+    
     // Format dates
     const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
         return new Date(dateString).toLocaleDateString('vi-VN', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric'
         });
+    };
+
+    // Cắt ngắn tên giảng viên nếu quá dài
+    const truncateTeacherName = (name, maxLength = 11) => {
+        if (!name) return 'Giảng viên';
+        if (name.length <= maxLength) return name;
+        return name.substring(0, maxLength) + '..';
     };
 
     return (
@@ -102,37 +108,39 @@ const CourseCard = ({ course }) => {
                     <div className="course-placeholder" style={{ background: getConsistentColor(course.id) }}>
                         <div className="image-text">
                             <div style={{ fontSize: "36px", fontWeight: "bold" }}>
-                                {course.name.charAt(0).toUpperCase()}
+                                {course.name?.charAt(0).toUpperCase() || 'C'}
                             </div>
                             <div style={{ fontSize: "14px", marginTop: "5px" }}>
-                                {course.name}
+                                {course.name || 'Course'}
                             </div>
                         </div>
                     </div>
                 )}
             </div>
             <div className="course-card-header">
-                <h3 className="course-title">{course.name}</h3>
-                <p className="course-dates">Thời hạn: {formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}</p>
-                <p className="course-major">Chuyên ngành: {course.major || 'Chưa có thông tin'}</p>
+                <h3 className="course-title">{course.name || 'Course Name'}</h3>
+                <p className="course-dates">
+                    Thời hạn: {formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}
+                </p>
+                <p className="course-major">Chuyên ngành: {course.major || 'N/A'}</p>
                 <div className="course-status">
-                    <span className={`status-badge ${course.status.toLowerCase()}`}>
-                        {course.status.toUpperCase() === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE'}
+                    <span className={`status-badge ${course.status?.toLowerCase() || 'unknown'}`}>
+                        {course.status || 'Unknown'}
                     </span>
                 </div>
             </div>
             <div className="course-stats">
-                <div className="stat-item">
+                <div className="stat-item" title={teacherName}>
                     <User size={16} />
-                    <span>{teacherName}</span>
+                    <span>{truncateTeacherName(teacherName)}</span>
                 </div>
-                <div className="stat-item">
+                <div className="stat-item" title={`${studentCount} sinh viên`}>
                     <Users size={16} />
-                    <span>{students.length}</span>
+                    <span>{studentCount}</span>
                 </div>
                 <div className="stat-item">
                     <Book size={16} />
-                    <span>{loading ? '...' : lessonCount} bài học</span>
+                    <span>{lessonCount} bài học</span>
                 </div>
             </div>
         </div>
@@ -141,72 +149,139 @@ const CourseCard = ({ course }) => {
 
 const TeacherDashboard = () => {
     const navigate = useNavigate();
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [myCourses, setMyCourses] = useState([]);
+    const [loading, setLoading] = useState({
+        myCourses: true,
+        allCourses: true
+    });
+    const [loadingMore, setLoadingMore] = useState({
+        myCourses: false,
+        allCourses: false
+    });
+    const { authToken } = useAuth();
+    
+    // Pagination state for my courses
+    const [myCoursesPage, setMyCoursesPage] = useState({
+        pageNumber: 0,
+        pageSize: 8,
+        totalPages: 0,
+        totalElements: 0
+    });
 
+    // Tải dữ liệu ban đầu khi component được mount
     useEffect(() => {
-        const fetchCourses = async () => {
+        const fetchInitialTeacherCourses = async () => {
             try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
-
-                const response = await axios.get('http://localhost:8080/lms/course/courseofteacher', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                setCourses(response.data.result || []);
-            } catch (err) {
-                setError(err.response?.data?.message || err.message);
-                console.error('Error fetching courses:', err);
-            } finally {
-                setLoading(false);
+                setLoading(prev => ({ ...prev, myCourses: true }));
+                const data = await getTeacherCourses(0, myCoursesPage.pageSize);
+                console.log('Fetched initial my courses:', data);
+                setMyCourses(data.content || []);
+                setMyCoursesPage(prev => ({
+                    ...prev,
+                    pageNumber: 0, // Đảm bảo reset về trang đầu tiên
+                    totalPages: data.totalPages || 1,
+                    totalElements: data.totalElements || 0
+                }));
+                setLoading(prev => ({ ...prev, myCourses: false }));
+            } catch (error) {
+                console.error('Error fetching initial my courses:', error);
+                setLoading(prev => ({ ...prev, myCourses: false }));
             }
         };
 
-        fetchCourses();
-    }, []);
+        fetchInitialTeacherCourses();
+    }, [authToken]); // Chỉ chạy khi component mount hoặc authToken thay đổi
 
-    if (loading) {
-        return <div className="courses-container">
-            <div className="main-content">
-                <div>Đang tải dữ liệu...</div>
-            </div>
-        </div>;
-    }
+    // Load more my courses
+    const loadMoreTeacherCourses = async () => {
+        if (myCoursesPage.pageNumber >= myCoursesPage.totalPages - 1) return;
+        
+        setLoadingMore(prev => ({ ...prev, myCourses: true }));
+        
+        try {
+            const nextPage = myCoursesPage.pageNumber + 1;
+            console.log('Loading more my courses, page:', nextPage);
+            const data = await getTeacherCourses(nextPage, myCoursesPage.pageSize);
+            
+            if (data.content && data.content.length > 0) {
+                console.log('Appending new my courses:', data.content.length);
+                // Append new courses to existing list
+                setMyCourses(prev => [...prev, ...data.content]);
+                
+                // Update pagination state
+                setMyCoursesPage(prev => ({
+                    ...prev,
+                    pageNumber: nextPage,
+                }));
+            }
+        } catch (error) {
+            console.error('Error loading more my courses:', error);
+        } finally {
+            setLoadingMore(prev => ({ ...prev, myCourses: false }));
+        }
+    };
 
-    if (error) {
-        return <div className="courses-container">
-            <div className="main-content">
-                <div>Có lỗi xảy ra: {error}</div>
-            </div>
-        </div>;
+    if (loading.myCourses && loading.allCourses) {
+        return <div className="courses-container">Đang tải dữ liệu khóa học...</div>;
     }
 
     return (
         <div className="courses-container">
-            <div className="main-content">
-                <div className="course-container">
-                    <div className="course-header">
-                        <h2 className="course-header-title">Khóa học của bạn</h2>
-                        <button className="add-course-button" onClick={() => navigate('/teacher/add-course')}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            <span style={{ marginLeft: '5px' }}>Thêm Khóa Học</span>
-                        </button>
+            <div className="my-courses-section">
+                <div className="courses-section-header">
+                    <div className='d-flex align-center'>
+                        <h1 className="section-title">Khóa học của bạn</h1>
+                        {myCoursesPage.totalElements > 0 && (
+                            <div className="course-count" style={{marginLeft: '2rem'}}>
+                                Hiển thị: {myCourses.length}/{myCoursesPage.totalElements} khóa học
+                            </div>
+                        )}
                     </div>
-                    <div className="courses-grid">
-                        {courses.map(course => (
-                            <CourseCard key={course.id} course={course} />
-                        ))}
-                    </div>
+                    <button className="add-course-button" onClick={() => navigate('/teacher/add-course')}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span style={{ marginLeft: '5px' }}>Thêm Khóa Học</span>
+                    </button>
                 </div>
+                
+                {loading.myCourses ? (
+                    <div className="loading-container">
+                        <div className="loading-spinner"></div>
+                        <p>Đang tải khóa học...</p>
+                    </div>
+                ) : myCourses.length === 0 ? (
+                    <p className="empty-message">Bạn chưa thêm khóa học nào.</p>
+                ) : (
+                    <>
+                        <div className="courses-grid">
+                            {myCourses.map(course => (
+                                <CourseCard key={course.id} course={course} isEnrolled={true} />
+                            ))}
+                        </div>
+                        
+                        {/* See More Button for My Courses */}
+                        {myCoursesPage.pageNumber < myCoursesPage.totalPages - 1 && (
+                            <div className="load-more-container">
+                                <button 
+                                    className="load-more-btn" 
+                                    onClick={loadMoreTeacherCourses}
+                                    disabled={loadingMore.myCourses}
+                                >
+                                    {loadingMore.myCourses ? (
+                                        <>
+                                            <span className="spinner-border-sm"></span>
+                                            Đang tải...
+                                        </>
+                                    ) : (
+                                        'Xem thêm khóa học'
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );

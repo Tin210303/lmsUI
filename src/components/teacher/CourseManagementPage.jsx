@@ -50,16 +50,26 @@ const CourseManagementPage = () => {
             setCourse(courseResponse.data.result);
 
             // Fetch enrolled students using the specific API
-            const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse/${courseId}`, {
+            const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse`, {
+                params: {
+                    courseId: courseId,
+                    pageSize: 10,
+                    pageNumber: 0
+                },
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setStudents(studentsResponse.data.result || []);
+            setStudents(studentsResponse.data.result.content || []);
 
             // Fetch course registration requests using the new API
-            const registrationsResponse = await axios.get(`http://localhost:8080/lms/joinclass/studentrequest/${courseId}`, {
+            const registrationsResponse = await axios.get(`http://localhost:8080/lms/joinclass/studentrequest`, {
+                params: {
+                    courseId: courseId,
+                    pageSize: 10,
+                    pageNumber: 0
+                },
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setRegistrations(registrationsResponse.data.result || []);
+            setRegistrations(registrationsResponse.data.result.content || []);
 
             setFormData({
                 name: courseResponse.data.result.name,

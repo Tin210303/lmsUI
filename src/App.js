@@ -90,14 +90,14 @@ function App() {
               </StudentLayout>
             </ProtectedRoute>
           } />
-          <Route path="/forum" element={
+          <Route path="/groups" element={
             <ProtectedRoute allowedRoles={['student']}>
               <StudentLayout>
                 <CoursesPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
-          <Route path="/posts" element={
+          <Route path="/documents" element={
             <ProtectedRoute allowedRoles={['student']}>
               <StudentLayout>
                 <CoursesPage />

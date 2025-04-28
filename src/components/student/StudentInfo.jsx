@@ -5,6 +5,7 @@ import { getMyCourses } from '../../services/courseService';
 import { useAuth } from '../../context/AuthContext';
 import CourseCard from './CourseCard';
 import { X, Upload, Backpack } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const StudentInfo = () => {
     const [studentData, setStudentData] = useState({
@@ -15,6 +16,7 @@ const StudentInfo = () => {
         avatar: null,
         id: null
     });
+    
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -23,6 +25,7 @@ const StudentInfo = () => {
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState(null);
     const { authToken } = useAuth();
+console.log(courses.length);
 
     const [loadingCourse, setLoadingCourse] = useState({
         myCourses: true,
@@ -41,6 +44,8 @@ const StudentInfo = () => {
         totalPages: 0,
         totalElements: 0
     });
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchStudentInfo = async () => {
@@ -61,13 +66,15 @@ const StudentInfo = () => {
                 // Check response
                 if (studentResponse.data.code === 0 && studentResponse.data.result) {
                     const studentInfo = studentResponse.data.result;
+                    console.log(studentInfo);
+                    
                     // Calculate joined days (using a placeholder - you might want to adjust this)
                     const joinedDays = 3; // Placeholder
 
                     setStudentData({
                         name: studentInfo.fullName || '',
                         email: studentInfo.email || '',
-                        major: studentInfo.major || 'Kỹ thuật phần mềm', // Default if not available
+                        major: studentInfo.major?.name || '',
                         joinedDays: joinedDays,
                         avatar: studentInfo.avatar,
                         id: studentInfo.id
@@ -220,9 +227,11 @@ const StudentInfo = () => {
                 setCourses(prev => [...prev, ...data.content]);
                 
                 // Update pagination state
-                setCourses(prev => ({
+                setMyCoursesPage(prev => ({
                     ...prev,
                     pageNumber: nextPage,
+                    totalPages: data.totalPages || prev.totalPages,
+                    totalElements: data.totalElements || prev.totalElements
                 }));
             }
         } catch (error) {
@@ -274,7 +283,13 @@ const StudentInfo = () => {
                     <Backpack size={18} style={{marginLeft: '8px'}}/>
                     <h3 className="myinfo-course-section-title">Khóa học đã đăng ký ({courses.length})</h3>
                 </div>
-                {courses.length > 0 ? (
+                
+                {loadingCourse.myCourses ? (
+                    <div className="loading-courses">
+                        <div className="spinner-border"></div>
+                        <p>Đang tải danh sách khóa học...</p>
+                    </div>
+                ) : courses.length > 0 ? (
                     <>
                         <div className="course-grid">
                             {courses.map(course => (
@@ -303,7 +318,12 @@ const StudentInfo = () => {
                         )}
                     </>
                 ) : (
-                    <p className="no-courses-message">Bạn chưa đăng ký khóa học nào.</p>
+                    <div className="no-courses-container">
+                        <p className="no-courses-message">Bạn chưa đăng ký khóa học nào.</p>
+                        <button className="browse-courses-btn" onClick={() => navigate('/courses')}>
+                            Tìm khóa học ngay
+                        </button>
+                    </div>
                 )}
             </div>
 

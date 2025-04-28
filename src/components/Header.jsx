@@ -32,6 +32,7 @@ function Header() {
     const [majors, setMajors] = useState([]);
     const [loadingMajors, setLoadingMajors] = useState(false);
     const [registrationRole, setRegistrationRole] = useState('student'); // 'student' hoặc 'teacher'
+console.log("aaaaaaaaaaaa",selectedMajor);
 
     // Lấy danh sách chuyên ngành từ API
     useEffect(() => {
@@ -246,7 +247,7 @@ function Header() {
                 email: regEmail,
                 password: regPassword,
                 fullName: regFullName,
-                ...(registrationRole === 'student' ? { majorId: parseInt(selectedMajor, 10) } : {})
+                ...(registrationRole === 'student' ? { majorId: selectedMajor } : {})
             };
 
             const apiUrl = registrationRole === 'student'

@@ -7,11 +7,18 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
-    console.log(course);
     
-    const [lessonCount, setLessonCount] = useState(course?.lessonCount || '0');
-    const [teacherName, setTeacherName] = useState(course.teacher?.fullName || 'N/A');
-    const [studentCount, setStudentCount] = useState(course?.studentCount || '0');
+    // Đảm bảo các state là kiểu dữ liệu chuỗi
+    const [lessonCount, setLessonCount] = useState(course?.lessonCount?.toString() || '0');
+    
+    // Đảm bảo teacherName là chuỗi, tránh render trực tiếp đối tượng teacher
+    const [teacherName, setTeacherName] = useState(
+        typeof course.teacher === 'object' ? (course.teacher?.fullName || 'N/A') : 
+        typeof course.teacher === 'string' ? course.teacher : 'N/A'
+    );
+    
+    // Đảm bảo studentCount là chuỗi
+    const [studentCount, setStudentCount] = useState(course?.studentCount?.toString() || '0');
     const [courseImage, setCourseImage] = useState(null);
 
     // useEffect(() => {
@@ -47,6 +54,8 @@ const CourseCard = ({ course, isEnrolled = false }) => {
 
     // Hàm tạo slug từ tên khóa học
     const createSlug = (name) => {
+        if (!name || typeof name !== 'string') return 'course-' + Date.now();
+        
         // Chuyển tiếng Việt có dấu thành không dấu
         let str = name.toLowerCase();
         str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -84,7 +93,9 @@ const CourseCard = ({ course, isEnrolled = false }) => {
             'linear-gradient(to right, #2b5876, #4e4376)'
         ];
         if (!id) return colors[0]; 
-        const sum = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        // Đảm bảo ID là chuỗi trước khi xử lý
+        const idStr = String(id);
+        const sum = idStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         return colors[sum % colors.length];
     };
     
@@ -101,37 +112,46 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     // Cắt ngắn tên giảng viên nếu quá dài
     const truncateTeacherName = (name, maxLength = 11) => {
         if (!name) return 'Giảng viên';
-        if (name.length <= maxLength) return name;
-        return name.substring(0, maxLength) + '..';
+        // Đảm bảo name là chuỗi
+        const nameStr = String(name);
+        if (nameStr.length <= maxLength) return nameStr;
+        return nameStr.substring(0, maxLength) + '..';
     };
+
+    // Đảm bảo course name là chuỗi
+    const courseName = typeof course.name === 'string' ? course.name : 'Course Name';
+    // Đảm bảo course major là chuỗi
+    const courseMajor = typeof course.major === 'string' ? course.major : 'N/A';
+    // Đảm bảo course status là chuỗi
+    const courseStatus = typeof course.status === 'string' ? course.status : 'Unknown';
 
     return (
         <div className="course-card" onClick={handleClick}>
             <div className="course-image">
                 {courseImage ? (
-                    <img src={courseImage} alt={course.name} className="course-img" />
+                    <img src={courseImage} alt={courseName} className="course-img" />
                 ) : (
                     <div className="course-placeholder" style={{ background: getConsistentColor(course.id) }}>
                         <div className="image-text">
                             <div style={{ fontSize: "36px", fontWeight: "bold" }}>
-                                {course.name?.charAt(0).toUpperCase() || 'C'}
+                                {courseName.charAt(0).toUpperCase() || 'C'}
                             </div>
                             <div style={{ fontSize: "14px", marginTop: "5px" }}>
-                                {course.name || 'Course'}
+                                {courseName}
                             </div>
                         </div>
                     </div>
                 )}
             </div>
             <div className="course-card-header">
-                <h3 className="course-title">{course.name || 'Course Name'}</h3>
+                <h3 className="course-title">{courseName}</h3>
                 <p className="course-dates">
                     Thời hạn: {formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}
                 </p>
-                <p className="course-major">Chuyên ngành: {course.major || 'N/A'}</p>
+                <p className="course-major">Chuyên ngành: {courseMajor}</p>
                 <div className="course-status">
-                    <span className={`status-badge ${course.status?.toLowerCase() || 'unknown'}`}>
-                        {course.status || 'Unknown'}
+                    <span className={`status-badge ${courseStatus.toLowerCase()}`}>
+                        {courseStatus}
                     </span>
                 </div>
             </div>

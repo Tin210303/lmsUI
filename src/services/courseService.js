@@ -237,11 +237,6 @@ export const getMyCourses = async (pageNumber = 0, pageSize = 10) => {
         console.log('Fetching my courses with token:', token.substring(0, 15) + '...');
         console.log('Pagination params: pageNumber=', pageNumber, 'pageSize=', pageSize);
 
-        // Create FormData object for sending pageNumber and pageSize
-        const formData = new FormData();
-        formData.append('pageNumber', pageNumber);
-        formData.append('pageSize', pageSize);
-
         const response = await axios.get(`${API_URL}/studentcourse/mycourse`, {
             params: {
                 pageNumber: pageNumber,
@@ -293,5 +288,74 @@ export const getMyCourses = async (pageNumber = 0, pageSize = 10) => {
 
         console.error('getMyCourses Error details:', error.response?.data || error.message);
         return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
+    }
+}; 
+
+export const getTeacherCourses = async (pageNumber = 0, pageSize = 10) => {
+    try {
+        // Lấy token từ localStorage và kiểm tra
+        let token = localStorage.getItem('authToken');
+        
+        if (!token) {
+            console.error('getTeacherCourses: Token không tồn tại, cần đăng nhập lại');
+            window.location.href = '/';
+            return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0 };
+        }
+        
+        console.log('Fetching teacher courses with params:', { pageNumber, pageSize });
+        
+        // Gọi API với các tham số lọc và phân trang
+        const response = await axios.get(`${API_URL}/course/courseofteacher`, {
+            params: {
+                pageNumber,
+                pageSize
+            },
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        console.log('Teacher courses API response:', response.data);
+        
+        // Xử lý kết quả và thông tin phân trang
+        if (response.data.code === 0) {
+            if (response.data.result && Array.isArray(response.data.result.content)) {
+                return {
+                    content: response.data.result.content,
+                    totalPages: response.data.result.page.totalPages || 1,
+                    totalElements: response.data.result.page.totalElements || response.data.result.content.length,
+                    pageNumber: response.data.result.page.number || 0,
+                    pageSize: response.data.result.page.size || pageSize
+                };
+            } else if (Array.isArray(response.data.result)) {
+                return {
+                    content: response.data.result,
+                    totalPages: 1,
+                    totalElements: response.data.result.length,
+                    pageNumber: 0,
+                    pageSize: pageSize
+                };
+            }
+        }
+        
+        return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0, pageSize: pageSize };
+    } catch (error) {
+        console.error('Error fetching teacher courses:', error);
+        
+        // Xử lý lỗi 401 Unauthorized (token hết hạn)
+        if (error.response && error.response.status === 401) {
+            console.error('getTeacherCourses: Token đã hết hạn hoặc không hợp lệ, cần đăng nhập lại');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenExpiry');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('role');
+            window.location.href = '/';
+        }
+        
+        console.error('getTeacherCourses Error details:', error.response?.data || error.message);
+        return { content: [], totalPages: 0, totalElements: 0, pageNumber: 0, pageSize: pageSize };
     }
 }; 
