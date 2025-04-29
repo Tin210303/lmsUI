@@ -78,7 +78,7 @@ const TeacherAddCourse = () => {
             navigate('/teacher/dashboard');
         } catch (error) {
             console.error('Error creating course:', error);
-            alert('Có lỗi xảy ra khi tạo khóa học. Vui lòng thử lại!');
+            showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi tạo khóa học. Vui lòng thử lại!');
         }
     };
 
@@ -115,7 +115,8 @@ const TeacherAddCourse = () => {
                         required
                     >
                         <option value="">Chọn loại</option>
-                        <option value="PUBLIC">Khóa học chung</option>
+                        <option value="PUBLIC">Khóa học miễn phí</option>
+                        <option value="REQUEST">Khóa học yêu cầu đăng ký</option>
                         <option value="PRIVATE">Khóa học riêng tư</option>
                     </select>
                 </div>

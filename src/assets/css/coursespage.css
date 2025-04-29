@@ -200,6 +200,11 @@
     color: #28a745;
 }
 
+.status-badge.request {
+    background-color: #e6eaf7;
+    color: #3828a7;
+}
+
 .status-badge.private {
     background-color: #ffebeb;
     color: #d22424;

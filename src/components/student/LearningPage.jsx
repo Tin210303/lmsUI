@@ -3,24 +3,29 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, BookOpen, HelpCircle, MessageSquare, FileText, Download, Menu, Lock, CircleCheck } from 'lucide-react';
-import logo from '../../assets/imgs/logo.png';
+import logo from '../../logo.svg';
 import '../../assets/css/learning-page.css';
 import CommentSection from './CommentSection';
 import LearningContent from './LearningContent';
+import Alert from '../common/Alert';
 
 // Định nghĩa API_BASE_URL
 const API_BASE_URL = 'http://localhost:8080/lms';
 
 const LearningPage = () => {
-const { id } = useParams();
-const navigate = useNavigate();
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [alert, setAlert] = useState(null);
+    const showAlert = (type, title, message) => {
+        setAlert({ type, title, message });
+    };
     const [courseData, setCourseData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentChapterId, setCurrentChapterId] = useState(null);
     const [currentLessonId, setCurrentLessonId] = useState(null);
-const [currentChapter, setCurrentChapter] = useState('');
-const [sidebarVisible, setSidebarVisible] = useState(true);
+    const [currentChapter, setCurrentChapter] = useState('');
+    const [sidebarVisible, setSidebarVisible] = useState(true);
     const [currentContent, setCurrentContent] = useState(null);
     const [currentQuizId, setCurrentQuizId] = useState(null);
     const [chapterCompleted, setChapterCompleted] = useState(false);
@@ -39,9 +44,12 @@ const [sidebarVisible, setSidebarVisible] = useState(true);
     const chapterRefs = useRef({});
     // Ref cho sidebar để cuộn
     const sidebarRef = useRef(null);
-
+    
+    // Thêm state để quản lý hiển thị modal CommentSection
+    const [showCommentModal, setShowCommentModal] = useState(false);
+    
     // Fetch course data from API
-useEffect(() => {
+    useEffect(() => {
         const fetchCourseData = async () => {
             try {
                 const token = localStorage.getItem('authToken');
@@ -428,12 +436,12 @@ useEffect(() => {
             } else {
                 const errorMsg = response.data?.message || 'Unknown error when completing chapter';
                 console.error('Failed to complete chapter:', errorMsg);
-                alert(`Không thể hoàn thành bài học. Lỗi: ${errorMsg}`);
+                showAlert('error', 'Lỗi', `Không thể hoàn thành bài học. Lỗi: ${errorMsg}`);
                 return null;
             }
         } catch (err) {
             console.error('Error completing chapter:', err);
-            alert('Có lỗi xảy ra khi đánh dấu hoàn thành bài học. Vui lòng thử lại sau.');
+            showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi đánh dấu hoàn thành bài học. Vui lòng thử lại sau.');
             return null;
         }
     };
@@ -448,7 +456,7 @@ useEffect(() => {
         // Kiểm tra xem chapter có được phép truy cập hay không
         if (!isChapterAccessible(lessonOrder, lessonId)) {
             console.log(`Chapter ${lessonId} not accessible`);
-            alert('Bạn cần hoàn thành các bài học trước đó để mở khóa bài này!');
+            showAlert('error', 'Lỗi', 'Bạn cần hoàn thành các bài học trước đó để mở khóa bài này!');
             return;
         }
         
@@ -782,7 +790,7 @@ const handleBackToCourses = () => {
         
         // Kiểm tra xem bài kiểm tra có được phép làm hay không
         if (!isQuizAccessible(lessonId)) {
-            alert('Bạn cần hoàn thành tất cả các bài học trong chương này trước khi làm bài kiểm tra!');
+            showAlert('error', 'Lỗi', 'Bạn cần hoàn thành tất cả các bài học trong chương này trước khi làm bài kiểm tra!');
             return;
         }
         
@@ -797,7 +805,7 @@ const handleBackToCourses = () => {
         // Lấy toàn bộ bài kiểm tra của lesson
         const lesson = courseData.lesson.find(l => l.id === lessonId);
         if (!lesson || !lesson.lessonQuiz || lesson.lessonQuiz.length === 0) {
-            alert('Không tìm thấy bài kiểm tra cho chương này!');
+            showAlert('error', 'Lỗi', 'Không tìm thấy bài kiểm tra cho chương này!');
             setQuizLoading(false);
             return;
         }
@@ -1126,17 +1134,17 @@ const handleBackToCourses = () => {
                 })
                 .catch(error => {
                     console.error('Error downloading file:', error);
-                    alert('Có lỗi khi tải file. Vui lòng thử lại sau.');
+                    showAlert('error', 'Lỗi', 'Có lỗi khi tải file. Vui lòng thử lại sau.');
                     setDownloadLoading(false);
                 });
             } catch (err) {
                 console.error('Error downloading file:', err);
-                alert('Có lỗi xảy ra khi tải tài liệu. Vui lòng thử lại.');
+                showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi tải tài liệu. Vui lòng thử lại.');
                 setDownloadLoading(false);
             }
         } else {
             console.error('No file path provided for download');
-            alert('Không thể tải xuống tài liệu. Đường dẫn tệp không hợp lệ.');
+            showAlert('error', 'Lỗi', 'Không thể tải xuống tài liệu. Đường dẫn tệp không hợp lệ.');
         }
     };
 
@@ -1471,8 +1479,28 @@ const handleBackToCourses = () => {
         return sortedChapters[0].id === chapterId;
     };
 
+    // Cập nhật hàm xử lý khi nhấn nút Hỏi đáp
+    const handleQuestionClick = () => {
+        setShowCommentModal(true);
+    };
+    
+    // Hàm đóng modal CommentSection
+    const handleCloseCommentModal = () => {
+        setShowCommentModal(false);
+    };
+
     return (
         <div className="learning-container">
+            {alert && (
+                <div className="alert-container">
+                    <Alert
+                        type={alert.type}
+                        title={alert.title}
+                        message={alert.message}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
             {/* Header */}
             <header className="learning-header">
                 <div className="header-left">
@@ -1493,7 +1521,7 @@ const handleBackToCourses = () => {
                         <BookOpen size={16} />
                         <span>Lịch sử hỏi đáp</span>
                     </button>
-                    <button className="header-button">
+                    <button className="header-button" onClick={handleQuestionClick}>
                         <HelpCircle size={16} />
                         <span>Hỏi Đáp</span>
                     </button>
@@ -1867,6 +1895,18 @@ const handleBackToCourses = () => {
                     </button>
                 </div>
             </footer>
+
+            {/* Modal CommentSection */}
+            {showCommentModal && (
+                <div className="comment-modal-overlay">
+                    <div className="comment-modal">
+                        <div className="comment-modal-close" onClick={handleCloseCommentModal}>
+                            <ChevronRight size={24} />
+                        </div>
+                        <CommentSection lessonId={1} />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

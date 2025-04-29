@@ -49,14 +49,17 @@ const CourseDetailPage = () => {
             const token = localStorage.getItem('authToken');
             if (!token) return;
 
-            const response = await axios.get(`http://localhost:8080/lms/joinclass/courserequest/${studentId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await axios.get(`http://localhost:8080/lms/joinclass/courserequest`, {
+                params: {
+                    studentId: studentId,
+                    pageSize: 10,
+                    pageNumber: 0
+                },
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (response.data && response.data.code === 0) {
-                setPendingCourses(response.data.result || []);
+                setPendingCourses(response.data.result.content || []);
             }
         } catch (error) {
             console.error('Error fetching pending courses:', error);
@@ -149,7 +152,7 @@ const CourseDetailPage = () => {
     };
 
     const handleRegister = async () => {
-        if (isEnrolled) {
+        if (isEnrolled || isPending) {
             navigate(`/learning/${course.id}`);
         } else {
             try {
@@ -162,6 +165,7 @@ const CourseDetailPage = () => {
                 const formData = new FormData();
                 formData.append('courseId', course.id.toString());
 
+                // Gửi yêu cầu đăng ký (pending)
                 const response = await axios.post('http://localhost:8080/lms/joinclass/pending', formData, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -170,10 +174,58 @@ const CourseDetailPage = () => {
                 });
 
                 if (response.data && response.data.code === 0) {
+                    // Nếu khóa học có status là PUBLIC, tự động phê duyệt
+                    if (course.status === 'PUBLIC' && studentId) {
+                        try {
+                            const approveFormData = new FormData();
+                            approveFormData.append('courseId', course.id.toString());
+                            approveFormData.append('studentId', studentId.toString());
+
+                            // Gọi API phê duyệt tự động
+                            const approveResponse = await axios.post('http://localhost:8080/lms/joinclass/approved', 
+                                approveFormData, {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'multipart/form-data'
+                                }
+                            });
+
+                            if (approveResponse.data && approveResponse.data.code === 0) {
+                                setIsEnrolled(true);
+                                setIsPending(false);
+                                
+                                // Cập nhật localStorage
+                                if (params.slug) {
+                                    localStorage.setItem(`course_${params.slug}_enrolled`, 'true');
+                                    localStorage.setItem(`course_${params.slug}_pending`, 'false');
+                                }
+                                
+                                showAlert('success', 'Thành công', 'Đăng ký khóa học thành công! Bạn có thể bắt đầu học ngay.');
+                                
+                                // Sau 2 giây, chuyển hướng người dùng đến trang học
+                                setTimeout(() => {
+                                    navigate(`/learning/${course.id}`);
+                                }, 1000);
+                                return;
+                            }
+                        } catch (approveError) {
+                            console.error('Error auto-approving course:', approveError);
+                            // Nếu lỗi khi tự động phê duyệt, vẫn coi như đăng ký thành công và chờ duyệt
+                        }
+                    }
+                    
+                    // Nếu không phải khóa học PUBLIC hoặc việc tự động phê duyệt thất bại
+                    // Cập nhật trạng thái chờ duyệt và hiển thị thông báo
+                    setIsPending(true);
+                    if (params.slug) {
+                        localStorage.setItem(`course_${params.slug}_pending`, 'true');
+                    }
+                    
                     // Cập nhật danh sách khóa học đang chờ duyệt
                     if (studentId) {
                         await fetchPendingCourses(studentId);
                     }
+                    
                     showAlert('success', 'Thành công', 'Đăng ký khóa học thành công! Vui lòng chờ giảng viên phê duyệt.');
                 } else {
                     throw new Error(response.data?.message || 'Đăng ký khóa học thất bại');
@@ -181,7 +233,7 @@ const CourseDetailPage = () => {
             } catch (error) {
                 console.error('Error registering for course:', error);
                 console.error('Error response:', error.response?.data);
-                showAlert('success', 'Thành công', 'Có lỗi xảy ra khi đăng ký khóa học. Vui lòng thử lại sau.');
+                showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi đăng ký khóa học. Vui lòng thử lại sau.');
             } finally {
                 setIsRegistering(false);
             }
@@ -341,10 +393,11 @@ const CourseDetailPage = () => {
                     )}
                 </div>
                 <div className="price-box">
+                    {console.log(typeof isPending, isPending)}
                     <button 
                         className="register-btn" 
                         onClick={handleRegister}
-                        disabled={isRegistering || isPending}
+                        disabled={isPending}
                     >
                         {isEnrolled ? 'TIẾP TỤC HỌC' : 
                          isPending ? 'ĐANG CHỜ DUYỆT' : 

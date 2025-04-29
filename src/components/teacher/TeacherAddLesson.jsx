@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import '../../assets/css/teacher-add-lesson.css';
+import Alert from '../common/Alert';
 
 const TeacherAddLesson = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { courseId, lessonId, lessonName } = location.state || {};
+    const [alert, setAlert] = useState(null);
+    const showAlert = (type, title, message) => {
+        setAlert({ type, title, message });
+    };
     const [formData, setFormData] = useState({
         lessonId: lessonId,
         name: '',
@@ -58,7 +63,7 @@ const TeacherAddLesson = () => {
             );
 
             if (response.data.code === 0) {
-                alert('Thêm nội dung bài học thành công!');
+                showAlert('success', 'Thành công', 'Thêm nội dung bài học thành công!');
                 navigate('/teacher/course', {
                     state: { courseId }
                 });
@@ -67,12 +72,26 @@ const TeacherAddLesson = () => {
             }
         } catch (error) {
             console.error('Error creating chapter:', error);
-            alert(error.message || 'Có lỗi xảy ra khi thêm nội dung bài học');
+            if (error.response.data.code = 1029) {
+                showAlert('error', 'Lỗi', 'Định dạng file không hợp lệ!');
+            } else {
+                showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi thêm nội dung bài học!');
+            }
         }
     };
 
     return (
         <div className="teacher-add-lesson-container">
+            {alert && (
+                <div className="alert-container">
+                    <Alert
+                        type={alert.type}
+                        title={alert.title}
+                        message={alert.message}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
             <h2>Thêm nội dung bài học</h2>
             <form onSubmit={handleSubmit} className="teacher-add-lesson-form">
                 <div className="teacher-form-group">

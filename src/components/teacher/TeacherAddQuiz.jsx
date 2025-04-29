@@ -3,11 +3,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Trash2 } from 'lucide-react';
 import '../../assets/css/teacher-add-quiz.css';
+import Alert from '../common/Alert';
 
 const TeacherAddQuiz = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { courseId, lessonId, lessonName } = location.state || {};
+    const [alert, setAlert] = useState(null);
+    const showAlert = (type, title, message) => {
+        setAlert({ type, title, message });
+    };
 
     const [quizzes, setQuizzes] = useState([{
         question: '',
@@ -181,18 +186,21 @@ const TeacherAddQuiz = () => {
                         withCredentials: false
                     }
                 );
-
+                if (response.data.code === 0) {
+                    showAlert('success', 'Thành công', 'Thêm bài kiểm tra thành công!');
+                }
                 if (response.data.code !== 0) {
                     throw new Error(response.data.message || 'Có lỗi xảy ra khi tạo câu hỏi');
                 }
             }
-
+            
             navigate('/teacher/course', {
                 state: { courseId }
             });
         } catch (error) {
             console.error('Error creating quiz:', error);
             setError(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi tạo câu hỏi');
+            showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi thêm nội dung bài học!');
         } finally {
             setSubmitting(false);
         }
