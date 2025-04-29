@@ -967,17 +967,6 @@ const handleBackToCourses = () => {
                 // Thêm quiz vào danh sách đã hoàn thành
                 if (currentQuizId) {
                     setCompletedQuizzes(prev => [...prev, currentQuizId]);
-                    
-                    // Cập nhật tiến độ học tập lên server
-                    try {
-                        await axios.post(`${API_BASE_URL}/progress/quizzes/${currentQuizId}`, {}, {
-                            headers: {
-                                Authorization: `Bearer ${token}`
-                            }
-                        });
-                    } catch (err) {
-                        console.error("Error updating quiz progress:", err);
-                    }
                 }
                 
                 // Kiểm tra nếu tất cả các chapter trong lesson đã hoàn thành

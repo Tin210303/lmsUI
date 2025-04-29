@@ -61,7 +61,7 @@ export const getCourseById = async (courseId) => {
     }
 };
 
-export const getAllCourses = async (pageNumber = 0, pageSize = 8) => {
+export const getCoursesOfMajor = async (pageNumber = 0, pageSize = 8) => {
     try {
         // Lấy token từ localStorage và kiểm tra
         let token = localStorage.getItem('authToken');
@@ -83,7 +83,7 @@ export const getAllCourses = async (pageNumber = 0, pageSize = 8) => {
         console.log('Pagination params for all courses: pageNumber=', pageNumber, 'pageSize=', pageSize);
         
         // Gọi API với các tham số phân trang
-        const response = await axios.get(`${API_URL}/course`, {
+        const response = await axios.get(`${API_URL}/course/courseofmajorfirst`, {
             params: {
                 pageNumber: pageNumber,
                 pageSize: pageSize

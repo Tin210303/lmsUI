@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMyCourses, getAllCourses } from '../../services/courseService';
+import { getMyCourses, getCoursesOfMajor } from '../../services/courseService';
 import { useAuth } from '../../context/AuthContext';
 import CourseCard from './CourseCard';
 import '../../assets/css/coursespage.css';
@@ -57,7 +57,7 @@ const CoursesPage = () => {
         const fetchInitialAllCourses = async () => {
             try {
                 setLoading(prev => ({ ...prev, allCourses: true }));
-                const data = await getAllCourses(0, allCoursesPage.pageSize);
+                const data = await getCoursesOfMajor(0, allCoursesPage.pageSize);
                 console.log('Fetched initial all courses:', data);
                 setAllCourses(data.content || []);
                 setAllCoursesPage(prev => ({
@@ -115,7 +115,7 @@ const CoursesPage = () => {
         try {
             const nextPage = allCoursesPage.pageNumber + 1;
             console.log('Loading more all courses, page:', nextPage);
-            const data = await getAllCourses(nextPage, allCoursesPage.pageSize);
+            const data = await getCoursesOfMajor(nextPage, allCoursesPage.pageSize);
             
             if (data.content && data.content.length > 0) {
                 console.log('Appending new all courses:', data.content.length);
