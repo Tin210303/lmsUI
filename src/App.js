@@ -9,16 +9,7 @@ import StudentLayout from './layouts/StudentLayout';
 import TeacherLayout from './layouts/TeacherLayout';
 import ProtectedRoute from './ProtectedRoute';
 
-import Header from './components/Header';
-import Hero from './components/Hero';
-import PopularCourses from './components/PopularCourses';
-import FreeCoursesSignup from './components/FreeCoursesSignup';
-import Footer from './components/Footer';
-import CoursesPage from './components/student/CoursesPage';
-import CourseDetailPage from './components/student/CourseDetailPage';
-import LearningPage from './components/student/LearningPage';
-import ChatboxPage from './components/student/ChatboxPage';
-import StudentInfo from './components/student/StudentInfo';
+// Teacher Routes
 import TeacherDashboard from './components/teacher/TeacherDashboard';
 import TeacherAddCourse from './components/teacher/TeacherAddCourse';
 import TeacherCourseDetail from './components/teacher/TeacherCourseDetail';
@@ -27,8 +18,23 @@ import TeacherAddQuiz from './components/teacher/TeacherAddQuiz';
 import TeacherAddMaterial from './components/teacher/TeacherAddMaterial';
 import CourseManagementPage from './components/teacher/CourseManagementPage';
 import AddStudentsPage from './components/teacher/AddStudentsPage';
-// import TeacherCourses from './components/teacher/TeacherCourses';
+import TeacherGroup from './components/teacher/TeacherGroup';
 
+// Student Routes
+import CoursesPage from './components/student/CoursesPage';
+import CourseDetailPage from './components/student/CourseDetailPage';
+import LearningPage from './components/student/LearningPage';
+import ChatboxPage from './components/student/ChatboxPage';
+import StudentInfo from './components/student/StudentInfo';
+import GroupPage from './components/student/GroupPage';
+import GroupDetailPage from './components/student/GroupDetailPage';
+
+// Common Routes
+import Header from './components/Header';
+import Hero from './components/Hero';
+import PopularCourses from './components/PopularCourses';
+import FreeCoursesSignup from './components/FreeCoursesSignup';
+import Footer from './components/Footer';
 import './App.css';
 
 function App() {
@@ -93,7 +99,14 @@ function App() {
           <Route path="/groups" element={
             <ProtectedRoute allowedRoles={['student']}>
               <StudentLayout>
-                <CoursesPage />
+                <GroupPage />
+              </StudentLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/groups/:id" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentLayout>
+                <GroupDetailPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
@@ -162,13 +175,13 @@ function App() {
               </TeacherLayout>
             </ProtectedRoute>
           } />
-          {/* <Route path="/teacher/courses" element={
+          <Route path="/teacher/groups" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
-                <TeacherCourses />
+                <TeacherGroup />
               </TeacherLayout>
             </ProtectedRoute>
-          } /> */}
+          } />
         </Routes>
       </AuthProvider>
     </Router>

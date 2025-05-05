@@ -9,7 +9,7 @@ const Sidebar = () => {
 
     const navItems = [
         { key: 'courses', label: 'Khóa học', icon: <BookOpenCheck size={20} />, path: '/teacher/dashboard' },
-        { key: 'forum', label: 'Nhóm', icon: <MessageSquareText size={20} />, path: '/teacher/forum' },
+        { key: 'groups', label: 'Nhóm', icon: <MessageSquareText size={20} />, path: '/teacher/groups' },
         { key: 'posts', label: 'Tài liệu', icon: <Newspaper size={20} />, path: '/teacher/documents' },
         { key: 'chat', label: 'Nhắn tin', icon: <MessageCircleMore size={20} />, path: '/chat' },
     ];

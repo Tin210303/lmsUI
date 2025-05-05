@@ -18,6 +18,7 @@ const CourseManagementPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [completionPercentages, setCompletionPercentages] = useState({});
 
 
     // Form states
@@ -58,7 +59,14 @@ const CourseManagementPage = () => {
                 },
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setStudents(studentsResponse.data.result.content || []);
+            
+            const studentsList = studentsResponse.data.result.content || [];
+            setStudents(studentsList);
+            
+            // Fetch completion percentages for each student
+            if (studentsList.length > 0) {
+                await fetchCompletionPercentages(studentsList, token);
+            }
 
             // Fetch course registration requests using the new API
             const registrationsResponse = await axios.get(`http://localhost:8080/lms/joinclass/studentrequest`, {
@@ -84,6 +92,40 @@ const CourseManagementPage = () => {
             console.error("Error fetching course management data:", err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchCompletionPercentages = async (studentsList, token) => {
+        try {
+            const percentageData = {};
+            
+            // Fetch completion percentage for each student
+            await Promise.all(
+                studentsList.map(async (student) => {
+                    try {
+                        const response = await axios.get(`http://localhost:8080/lms/lessonchapterprogress/getpercent`, {
+                            params: {
+                                courseId: courseId,
+                                studentId: student.id
+                            },
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        if (response.data && response.data.result !== undefined) {
+                            percentageData[student.id] = response.data.result;
+                        } else {
+                            percentageData[student.id] = 0; // Default to 0% if no data available
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching completion percentage for student ${student.id}:`, error);
+                        percentageData[student.id] = 0; // Default to 0% on error
+                    }
+                })
+            );
+            
+            setCompletionPercentages(percentageData);
+        } catch (error) {
+            console.error("Error fetching completion percentages:", error);
         }
     };
 
@@ -288,11 +330,11 @@ const CourseManagementPage = () => {
             <div className="members-list">
                 <div className="members-section">
                     <h3>Giáo Viên</h3>
-                    <div className="teacher-item d-flex">
+                    <div className="course-teacher-item d-flex">
                         <img src={logo} alt='Ava' />
                         <div>
                             <div>{course.teacher.fullName}</div>
-                            <div className="student-email">{course.teacher.email}</div>
+                            <div className="course-student-email">{course.teacher.email}</div>
                         </div>
                     </div>
                 </div>
@@ -306,12 +348,24 @@ const CourseManagementPage = () => {
                     </h3>
                     {students.map(student => (
                         <div key={student.id} className="member-item">
-                            <div className='d-flex'>
+                            <div className='d-flex' style={{width: '40%'}}>
                                 <img src={student.avatar || logo} alt='Ava' />
                                 <div>
                                     <div>{student.fullName}</div>
-                                    <div className="student-email">{student.email}</div>
+                                    <div className="course-student-email">{student.email}</div>
                                 </div>
+                            </div>
+                            <div className="student-progress">
+                                <div className="progress-bar-container">
+                                    <div 
+                                        className="progress-bar" 
+                                        style={{ 
+                                            width: `${completionPercentages[student.id] || 0}%`,
+                                            backgroundColor: getProgressColor(completionPercentages[student.id] || 0)
+                                        }}
+                                    ></div>
+                                </div>
+                                <span className="progress-text">{completionPercentages[student.id] || 0}%</span>
                             </div>
                             <button className="remove-member-btn" onClick={() => handleRemoveStudent(student.id, courseId)}>
                                 <Trash2 size={16}/>
@@ -345,7 +399,7 @@ const CourseManagementPage = () => {
                                         <img src={registration.avatar || logo} alt={registration.fullName} />
                                         <div>
                                             <div>{registration.fullName}</div>
-                                            <div className="student-email">{registration.email}</div>
+                                            <div className="course-student-email">{registration.email}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -376,6 +430,13 @@ const CourseManagementPage = () => {
             </div>
         </div>
     );
+
+    // Helper function to determine progress bar color based on completion percentage
+    const getProgressColor = (percentage) => {
+        if (percentage < 30) return '#ff4d4f'; // Red for low progress
+        if (percentage < 70) return '#faad14'; // Yellow for medium progress
+        return '#52c41a'; // Green for high progress
+    };
 
     if (loading) return <div className="loading">Đang tải...</div>;
     if (error) return <div className="error">Lỗi: {error}</div>;

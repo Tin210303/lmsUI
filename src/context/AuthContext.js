@@ -1,78 +1,193 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const AuthContext = createContext();
 
 // Token durations aligned with API specifications
 const TOKEN_VALID_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-const TOKEN_REFRESH_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const REFRESH_MARGIN = 60 * 1000; // Refresh 60 seconds before expiration
 
 export const AuthProvider = ({ children }) => {
+    const location = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [authToken, setAuthToken] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [tokenExpiry, setTokenExpiry] = useState(null);
-    const [refreshTimer, setRefreshTimer] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const TOKEN_REFRESH_INTERVAL = 950 * 1000;
+
+    // Kiểm tra xác thực từ localStorage khi component mount
+    useEffect(() => {
+        const checkAuth = async () => {
+            setIsLoading(true);
+            const storedToken = localStorage.getItem('authToken');
+            const storedUser = localStorage.getItem('user');
+            const storedIsLoggedIn = localStorage.getItem('isLoggedIn');
+
+            if (storedToken && storedUser && storedIsLoggedIn === 'true') {
+                try {
+                    // Kiểm tra token có hợp lệ không bằng cách gọi API kiểm tra token
+                    const response = await axios.post('http://localhost:8080/lms/auth/verify', {
+                        token: storedToken
+                    }, {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    // Nếu token hợp lệ
+                    if (response.data && response.data.code === 0) {
+                        setAuthToken(storedToken);
+                        setUser(JSON.parse(storedUser));
+                        setIsAuthenticated(true);
+                        console.log('Auth restored from localStorage');
+                    } else {
+                        // Nếu token không hợp lệ, thử refresh
+                        await refreshToken();
+                    }
+                } catch (error) {
+                    console.error("Error verifying token:", error);
+                    // Thử refresh token nếu verify thất bại
+                    await refreshToken();
+                }
+            }
+            setIsLoading(false);
+        };
+
+        checkAuth();
+    }, []);
 
     // Function to refresh token
-    const refreshToken = useCallback(async () => {
+    const refreshToken = async () => {
         try {
             const currentToken = localStorage.getItem('authToken');
             if (!currentToken) {
-                handleLogout();
-                return false;
+                // No token found, redirect to login
+                setIsAuthenticated(false);
+                setUser(null);
+                return;
             }
 
-            const response = await axios.post('http://localhost:8080/lms/auth/refresh', 
-                { token: currentToken },
-                { headers: { 'Content-Type': 'application/json' } }
-            );
+            // Call the refresh token API
+            const response = await axios.post('http://localhost:8080/lms/auth/refresh', {
+                token: currentToken
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            if (response.data && response.data.code === 0) {
-                const { token } = response.data.result;
-                const newExpiryTime = Date.now() + TOKEN_VALID_DURATION;
+            // Update with new token if provided
+            if (response.data && response.data.result && response.data.result.token) {
+                const newToken = response.data.result.token;
+                localStorage.setItem('authToken', newToken);
+                setAuthToken(newToken);
                 
-                // Update localStorage first
-                localStorage.setItem('authToken', token);
-                localStorage.setItem('tokenExpiry', newExpiryTime.toString());
-
-                // Then update state
-                setAuthToken(token);
-                setTokenExpiry(newExpiryTime);
+                // Cũng cập nhật user nếu có trong response
+                if (response.data.result.user) {
+                    localStorage.setItem('user', JSON.stringify(response.data.result.user));
+                    setUser(response.data.result.user);
+                } else {
+                    // Nếu không có user trong response, lấy từ localStorage
+                    const storedUser = localStorage.getItem('user');
+                    if (storedUser) {
+                        setUser(JSON.parse(storedUser));
+                    }
+                }
+                
+                setIsAuthenticated(true);
                 return true;
             }
             return false;
         } catch (error) {
-            console.error('Error refreshing token:', error);
-            handleLogout();
+            console.error("Lỗi khi refresh token:", error);
+            // If refresh fails with 401, clear auth state
+            if (error.response && error.response.status === 401) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('role');
+                setAuthToken(null);
+                setUser(null);
+                setIsAuthenticated(false);
+            }
             return false;
         }
-    }, []);
+    };
 
-    // Logout function
-    const handleLogout = useCallback(() => {
-        // Clear localStorage first
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('tokenExpiry');
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('role');
-
-        // Clear timer if exists
-        if (refreshTimer) {
-            clearTimeout(refreshTimer);
+    useEffect(() => {
+        // Skip token verification if we're already on the login page
+        if (location.pathname === '/') {
+            return;
         }
 
-        // Reset all state
-        setRefreshTimer(null);
-        setAuthToken(null);
-        setUser(null);
-        setIsAuthenticated(false);
-        setTokenExpiry(null);
-    }, [refreshTimer]);
+        // Check token existence
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            navigate('/');
+            return;
+        }
+
+        // Set up axios interceptor to catch 401 errors
+        const interceptor = axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response && error.response.status === 401) {
+                    // Only redirect if the error is not from the refresh token endpoint
+                    if (!error.config.url.includes('/refresh')) {
+                        // Try to refresh the token once
+                        refreshToken().catch(() => {
+                            // If refresh fails, redirect to login
+                            localStorage.removeItem('authToken');
+                            navigate('/');
+                        });
+                    }
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        // Set up interval for token refresh
+        const tokenRefreshInterval = setInterval(refreshToken, TOKEN_REFRESH_INTERVAL);
+
+        // Clean up
+        return () => {
+            clearInterval(tokenRefreshInterval);
+            axios.interceptors.response.eject(interceptor);
+        };
+    }, [navigate, location.pathname, TOKEN_REFRESH_INTERVAL]);
+
+    // Logout function
+    const handleLogout = async () => {
+        try {
+            // Get the token from localStorage
+            const token = localStorage.getItem('authToken');
+            
+            if (token) {
+                // Call the logout API with token in request body
+                await axios.post('http://localhost:8080/lms/auth/logout', {
+                    token: token
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Lỗi khi đăng xuất:", error);
+        } finally {
+            // Always remove the token and redirect regardless of API success/failure
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('role');
+            setAuthToken(null);
+            setUser(null);
+            setIsAuthenticated(false);
+            navigate('/');
+        }
+    };
 
     // Login function
     const login = useCallback(async (email, password, role) => {
@@ -96,8 +211,7 @@ export const AuthProvider = ({ children }) => {
                 switch (response.data.code) {
                     case 0: // Success
                         const { token } = response.data.result;
-                        const authenticated = response.data.result.authenticated;
-                        const userData = { ...response.data.result, role }; // Add role to user data
+                        const userData = { ...response.data.result, role };
                         const expiryTime = Date.now() + TOKEN_VALID_DURATION;
                         
                         console.log('Login successful, token:', token.substring(0, 15) + '...');
@@ -106,20 +220,13 @@ export const AuthProvider = ({ children }) => {
                         // Update localStorage first
                         localStorage.setItem('authToken', token);
                         localStorage.setItem('user', JSON.stringify(userData));
-                        localStorage.setItem('tokenExpiry', expiryTime.toString());
                         localStorage.setItem('isLoggedIn', 'true');
                         localStorage.setItem('role', role);
-
+                        
                         // Then update state
                         setAuthToken(token);
                         setUser(userData);
-                        setTokenExpiry(expiryTime);
                         setIsAuthenticated(true);
-
-                        // Schedule token refresh
-                        const timeUntilRefresh = TOKEN_VALID_DURATION - REFRESH_MARGIN;
-                        const timer = setTimeout(refreshToken, timeUntilRefresh);
-                        setRefreshTimer(timer);
 
                         // Navigate to appropriate page based on role
                         if (role === 'teacher') {
@@ -150,65 +257,24 @@ export const AuthProvider = ({ children }) => {
                 error: error.response?.data?.message || 'Network error occurred'
             };
         }
-    }, [refreshToken, navigate]);
+    }, [navigate]);
 
-    // Initialize auth state
-    useEffect(() => {
-        const initializeAuth = async () => {
-            try {
-                const token = localStorage.getItem('authToken');
-                const storedUser = localStorage.getItem('user');
-                const storedExpiry = localStorage.getItem('tokenExpiry');
-
-                if (!token || !storedUser || !storedExpiry) {
-                    handleLogout();
-                    return;
-                }
-
-                const expiryTime = parseInt(storedExpiry, 10);
-                const now = Date.now();
-
-                if (now >= expiryTime - REFRESH_MARGIN) {
-                    // Token is expired or close to expiring, try to refresh
-                    const refreshed = await refreshToken();
-                    if (!refreshed) {
-                        handleLogout();
-                        return;
-                    }
-                }
-
-                // Set the authentication state
-                setAuthToken(token);
-                setUser(JSON.parse(storedUser));
-                setIsAuthenticated(true);
-                setTokenExpiry(expiryTime);
-
-                // Schedule next refresh
-                const timeUntilRefresh = expiryTime - now - REFRESH_MARGIN;
-                if (timeUntilRefresh > 0) {
-                    const timer = setTimeout(refreshToken, timeUntilRefresh);
-                    setRefreshTimer(timer);
-                }
-            } catch (error) {
-                console.error('Error initializing auth:', error);
-                handleLogout();
-            }
-        };
-
-        initializeAuth();
-
-        return () => {
-            if (refreshTimer) {
-                clearTimeout(refreshTimer);
-            }
-        };
-    }, []); // Run only once on mount
+    // Nếu đang loading, hiển thị trạng thái loading hoặc null
+    if (isLoading) {
+        return (
+            <AuthContext.Provider value={{ isLoading }}>
+                {/* Có thể render một loading spinner ở đây */}
+                {children}
+            </AuthContext.Provider>
+        );
+    }
 
     return (
         <AuthContext.Provider value={{ 
             user, 
             authToken, 
             isAuthenticated,
+            isLoading,
             login,
             logout: handleLogout,
             refreshToken

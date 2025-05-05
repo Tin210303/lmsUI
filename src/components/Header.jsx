@@ -32,7 +32,6 @@ function Header() {
     const [majors, setMajors] = useState([]);
     const [loadingMajors, setLoadingMajors] = useState(false);
     const [registrationRole, setRegistrationRole] = useState('student'); // 'student' hoặc 'teacher'
-console.log("aaaaaaaaaaaa",selectedMajor);
 
     // Lấy danh sách chuyên ngành từ API
     useEffect(() => {
@@ -551,7 +550,7 @@ console.log("aaaaaaaaaaaa",selectedMajor);
                                     >
                                         {loading ? (
                                             <>
-                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                <span className="spinner-header-border spinner-header-border-sm me-2" role="status" aria-hidden="true"></span>
                                                 Đang đăng nhập...
                                             </>
                                         ) : (

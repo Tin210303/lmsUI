@@ -1,0 +1,345 @@
+.group-page-container {
+  padding: 20px 60px;
+  background-color: #fafafa;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  gap: 20px;
+}
+
+.group-card {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.group-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.group-header h3 {
+  font-size: 18px;
+  margin: 0 0 5px 0;
+  color: #333;
+  font-weight: 600;
+}
+
+.group-header p {
+  font-size: 14px;
+  color: #777;
+  margin: 0;
+  font-weight: 400;
+}
+
+.group-content {
+  display: flex;
+  margin-top: 15px;
+  align-items: center;
+  position: relative;
+  padding-right: 30px; /* Space for menu icon */
+}
+
+.teachers-section, .students-section {
+  flex: 1;
+}
+
+.group-section-title {
+  font-size: 14px;
+  color: #888;
+  margin: 0 0 10px 0;
+  font-weight: 400;
+}
+
+.teachers-avatars, .students-avatars {
+  display: flex;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: -8px; /* Negative margin for overlapping effect */
+  border: 2px solid white;
+  position: relative;
+}
+
+.avatar:last-child {
+  margin-right: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+  margin-right: 10px;
+}
+
+.student-avatar:last-child {
+  margin-right: 0;
+}
+
+.divider {
+  width: 1px;
+  height: 40px;
+  background-color: #e0e0e0;
+  margin: 0 15px;
+}
+
+.menu-icon {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.group-hearder {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.group-header-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  border-left:  4px solid #066fbf;
+  padding-left: 10px;
+}
+
+.group-content-left {
+  display: flex;
+  gap: 1rem;
+}
+
+.group-search {
+  position: relative;
+  flex: 1 1;
+}
+
+.group-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.group-search input {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 16px 8px 40px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  font-size: 14px;
+  outline: none;
+  color: #333;
+  font-family: inherit;
+}
+
+.group-add-btn {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background-color: #066fbf;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.group-add-btn:hover {
+  background-color: #065d9e;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .group-grid {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .group-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+  
+  .group-card {
+    padding: 15px;
+  }
+}
+
+/* Modal Styles */
+.teacher-group-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.teacher-group-modal-container {
+  background-color: white;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 500px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.teacher-group-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.teacher-group-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.teacher-group-close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.teacher-group-close-button:hover {
+  background-color: #f0f0f0;
+}
+
+.teacher-group-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.teacher-group-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.teacher-group-form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.teacher-group-form-group input,
+.teacher-group-form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.teacher-group-form-group input:focus,
+.teacher-group-form-group textarea:focus {
+  border-color: #3e60ff;
+  outline: none;
+}
+
+.teacher-group-required {
+  color: #e53935;
+}
+
+.teacher-group-error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.teacher-group-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.teacher-group-cancel-button {
+  padding: 10px 16px;
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.teacher-group-cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.teacher-group-submit-button {
+  padding: 10px 16px;
+  background-color: #3e60ff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.teacher-group-submit-button:hover {
+  background-color: #2a4ad8;
+}
+
+.teacher-group-submit-button:disabled {
+  background-color: #9baafa;
+  cursor: not-allowed;
+} 

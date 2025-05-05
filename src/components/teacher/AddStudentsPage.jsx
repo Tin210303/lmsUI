@@ -10,7 +10,12 @@ const AddStudentsPage = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
     const [course, setCourse] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    
+    // Thay searchTerm đơn bằng 3 state riêng biệt
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
+    const [majorName, setMajorName] = useState('');
+    
     const [searchResults, setSearchResults] = useState([]);
     const [selectedStudents, setSelectedStudents] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -36,22 +41,48 @@ const AddStudentsPage = () => {
     };
 
     const handleSearch = async () => {
-        if (!searchTerm.trim()) return;
+        // Kiểm tra ít nhất một trường đã được nhập
+        if (!fullName.trim() && !email.trim() && !majorName.trim()) {
+            showAlert('warning', 'Chú ý', 'Vui lòng nhập ít nhất một điều kiện tìm kiếm');
+            return;
+        }
         
         setLoading(true);
         try {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
 
-            // Thay đổi URL API này theo endpoint tìm kiếm sinh viên của bạn
-            const response = await axios.get(`http://localhost:8080/lms/student/search?query=${searchTerm}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            // Tạo formData với 5 trường theo yêu cầu
+            const formData = new FormData();
+            formData.append('fullName', fullName.trim());
+            formData.append('email', email.trim());
+            formData.append('majorName', majorName.trim());
+            formData.append('pageNumber', 0);
+            formData.append('pageSize', 10);
+
+            // Gọi API bằng phương thức POST
+            const response = await axios.post('http://localhost:8080/lms/student/search', 
+                formData,
+                {
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
             
-            setSearchResults(response.data.result || []);
+            // Xử lý kết quả
+            if (response.data && response.data.result) {
+                // Nếu API trả về dạng phân trang
+                const students = response.data.result.content || response.data.result;
+                setSearchResults(students);
+            } else {
+                setSearchResults([]);
+            }
         } catch (error) {
             console.error('Error searching students:', error);
             showAlert('error', 'Lỗi', 'Không thể tìm kiếm sinh viên');
+            setSearchResults([]);
         } finally {
             setLoading(false);
         }
@@ -78,25 +109,33 @@ const AddStudentsPage = () => {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
 
-            // Thực hiện nhiều request để thêm từng sinh viên vào khóa học
-            const requests = selectedStudents.map(student => {
-                const formData = new FormData();
-                formData.append('courseId', courseId);
-                formData.append('studentId', student.id);
-                
-                return axios.post('http://localhost:8080/lms/joinclass/addstudent', formData, {
+            // Lấy danh sách ID của các sinh viên đã chọn
+            const studentIds = selectedStudents.map(student => student.id);
+
+            // Gọi API addstudents với courseId và danh sách studentIds
+            const response = await axios.post(
+                'http://localhost:8080/lms/studentcourse/addstudents',
+                {
+                    courseId: courseId,
+                    studentIds: studentIds
+                },
+                {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
+                        'Content-Type': 'application/json'
                     }
-                });
-            });
+                }
+            );
             
-            await Promise.all(requests);
-            showAlert('success', 'Thành công', 'Đã thêm sinh viên vào khóa học');
-            setTimeout(() => {
-                navigate(`/teacher/course/${courseId}`);
-            }, 2000);
+            // Xử lý kết quả
+            if (response.data && response.data.code === 200) {
+                showAlert('success', 'Thành công', 'Đã thêm sinh viên vào khóa học');
+                setTimeout(() => {
+                    navigate(`/teacher/course-management/${courseId}`);
+                }, 2000);
+            } else {
+                showAlert('error', 'Lỗi', response.data?.message || 'Không thể thêm sinh viên vào khóa học');
+            }
         } catch (error) {
             console.error('Error adding students to course:', error);
             showAlert('error', 'Lỗi', 'Không thể thêm sinh viên vào khóa học');
@@ -105,8 +144,22 @@ const AddStudentsPage = () => {
         }
     };
 
+    // Hàm xử lý khi người dùng nhấn phím Enter trong bất kỳ ô input nào
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+
     const showAlert = (type, title, message) => {
         setAlert({ type, title, message });
+    };
+
+    const resetSearchForm = () => {
+        setFullName('');
+        setEmail('');
+        setMajorName('');
+        setSearchResults([]);
     };
 
     return (
@@ -131,17 +184,60 @@ const AddStudentsPage = () => {
                 <div className="search-section">
                     <div className="search-form">
                         <h3>Tìm kiếm sinh viên</h3>
-                        <div className="search-input-group">
-                            <input
-                                type="text"
-                                placeholder="Nhập tên hoặc email sinh viên..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                            />
-                            <button onClick={handleSearch} disabled={loading}>
-                                <Search size={18} />
-                            </button>
+                        <div className="search-form-inputs">
+                            <div className="search-form-group">
+                                <label htmlFor="fullName">Tên sinh viên</label>
+                                <input
+                                    id="fullName"
+                                    type="text"
+                                    placeholder="Nhập tên sinh viên..."
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                />
+                            </div>
+
+                            <div className="search-form-group">
+                                <label htmlFor="email">Email</label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    placeholder="Nhập email sinh viên..."
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                />
+                            </div>
+
+                            <div className="search-form-group">
+                                <label htmlFor="majorName">Chuyên ngành</label>
+                                <input
+                                    id="majorName"
+                                    type="text"
+                                    placeholder="Nhập chuyên ngành..."
+                                    value={majorName}
+                                    onChange={(e) => setMajorName(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                />
+                            </div>
+
+                            <div className="search-buttons">
+                                <button 
+                                    className="search-btn" 
+                                    onClick={handleSearch} 
+                                    disabled={loading}
+                                >
+                                    <Search size={18} />
+                                    <span>Tìm kiếm</span>
+                                </button>
+                                <button 
+                                    className="reset-btn" 
+                                    onClick={resetSearchForm}
+                                    disabled={loading}
+                                >
+                                    Xóa bộ lọc
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -214,7 +310,7 @@ const AddStudentsPage = () => {
                     <div className="add-student-action-buttons">
                         <button 
                             className="cancel-btn"
-                            onClick={() => navigate(`/teacher/course/${courseId}`)}
+                            onClick={() => navigate(`/teacher/course-management/${courseId}`)}
                         >
                             Hủy
                         </button>

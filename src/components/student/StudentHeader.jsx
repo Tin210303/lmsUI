@@ -361,10 +361,10 @@ const StudentHeader = () => {
                         const progressResponse = await axios.get(`${API_BASE_URL}/lms/lessonchapterprogress/getpercent`, {
                             params: {
                                 courseId: course.id,
+                                studentId: studentData.id
                             },
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
-
                         const progressPercentage = progressResponse.data.result
                         
                         
@@ -608,7 +608,7 @@ const StudentHeader = () => {
                     }
                 });
                 
-                const myCourses = myCourseResponse.data.result || [];
+                const myCourses = myCourseResponse.data.result.content || [];
                 
                 // Kiểm tra xem khóa học hiện tại có trong danh sách đã đăng ký không
                 isEnrolled = myCourses.some(myCourse => myCourse.id === course.id);
@@ -823,10 +823,10 @@ const StudentHeader = () => {
                 <div className="student-header-search-inputs">
                     <div className="student-header-search-input-group">
                         <span className="student-header-search-icon">
-                    <Search size={18} color='#787878'/>
-                </span>
-                <input
-                    type="text"
+                            <Search size={18} color='#787878'/>
+                        </span>
+                        <input
+                            type="text"
                             placeholder="Tên khóa học..."
                             value={searchQueryCourse}
                             onChange={handleSearchCourseChange}

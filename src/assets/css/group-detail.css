@@ -1,0 +1,612 @@
+.content-container {
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+/* Course detail page styles */
+.course-detail-section {
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+.group-detail-header {
+  padding: 12px 12px 0 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.group-detail-header h1 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: #333;
+  display: none;
+}
+
+.back-nav {
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.back_button {
+  background: none;
+  border: none;
+  color: #333;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 16px;
+  font-size: 20px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.back_button:hover {
+  text-decoration: underline;
+}
+
+.course-tabs {
+  display: flex;
+  border-bottom: 1px solid #eee;
+}
+
+.course-tabs button {
+  padding: 15px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.course-tabs button:hover {
+  color: #2196F3;
+}
+
+.course-tabs button.tab-active {
+  color: #2196F3;
+  border-bottom: 2px solid #2196F3;
+}
+
+.group-course-content {
+  padding: 20px;
+}
+
+/* Wall tab specific styles */
+.wall-content {
+  display: flex;
+  gap: 20px;
+}
+
+.class-info {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.class-code,
+.upcoming-deadline {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+}
+
+.label {
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.value {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.view-all {
+  color: #2196F3;
+  text-decoration: none;
+  font-size: 12px;
+  display: block;
+  text-align: right;
+  cursor: pointer;
+}
+
+.view-all:hover {
+  text-decoration: underline;
+}
+
+.class-announcement {
+  flex: 1;
+}
+
+.announcement_header {
+  width: 100% !important;
+  padding: 12px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  width: 38.2rem;
+  margin-bottom: 15px;
+  box-shadow: 1px 1px 5px #aaaaaa;
+}
+
+.open-editor {
+  width: 100%;
+  cursor: pointer;
+}
+
+.announcement_header-input {
+  border: none;
+  width: 100%;
+  cursor: pointer;
+}
+
+.announcement_header-input:focus-visible {
+  outline: none;
+}
+
+.announcement_item {
+  border: 1px solid #ccc;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.announcement_item::after {
+  content: '';
+  width: 100%;
+  border-top: 1px solid #ccc;
+  position: absolute;
+  bottom: 71px;
+  left: 0;
+}
+
+.announcement-author {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.group-author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
+}
+
+.author-info {
+  flex: 1;
+}
+
+.author-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.announcement-time {
+  color: #999;
+  font-size: 12px;
+}
+
+.more-options {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #000;
+  font-weight: bold;
+}
+
+.group-comment-section {
+  display: flex;
+  align-items: center;
+}
+
+.comment-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.group-comment-input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.send-button {
+  border-radius: 50%;
+  color: #666;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+  cursor: pointer;
+  padding: 2px;
+  padding: 4px;
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.send-button:hover {
+  background-color: #f4f4f4;
+}
+
+/* Tasks tab styling */
+.tasks-content {
+  padding: 0 20px;
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  width: 100%;
+  height: 4rem;
+  transition: box-shadow 0.3s ease;
+}
+
+.task-item:hover {
+  box-shadow: 1px 1px 5px #aaaaaa;
+  cursor: pointer;
+}
+
+.task-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.task-icon-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #2a9af3;
+  text-align: center;
+  font-size: 20px;
+  line-height: 2;
+  color: #fff;
+}
+
+.task-details {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-title {
+  font-weight: 500;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.task-deadline {
+  color: #757575;
+  font-size: 14px;
+}
+
+.task-actions {
+  margin-left: 16px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.task-actions:hover {
+  background-color: #f1f1f1;
+}
+
+.task-more-options {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  color: #616161;
+}
+
+/* People tab styling */
+.people-content {
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+.people-section {
+  width: 100%;
+}
+
+.group-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 15px;
+}
+
+.group-section-header h3 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.add-person-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  color: #616161;
+}
+
+.add-person-button:hover {
+  background-color: #f5f5f5;
+  color: #1a73e8;
+}
+
+/* Scrollable container for people lists */
+.people-list-container {
+  height: 100%;
+  border-radius: 4px;
+}
+
+/* Custom scrollbar styling */
+.people-list-container::-webkit-scrollbar {
+  background-color: #F5F5F5;
+  width: 6px;
+}
+
+.people-list-container::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+  background-color: #F5F5F5;
+}
+
+.people-list-container::-webkit-scrollbar-thumb {
+  background: #000000;
+  border-radius: 3px;
+}
+
+.people-list-container::-webkit-scrollbar-thumb:hover {
+  background: #fff;
+}
+
+.people-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.person-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.teacher-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+}
+
+.person-avatar {
+  margin-right: 15px;
+}
+
+.person-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.person-name {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.teacher-list .person-item {
+  padding-bottom: 12px;
+}
+
+.student-list .person-item:last-child {
+  border-bottom: none;
+}
+
+.announcement-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+}
+
+.editor-recipient {
+  padding: 10px 0px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+  color: #000;
+  font-weight: 500;
+}
+
+.editor-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 15px;
+  border: none;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.editor-toolbar {
+  display: flex;
+  padding: 10px 15px;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 15px;
+}
+
+.cancel-button {
+  padding: 8px 15px;
+  margin-right: 10px;
+  border: none;
+  background: none;
+  color: #1a73e8;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.post-button {
+  padding: 8px 20px;
+  border: none;
+  background-color: #1a73e8;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.editor-content {
+  min-height: 100px;
+  padding: 15px;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  overflow-y: auto;
+  font-weight: normal;
+  white-space: pre-wrap; 
+  word-wrap: break-word; 
+  word-break: break-word; 
+  overflow-x: hidden; 
+  max-width: 100%; 
+  line-height: 1.5; 
+}
+
+.editor-content[placeholder]:empty:before {
+  content: attr(placeholder);
+  color: #999;
+  pointer-events: none;
+}
+
+.editor-content ul {
+  padding-left: 16px;
+}
+
+.editor {
+  position: relative;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #9b9b9b;
+}
+
+.editor.active {
+  border-bottom: 2px solid #1a73e8;
+}
+
+.editor::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  background-color: #1a73e8;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease-in-out;
+}
+
+.editor.active::after {
+  transform: scaleX(1);
+}
+
+/* Apply styles to the displayed announcements directly, since they now contain HTML */
+.announcement_content {
+  margin-top: 10px;
+  margin-bottom: 28px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+}
+
+.announcement_content ul {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.announcement_content li {
+  margin-bottom: 4px;
+}
+
+.toolbar-button.active {
+  background-color: #e6e6e6;
+  border-radius: 2px;
+}
+
+.toolbar-button {
+  width: 34px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 5px 10px;
+  transition: background-color 0.2s;
+}
+
+.toolbar-button:hover {
+  background-color: #f0f0f0;
+  border-radius: 50%;
+}
+
+.toolbar-button.active:hover {
+  background-color: #eaeaea;
+  border-radius: 2px;
+}
+
+.toolbar-button.italic {
+  font-style: italic;
+}
+
+.toolbar-button.underline {
+  text-decoration: underline;
+}

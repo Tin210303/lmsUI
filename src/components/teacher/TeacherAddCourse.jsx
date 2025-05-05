@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../assets/css/teacher-add-course.css';
 import Alert from '../common/Alert';
+import axios from 'axios';
 
 const TeacherAddCourse = () => {
     const navigate = useNavigate();
@@ -15,7 +16,7 @@ const TeacherAddCourse = () => {
         startDate: today,
         endDate: '',
         learningDurationType: 'Không thời hạn',
-        major: 'IT'
+        majorId: '',
     });
 
     const [alert, setAlert] = useState(null);
@@ -23,12 +24,44 @@ const TeacherAddCourse = () => {
         setAlert({ type, title, message });
     };
 
+    const [error, setError] = useState('');
+    const [majors, setMajors] = useState([]);
+    const [loadingMajors, setLoadingMajors] = useState(false);
+
+    // Lấy danh sách chuyên ngành từ API
+    useEffect(() => {
+        const fetchMajors = async () => {
+            try {
+                setLoadingMajors(true);
+                const response = await axios.get('http://localhost:8080/lms/major');
+                
+                if (response.data && response.data.code === 0) {
+                    console.log('Danh sách chuyên ngành:', response.data.result);
+                    setMajors(response.data.result);
+                } else {
+                    console.error('Lỗi khi lấy danh sách chuyên ngành:', response.data);
+                    setError('Không thể lấy danh sách chuyên ngành. Vui lòng thử lại sau.');
+                }
+            } catch (err) {
+                console.error('Lỗi khi gọi API chuyên ngành:', err);
+                setError('Đã xảy ra lỗi khi lấy danh sách chuyên ngành.');
+            } finally {
+                setLoadingMajors(false);
+            }
+        };
+
+        fetchMajors();
+    }, []);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
+        console.log(formData);
+        
     };
 
     const handleSubmit = async (e) => {
@@ -123,17 +156,17 @@ const TeacherAddCourse = () => {
                 <div className="teacher-form-group">
                     <label>Chuyên ngành <span style={{color: '#f00', marginLeft: '20px'}}>*</span></label>
                     <select 
-                        name="major"
-                        value={formData.major}
+                        name="majorId"
+                        value={formData.majorId}
                         onChange={handleInputChange}
                         required
                     >
                         <option value="">Chọn chuyên ngành</option>
-                        <option value="Công nghệ thông tin">Công nghệ thông tin</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Business">Kinh doanh</option>
-                        <option value="Design">Thiết kế</option>
-                        <option value="Language">Ngoại ngữ</option>
+                        {majors.map(major => (
+                            <option key={major.id} value={major.id}>
+                                {major.name}
+                            </option>
+                        ))}
                     </select>
                 </div>
                 <div className="teacher-form-group">
