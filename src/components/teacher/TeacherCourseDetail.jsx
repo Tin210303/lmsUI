@@ -4,12 +4,15 @@ import axios from 'axios';
 import '../../assets/css/teacher-course-detail.css';
 import { CircleGauge, Film, Clock, AlarmClock, FileText, FileQuestion, File, Plus, SquareUser, GraduationCap, FolderPen } from 'lucide-react';
 import Alert from '../common/Alert';
+import { API_BASE_URL, ADD_LESSON_API } from '../../services/apiService';
 
 const TeacherCourseDetail = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { courseId } = location.state || {};
     const [course, setCourse] = useState(null);
+    console.log(course);
+    
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [expandedLessons, setExpandedLessons] = useState({});
@@ -36,7 +39,7 @@ const TeacherCourseDetail = () => {
                     throw new Error('Course ID not found');
                 }
 
-                const response = await axios.get(`http://localhost:8080/lms/course/${courseId}`, {
+                const response = await axios.get(`${API_BASE_URL}/lms/course/${courseId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -111,7 +114,7 @@ const TeacherCourseDetail = () => {
             const currentMaxOrder = Math.max(...course.lesson.map(l => l.order), 0);
             const newOrder = currentMaxOrder + 1;
 
-            const response = await axios.post('http://localhost:8080/lms/lesson/create', {
+            const response = await axios.post(`${ADD_LESSON_API}`, {
                 courseId,
                 description: newLesson.description,
                 order: newOrder
@@ -123,7 +126,7 @@ const TeacherCourseDetail = () => {
 
             if (response.data.code === 0) {
                 // Refresh lại dữ liệu khóa học
-                const updatedCourse = await axios.get(`http://localhost:8080/lms/course/${courseId}`, {
+                const updatedCourse = await axios.get(`${API_BASE_URL}/lms/course/${courseId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -256,7 +259,7 @@ const TeacherCourseDetail = () => {
                                                             <File size={16} />
                                                         </div>
                                                         <div className="teacher-lesson-title">
-                                                            {material.path.split('/').pop()}
+                                                            {material.fileName}
                                                         </div>
                                                     </div>
                                                 ))}

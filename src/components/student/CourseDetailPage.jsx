@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCourseById } from '../../services/courseService';
+import { getCourseById, URL } from '../../services/courseService';
+import { GET_STATUS_API } from '../../services/apiService';
 import axios from 'axios';
 import '../../assets/css/course-detail.css';
 import { Check, CirclePlay, Film, Clock, AlarmClock, Plus, Minus, SquareUser, GraduationCap } from 'lucide-react';
@@ -54,7 +55,7 @@ const CourseDetailPage = () => {
             formData.append('courseId', courseId);
 
             // Gọi API kiểm tra trạng thái
-            const response = await axios.get(`http://localhost:8080/lms/joinclass/getstatus`, {
+            const response = await axios.get(`${GET_STATUS_API}`, {
                 headers: { 
                     'Authorization': `Bearer ${token}`
                 },

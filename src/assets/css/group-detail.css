@@ -138,7 +138,7 @@
   display: flex;
   align-items: center;
   width: 38.2rem;
-  margin-bottom: 15px;
+  margin-bottom: 1.5rem;
   box-shadow: 1px 1px 5px #aaaaaa;
 }
 
@@ -160,18 +160,9 @@
 .announcement_item {
   border: 1px solid #ccc;
   padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 15px;
   position: relative;
-}
-
-.announcement_item::after {
-  content: '';
-  width: 100%;
-  border-top: 1px solid #ccc;
-  position: absolute;
-  bottom: 71px;
-  left: 0;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 
 .announcement-author {
@@ -202,13 +193,13 @@
   font-size: 12px;
 }
 
-.more-options {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #000;
-  font-weight: bold;
+.group-comment-divided {
+  border: 1px solid #ccc;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  margin-bottom: 1.5rem;
+  padding: 15px;
+  border-top: none;
 }
 
 .group-comment-section {
@@ -609,6 +600,10 @@
 
 .toolbar-button.underline {
   text-decoration: underline;
+}
+
+.toolbar-button.upload-file {
+  padding: 4px 0 0 0;
 }
 
 /* Style cho các file attachment trong bài đăng */

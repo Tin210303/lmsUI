@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, User, LogOut, Bell, Check } from 'lucide-react';
 import logo from '../../assets/imgs/logo.png';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL, SEARCH_COURSE_API, GET_MY_COURSE, GET_PROGRESS_PERCENT, GET_STUDENT_INFO } from '../../services/apiService';
 import '../../assets/css/student-header.css'; // Use the shared header CSS
 import axios from 'axios';
 
@@ -50,8 +51,6 @@ const sampleNotifications = [
         type: 'promotion',
     }
 ];
-
-const API_BASE_URL = 'http://localhost:8080';
 
 const StudentHeader = () => {
     const { user, logout } = useAuth();
@@ -161,7 +160,7 @@ const StudentHeader = () => {
             // Tạo form data theo yêu cầu của backend
             console.log(`Tìm kiếm với: courseName=${courseName}, teacherName=${teacherName}, pageNumber=${pageNumber}, pageSize=${pageSize}`);
             
-            const response = await axios.get(`${API_BASE_URL}/lms/course/search`, {
+            const response = await axios.get(`${SEARCH_COURSE_API}`, {
                 params: {
                     courseName: courseName || '',
                     teacherName: teacherName || '',
@@ -321,7 +320,7 @@ const StudentHeader = () => {
             if (!token) throw new Error('Không tìm thấy token xác thực');
             
             // Fetch my courses with pagination
-            const myCourseResponse = await axios.get(`${API_BASE_URL}/lms/studentcourse/mycourse`, {
+            const myCourseResponse = await axios.get(`${GET_MY_COURSE}`, {
                 params: {
                     pageNumber: pageNumber,
                     pageSize: pageSize
@@ -358,7 +357,7 @@ const StudentHeader = () => {
                         const courseDetail = courseDetailResponse.data.result;
                         
                         // Calculate progress percentage
-                        const progressResponse = await axios.get(`${API_BASE_URL}/lms/lessonchapterprogress/getpercent`, {
+                        const progressResponse = await axios.get(`${GET_PROGRESS_PERCENT}`, {
                             params: {
                                 courseId: course.id,
                                 studentId: studentData.id
@@ -482,7 +481,7 @@ const StudentHeader = () => {
                 }
 
                 // Fetch student info
-                const studentResponse = await axios.get('http://localhost:8080/lms/student/myinfo', {
+                const studentResponse = await axios.get(`${GET_STUDENT_INFO}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -529,7 +528,7 @@ const StudentHeader = () => {
             if (!token) return;
 
             // Fetch avatar with authorization header
-            const response = await axios.get(`http://localhost:8080${avatarPath}`, {
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
@@ -602,7 +601,7 @@ const StudentHeader = () => {
             const token = localStorage.getItem('authToken');
             if (token) {
                 // Gọi API để lấy danh sách khóa học đã đăng ký
-                const myCourseResponse = await axios.get(`${API_BASE_URL}/lms/studentcourse/mycourse`, {
+                const myCourseResponse = await axios.get(`${GET_MY_COURSE}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

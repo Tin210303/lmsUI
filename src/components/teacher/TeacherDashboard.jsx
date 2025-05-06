@@ -15,50 +15,6 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     const [studentCount, setStudentCount] = useState(course?.studentCount || '0');
     const [courseImage, setCourseImage] = useState(null);
 
-    // useEffect(() => {
-    //     const fetchData = async () => {
-    //         try {
-    //             const token = localStorage.getItem('authToken');
-    //             if (!token) {
-    //                 throw new Error('No authentication token found');
-    //             }
-
-    //             // Fetch students
-    //             const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse/${course.id}`, {
-    //                 headers: {
-    //                     'Authorization': `Bearer ${token}`
-    //                 }
-    //             });
-    //             setStudents(studentsResponse.data.result || []);
-
-    //             if (course.image) {
-    //                 // Tạo URL đầy đủ từ tên file ảnh
-    //                 const imageUrl = `http://localhost:8080/lms/course/image/${course.image}`;
-    //                 setCourseImage(imageUrl);
-    //             }
-    //         } catch (err) {
-    //             console.error('Error fetching data:', err);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-
-    //     fetchData();
-    // }, [course.id]);
-
-    // Hàm tạo slug từ tên khóa học
-    const createSlug = (name) => {
-        // Chuyển tiếng Việt có dấu thành không dấu
-        let str = name.toLowerCase();
-        str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        
-        // Thay thế ký tự đặc biệt và dấu cách bằng dấu gạch ngang
-        str = str.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-        
-        // Thêm thời gian hiện tại để đảm bảo slug là duy nhất
-        return str + '-' + Date.now();
-    };
-
     const handleClick = () => {
         navigate('/teacher/course', {
             state: { courseId: course.id }

@@ -5,6 +5,7 @@ import '../../assets/css/course-management.css';
 import { Trash2, UserPlus } from 'lucide-react';
 import logo from '../../logo.svg';
 import Alert from '../common/Alert';
+import { API_BASE_URL, GET_PROGRESS_PERCENT, GET_JOINCLASS_REQUEST, GET_STUDENT_COURSE, JOINCLASS_APPROVED_API, JOINCLASS_REJECTED_API, DELETE_STUDENT_COURSE, UPDATE_COURSE_API, GET_MAJOR_API } from '../../services/apiService';
 
 const CourseManagementPage = () => {
     const { courseId } = useParams();
@@ -19,7 +20,7 @@ const CourseManagementPage = () => {
     const [error, setError] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [completionPercentages, setCompletionPercentages] = useState({});
-
+    const [majors, setMajors] = useState([]);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -28,13 +29,17 @@ const CourseManagementPage = () => {
         major: '',
         endDate: '',
         description: '',
-        image: null
+        image: null,
+        learningDurationType: 'Không thời hạn',
     });
+    console.log(formData);
+    
 
     const [alert, setAlert] = useState(null);
 
     useEffect(() => {
         fetchData();
+        fetchMajors();
     }, [courseId]);
 
     const fetchData = async () => {
@@ -45,13 +50,13 @@ const CourseManagementPage = () => {
             if (!token) throw new Error('No authentication token found');
 
             // Fetch course details
-            const courseResponse = await axios.get(`http://localhost:8080/lms/course/${courseId}`, {
+            const courseResponse = await axios.get(`${API_BASE_URL}/lms/course/${courseId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setCourse(courseResponse.data.result);
 
             // Fetch enrolled students using the specific API
-            const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse`, {
+            const studentsResponse = await axios.get(`${GET_STUDENT_COURSE}`, {
                 params: {
                     courseId: courseId,
                     pageSize: 10,
@@ -69,7 +74,7 @@ const CourseManagementPage = () => {
             }
 
             // Fetch course registration requests using the new API
-            const registrationsResponse = await axios.get(`http://localhost:8080/lms/joinclass/studentrequest`, {
+            const registrationsResponse = await axios.get(`${GET_JOINCLASS_REQUEST}`, {
                 params: {
                     courseId: courseId,
                     pageSize: 10,
@@ -81,11 +86,12 @@ const CourseManagementPage = () => {
 
             setFormData({
                 name: courseResponse.data.result.name,
-                type: courseResponse.data.result.status === 'PUBLIC' ? 'Khóa học chung' : 'Khóa học riêng',
+                type: courseResponse.data.result.status,
                 major: courseResponse.data.result.major,
                 endDate: courseResponse.data.result.endDate,
                 description: courseResponse.data.result.description,
-                image: courseResponse.data.result.image
+                image: courseResponse.data.result.image,
+                learningDurationType: courseResponse.data.result.learningDurationType || 'Không thời hạn',
             });
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'An error occurred');
@@ -103,7 +109,7 @@ const CourseManagementPage = () => {
             await Promise.all(
                 studentsList.map(async (student) => {
                     try {
-                        const response = await axios.get(`http://localhost:8080/lms/lessonchapterprogress/getpercent`, {
+                        const response = await axios.get(`${GET_PROGRESS_PERCENT}`, {
                             params: {
                                 courseId: courseId,
                                 studentId: student.id
@@ -129,6 +135,19 @@ const CourseManagementPage = () => {
         }
     };
 
+    const fetchMajors = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+            const res = await axios.get(GET_MAJOR_API, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setMajors(res.data.result || []);
+        } catch (err) {
+            setMajors([]);
+        }
+    };
+
     const showAlert = (type, title, message) => {
         setAlert({ type, title, message });
     };
@@ -138,25 +157,19 @@ const CourseManagementPage = () => {
         try {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
-
-            // Xác định learningDurationType dựa trên endDate
-            const learningDurationType = formData.endDate ? 'Có thời hạn' : 'Không thời hạn';
-
-            await axios.put(`http://localhost:8080/lms/course/update`, {
+            await axios.put(`${UPDATE_COURSE_API}`, {
                 idCourse: courseId,
                 name: formData.name,
                 description: formData.description,
-                endDate: formData.endDate,
-                major: formData.major,
-                status: formData.type === 'Khóa học chung' ? 'PUBLIC' : 'PRIVATE',
-                learningDurationType: learningDurationType
+                endDate: formData.learningDurationType === 'Có thời hạn' ? formData.endDate : '',
+                majorId: formData.major,
+                status: formData.type,
+                learningDurationType: formData.learningDurationType
             }, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
             showAlert('success', 'Thành công', 'Cập nhật thông tin khóa học thành công!');
             fetchData();
-
         } catch (err) {
             showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi cập nhật thông tin khóa học');
         }
@@ -179,10 +192,10 @@ const CourseManagementPage = () => {
             let successMessage = '';
 
             if (action === 'accept') {
-                apiUrl = `http://localhost:8080/lms/joinclass/approved`;
+                apiUrl = `${JOINCLASS_APPROVED_API}`;
                 successMessage = 'Đã chấp nhận sinh viên vào khóa học.';
             } else if (action === 'reject') {
-                apiUrl = `http://localhost:8080/lms/joinclass/rejected`;
+                apiUrl = `${JOINCLASS_REJECTED_API}`;
                 successMessage = 'Đã từ chối yêu cầu của sinh viên.';
             } else {
                 throw new Error('Invalid action specified');
@@ -209,7 +222,7 @@ const CourseManagementPage = () => {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
 
-            await axios.delete(`http://localhost:8080/lms/course/${courseId}`, {
+            await axios.delete(`${API_BASE_URL}/lms/course/${courseId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -234,7 +247,7 @@ const CourseManagementPage = () => {
             formData.append('studentId', studentId);
 
             const response = await axios.request({
-                url: 'http://localhost:8080/lms/studentcourse/delete',
+                url: `${DELETE_STUDENT_COURSE}`,
                 method: 'delete',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -266,36 +279,54 @@ const CourseManagementPage = () => {
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                     />
                 </div>
-
                 <div className="form-group-manage">
                     <label>Loại</label>
                     <select 
                         value={formData.type}
                         onChange={(e) => setFormData({...formData, type: e.target.value})}
                     >
-                        <option value="PUBLIC">Khóa học chung</option>
+                        <option value="PUBLIC">Khóa học miễn phí</option>
+                        <option value="REQUEST">Khóa học yêu cầu đăng ký</option>
                         <option value="PRIVATE">Khóa học riêng tư</option>
                     </select>
                 </div>
-
                 <div className="form-group-manage">
                     <label>Chuyên ngành</label>
-                    <input
-                        type="text"
+                    <select
                         value={formData.major}
                         onChange={(e) => setFormData({...formData, major: e.target.value})}
-                    />
+                    >
+                        {majors.map((major) => (
+                            <option key={major.id} value={major.id}>{major.name}</option>
+                        ))}
+                    </select>
                 </div>
-
+                <div className="form-group-manage">
+                    <label>Kiểu thời lượng</label>
+                    <select
+                        value={formData.learningDurationType}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData((prev) => ({
+                                ...prev,
+                                learningDurationType: val,
+                                endDate: val === 'Có thời hạn' ? prev.endDate : ''
+                            }));
+                        }}
+                    >
+                        <option value="Không thời hạn">Không thời hạn</option>
+                        <option value="Có thời hạn">Có thời hạn</option>
+                    </select>
+                </div>
                 <div className="form-group-manage">
                     <label>Ngày kết thúc khóa học</label>
                     <input
                         type="date"
                         value={formData.endDate ? formData.endDate.split('T')[0] : ''}
                         onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                        disabled={formData.learningDurationType !== 'Có thời hạn'}
                     />
                 </div>
-
                 <div className="form-group-manage">
                     <label>Ảnh đại diện cho khóa học</label>
                     <div className="image-upload">
@@ -307,7 +338,6 @@ const CourseManagementPage = () => {
                         }} />
                     </div>
                 </div>
-
                 <div className="form-group-manage">
                     <label>Mô tả về khóa học</label>
                     <textarea
@@ -316,7 +346,6 @@ const CourseManagementPage = () => {
                         rows={4}
                     />
                 </div>
-
                 <div className="form-actions">
                     <button type="submit" className="btn-confirm">Xác nhận</button>
                 </div>

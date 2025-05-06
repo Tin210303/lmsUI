@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../../assets/css/student-info.css';
 import axios from 'axios';
 import { getMyCourses } from '../../services/courseService';
+import { API_BASE_URL, GET_STUDENT_INFO } from '../../services/apiService';
 import { useAuth } from '../../context/AuthContext';
 import CourseCard from './CourseCard';
 import { X, Upload, Backpack } from 'lucide-react';
@@ -57,7 +58,7 @@ console.log(courses.length);
                 }
 
                 // Fetch student info
-                const studentResponse = await axios.get('http://localhost:8080/lms/student/myinfo', {
+                const studentResponse = await axios.get(`${GET_STUDENT_INFO}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -124,7 +125,7 @@ console.log(courses.length);
             if (!token) return;
 
             // Fetch avatar with authorization header
-            const response = await axios.get(`http://localhost:8080${avatarPath}`, {
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
@@ -173,7 +174,7 @@ console.log(courses.length);
             const formData = new FormData();
             formData.append('file', selectedAvatar);
 
-            const response = await axios.post(`http://localhost:8080/lms/student/${studentData.id}/upload-photo`, formData, {
+            const response = await axios.post(`${API_BASE_URL}/lms/student/${studentData.id}/upload-photo`, formData, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
@@ -181,7 +182,7 @@ console.log(courses.length);
             });
 
             if (response.data.code === 0 || response.status === 200) {
-                const studentResponse = await axios.get('http://localhost:8080/lms/student/myinfo', {
+                const studentResponse = await axios.get(`${GET_STUDENT_INFO}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

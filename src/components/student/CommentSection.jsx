@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import logo from '../../logo.svg';
 import axios from 'axios';
 import '../../assets/css/comment-section.css';
+import { API_BASE_URL, GET_STUDENT_INFO } from '../../services/apiService';
 
 // Dữ liệu mẫu (sau này có thể gọi từ API)
 const commentsData = {
@@ -81,7 +82,7 @@ const CommentSection = ({ lessonId }) => {
                 }
 
                 // Fetch student info
-                const studentResponse = await axios.get('http://localhost:8080/lms/student/myinfo', {
+                const studentResponse = await axios.get(`${GET_STUDENT_INFO}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -128,7 +129,7 @@ const CommentSection = ({ lessonId }) => {
             if (!token) return;
 
             // Fetch avatar with authorization header
-            const response = await axios.get(`http://localhost:8080${avatarPath}`, {
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },

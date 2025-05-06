@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import '../../assets/css/group-page.css';
+import { API_BASE_URL, GET_TEACHER_GROUPS } from '../../services/apiService';
 
 // Add Group Modal Component
 const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
@@ -212,7 +213,7 @@ const GroupPage = () => {
         
         // Gọi API với phương thức GET và params
         const response = await axios.get(
-          `http://localhost:8080/lms/group/groupofteacher?${params.toString()}`,
+          `${GET_TEACHER_GROUPS}?${params.toString()}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`

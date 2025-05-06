@@ -5,6 +5,7 @@ import logo from '../../logo.svg';
 import { Search, Plus, Users } from 'lucide-react';
 import Alert from '../common/Alert';
 import '../../assets/css/add-students.css';
+import { API_BASE_URL, SEARCH_STUDENT_NOT_IN_COURSE, ADD_STUDENT_COURSE } from '../../services/apiService';
 
 const AddStudentsPage = () => {
     const { courseId } = useParams();
@@ -30,7 +31,7 @@ const AddStudentsPage = () => {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
 
-            const response = await axios.get(`http://localhost:8080/lms/course/${courseId}`, {
+            const response = await axios.get(`${API_BASE_URL}/lms/course/${courseId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setCourse(response.data.result);
@@ -61,7 +62,7 @@ const AddStudentsPage = () => {
 
             // Gọi API bằng phương thức GET với params trong URL
             const response = await axios.get(
-                `http://localhost:8080/lms/studentcourse/searchstudentnotin?${params.toString()}`,
+                `${SEARCH_STUDENT_NOT_IN_COURSE}?${params.toString()}`,
                 {
                     headers: { 
                         'Authorization': `Bearer ${token}`
@@ -112,7 +113,7 @@ const AddStudentsPage = () => {
 
             // Gọi API addstudents với courseId và danh sách studentIds
             const response = await axios.post(
-                'http://localhost:8080/lms/studentcourse/addstudents',
+                `${ADD_STUDENT_COURSE}`,
                 {
                     courseId: courseId,
                     studentIds: studentIds

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../assets/css/teacher-add-course.css';
 import Alert from '../common/Alert';
 import axios from 'axios';
+import { GET_MAJOR_API, ADD_COURSE_API } from '../../services/apiService';
 
 const TeacherAddCourse = () => {
     const navigate = useNavigate();
@@ -33,7 +34,7 @@ const TeacherAddCourse = () => {
         const fetchMajors = async () => {
             try {
                 setLoadingMajors(true);
-                const response = await axios.get('http://localhost:8080/lms/major');
+                const response = await axios.get(`${GET_MAJOR_API}`);
                 
                 if (response.data && response.data.code === 0) {
                     console.log('Danh sách chuyên ngành:', response.data.result);
@@ -91,7 +92,7 @@ const TeacherAddCourse = () => {
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch('http://localhost:8080/lms/course/create', {
+            const response = await fetch(`${ADD_COURSE_API}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

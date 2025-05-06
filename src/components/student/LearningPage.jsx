@@ -8,9 +8,7 @@ import '../../assets/css/learning-page.css';
 import CommentSection from './CommentSection';
 import LearningContent from './LearningContent';
 import Alert from '../common/Alert';
-
-// Định nghĩa API_BASE_URL
-const API_BASE_URL = 'http://localhost:8080/lms';
+import { API_BASE_URL } from '../../services/apiService';
 
 const LearningPage = () => {
     const { id } = useParams();
@@ -53,7 +51,7 @@ const LearningPage = () => {
         const fetchCourseData = async () => {
             try {
                 const token = localStorage.getItem('authToken');
-                const response = await axios.get(`${API_BASE_URL}/course/${id}`, {
+                const response = await axios.get(`${API_BASE_URL}/lms/course/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -184,7 +182,7 @@ const LearningPage = () => {
         try {
             const checkPromises = allChapterIds.map(async (chapterId) => {
                 try {
-                    const response = await axios.get(`${API_BASE_URL}/lessonchapterprogress/getprogress/${chapterId}`, {
+                    const response = await axios.get(`${API_BASE_URL}/lms/lessonchapterprogress/getprogress/${chapterId}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -302,7 +300,7 @@ const LearningPage = () => {
             console.log('Checking if chapter progress exists:', chapterId);
             
             // Trước tiên, kiểm tra xem chapter progress đã tồn tại chưa
-            const progressResponse = await axios.get(`${API_BASE_URL}/lessonchapterprogress/getprogress/${chapterId}`, {
+            const progressResponse = await axios.get(`${API_BASE_URL}/lms/lessonchapterprogress/getprogress/${chapterId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -314,7 +312,7 @@ const LearningPage = () => {
             if (!progressResponse.data.result || progressResponse.data.result.isCompleted === null) {
                 console.log('Initializing progress for chapter:', chapterId);
                 
-                const response = await axios.post(`${API_BASE_URL}/lessonchapterprogress/savechapterprogress/${chapterId}`, null, {
+                const response = await axios.post(`${API_BASE_URL}/lms/lessonchapterprogress/savechapterprogress/${chapterId}`, null, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -366,7 +364,7 @@ const LearningPage = () => {
             
             console.log('Checking completion for chapter:', chapterId);
             
-            const response = await axios.get(`${API_BASE_URL}/lessonchapterprogress/getprogress/${chapterId}`, {
+            const response = await axios.get(`${API_BASE_URL}/lms/lessonchapterprogress/getprogress/${chapterId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -411,7 +409,7 @@ const LearningPage = () => {
             
             console.log('Sending request to complete chapter:', chapterId);
             
-            const response = await axios.put(`${API_BASE_URL}/lessonchapterprogress/completechapter/${chapterId}`, null, {
+            const response = await axios.put(`${API_BASE_URL}/lms/lessonchapterprogress/completechapter/${chapterId}`, null, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -766,7 +764,7 @@ const handleBackToCourses = () => {
             name: materialName,
             type: 'material', 
             lessonType: 'material',
-            fileUrl: `http://localhost:8080${material.path}`,
+            fileUrl: `${API_BASE_URL}${material.path}`,
             path: material.path,
             fileType,
             data: {
@@ -882,7 +880,7 @@ const handleBackToCourses = () => {
             
             console.log('Sending request to complete lesson:', lessonId);
             
-            const response = await axios.put(`${API_BASE_URL}/lessonprogress/completelesson/${lessonId}`, null, {
+            const response = await axios.put(`${API_BASE_URL}/lms/lessonprogress/completelesson/${lessonId}`, null, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1059,7 +1057,7 @@ const handleBackToCourses = () => {
             }
             
             // Tạo URL đầy đủ
-            const fileUrl = `http://localhost:8080${materialPath}`;
+            const fileUrl = `${API_BASE_URL}${materialPath}`;
             
             const getMimeType = (extension) => {
                 switch (extension.toLowerCase()) {
@@ -1224,7 +1222,7 @@ const handleBackToCourses = () => {
             
             console.log('Checking completion for lesson:', lessonId);
             
-            const response = await axios.get(`${API_BASE_URL}/lessonprogress/getprogress/${lessonId}`, {
+            const response = await axios.get(`${API_BASE_URL}/lms/lessonprogress/getprogress/${lessonId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1308,7 +1306,7 @@ const handleBackToCourses = () => {
             console.log('Checking if lesson progress exists:', lessonId);
             
             // Trước tiên, kiểm tra xem lesson progress đã tồn tại chưa
-            const progressResponse = await axios.get(`${API_BASE_URL}/lessonprogress/getprogress/${lessonId}`, {
+            const progressResponse = await axios.get(`${API_BASE_URL}/lms/lessonprogress/getprogress/${lessonId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1320,7 +1318,7 @@ const handleBackToCourses = () => {
             if (!progressResponse.data.result || progressResponse.data.result.isCompleted === null) {
                 console.log('Initializing progress for lesson:', lessonId);
                 
-                const response = await axios.post(`${API_BASE_URL}/lessonprogress/savelessonprogress/${lessonId}`, null, {
+                const response = await axios.post(`${API_BASE_URL}/lms/lessonprogress/savelessonprogress/${lessonId}`, null, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -1703,31 +1701,31 @@ const handleBackToCourses = () => {
                                                         ${!isAccessible ? 'locked' : ''}`;
                                                     
                                                     return (
-                                            <div 
-                                                key={lesson.id}
-                                                            className={lessonClass}
-                                                            onClick={() => handleLessonClick(chapter.id, lesson.id, chapter.description, lesson.order)}
-                                                            ref={el => chapterRefs.current[`${chapter.id}-${lesson.id}`] = el}
-                                            >
-                                                <div className="lesson-info">
-                                                                {!isAccessible ? (
-                                                                    <Lock size={16} className="lesson-icon lock-icon" />
-                                                                ) : (
-                                                    <FileText size={16} className="lesson-icon" />
-                                                                )}
-                                                    <div className="lesson-title">
-                                                        <span className="learning-lesson-number">{lesson.order}.</span>
-                                                        <span className="learning-lesson-name">{lesson.name}</span>
-                                                    </div>
-                                                </div>
+                                                        <div 
+                                                            key={lesson.id}
+                                                                        className={lessonClass}
+                                                                        onClick={() => handleLessonClick(chapter.id, lesson.id, chapter.description, lesson.order)}
+                                                                        ref={el => chapterRefs.current[`${chapter.id}-${lesson.id}`] = el}
+                                                        >
+                                                            <div className="lesson-info">
+                                                                            {!isAccessible ? (
+                                                                                <Lock size={16} className="lesson-icon lock-icon" />
+                                                                            ) : (
+                                                                <FileText size={16} className="lesson-icon" />
+                                                                            )}
+                                                                <div className="lesson-title">
+                                                                    <span className="learning-lesson-number">{lesson.order}.</span>
+                                                                    <span className="learning-lesson-name">{lesson.name}</span>
+                                                                </div>
+                                                            </div>
                                                             <div className='d-flex align-center' style={{gap: '4px'}}>
                                                                 {isCompleted ? (
                                                                     <CircleCheck size={16} className="lesson-icon" />
                                                                 ) : (
                                                                     <div></div>
                                                                 )}
-                                                <span className="lesson-duration">00:00</span>
-                                            </div>
+                                                                <span className="lesson-duration">00:00</span>
+                                                            </div>
                                                         </div>
                                                     );
                                                 })

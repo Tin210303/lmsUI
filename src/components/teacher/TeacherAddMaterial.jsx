@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Upload, X } from 'lucide-react';
 import '../../assets/css/teacher-add-material.css';
+import { ADD_MATERIAL_API } from '../../services/apiService';
 
 const TeacherAddMaterial = () => {
     const navigate = useNavigate();
@@ -77,7 +78,7 @@ const TeacherAddMaterial = () => {
             formData.append('type', 'file');
 
             const response = await axios.post(
-                'http://localhost:8080/lms/lessonmaterial/create',
+                `${ADD_MATERIAL_API}`,
                 formData,
                 {
                     headers: {

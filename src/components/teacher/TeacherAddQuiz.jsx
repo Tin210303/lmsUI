@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Plus, Trash2 } from 'lucide-react';
 import '../../assets/css/teacher-add-quiz.css';
 import Alert from '../common/Alert';
+import { API_BASE_URL } from '../../services/apiService';
 
 const TeacherAddQuiz = () => {
     const navigate = useNavigate();
@@ -170,7 +171,7 @@ const TeacherAddQuiz = () => {
                     .join('; ');
 
                 const response = await axios.post(
-                    `http://localhost:8080/lms/lessonquiz/${lessonId}/create`,
+                    `${API_BASE_URL}/lms/lessonquiz/${lessonId}/create`,
                     [
                         {
                             question: quiz.question,

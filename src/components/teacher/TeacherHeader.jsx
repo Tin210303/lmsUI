@@ -6,8 +6,7 @@ import { User, LogOut } from 'lucide-react';
 import {Search} from 'lucide-react'
 import logo from '../../assets/imgs/logo.png';
 import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8080';
+import { API_BASE_URL, GET_TEACHER_INFO, SEARCH_COURSE_API } from '../../services/apiService';
 
 const TeacherHeader = () => {
     const { user, logout } = useAuth();
@@ -96,7 +95,7 @@ const TeacherHeader = () => {
                 }
 
                 // Fetch student info
-                const teacherResponse = await axios.get(`${API_BASE_URL}/lms/teacher/myinfo`, {
+                const teacherResponse = await axios.get(`${GET_TEACHER_INFO}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -143,7 +142,7 @@ const TeacherHeader = () => {
             if (!token) return;
 
             // Fetch avatar with authorization header
-            const response = await axios.get(`http://localhost:8080${avatarPath}`, {
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
@@ -200,7 +199,7 @@ const TeacherHeader = () => {
             // Tạo form data theo yêu cầu của backend
             console.log(`Tìm kiếm với: courseName=${courseName}, teacherName=${teacherName}, pageNumber=${pageNumber}, pageSize=${pageSize}`);
             
-            const response = await axios.get(`${API_BASE_URL}/lms/course/search`, {
+            const response = await axios.get(`${SEARCH_COURSE_API}`, {
                 params: {
                     courseName: courseName || '',
                     teacherName: teacherName || '',
@@ -422,43 +421,33 @@ const TeacherHeader = () => {
                 <Link to="/teacher/dashboard"><img src={logo} alt="LMS Logo" className="logo" /></Link>
                 <span className="title">Hệ Thống Học Tập Trực Tuyến</span>
             </div>
-
-            <div className="teacher-header-search-box">
-                <span className="teacher-header-search-icon">
-                    <Search size={18} color='#787878'/>
-                </span>
-                <input
-                    type="text"
-                    placeholder="Tìm kiếm khóa học..."
-                    value={searchQueryCourse}
-                    onChange={handleSearchCourseChange}
-                    onFocus={() => {
-                        if (searchQueryCourse || searchQueryTeacher) setIsSearchOpen(true);
-                    }}
-                />
-            </div>
-            {isSearchOpen && (searchQueryCourse || searchQueryTeacher) && (
-                <div className="search-results-dropdown">
-                    <div className="search-results-header">
-                        <h3>Kết quả tìm kiếm</h3>
-                        <div className="search-results-close" onClick={() => setIsSearchOpen(false)}>
-                            ×
-                        </div>
-                    </div>
-                    {renderSearchResults()}
+            <div className='teacher-search-box'>
+                <div className="teacher-header-search-box">
+                    <span className="teacher-header-search-icon">
+                        <Search size={18} color='#787878'/>
+                    </span>
+                    <input
+                        type="text"
+                        placeholder="Tìm kiếm khóa học..."
+                        value={searchQueryCourse}
+                        onChange={handleSearchCourseChange}
+                        onFocus={() => {
+                            if (searchQueryCourse || searchQueryTeacher) setIsSearchOpen(true);
+                        }}
+                    />
                 </div>
-            )}
-            <button 
-                className="search-button" 
-                onClick={handleSearch}
-                disabled={isSearching}
-            >
-                {isSearching ? (
-                    <div className="search-button-spinner"></div>
-                ) : (
-                    <Search size={18} color='#fff'/>
+                {isSearchOpen && (searchQueryCourse || searchQueryTeacher) && (
+                    <div className="search-results-dropdown">
+                        <div className="search-results-header">
+                            <h3>Kết quả tìm kiếm</h3>
+                            <div className="search-results-close" onClick={() => setIsSearchOpen(false)}>
+                                ×
+                            </div>
+                        </div>
+                        {renderSearchResults()}
+                    </div>
                 )}
-            </button>
+            </div>
 
             <div className='right-section'>
                 <Link to="/teacher/dashboard" className="my-courses">Quản lý khóa học</Link>

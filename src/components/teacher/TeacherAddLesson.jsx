@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import '../../assets/css/teacher-add-lesson.css';
 import Alert from '../common/Alert';
+import { ADD_CHAPTER_API } from '../../services/apiService';
 
 const TeacherAddLesson = () => {
     const navigate = useNavigate();
@@ -52,7 +53,7 @@ const TeacherAddLesson = () => {
             formDataToSend.append('type', formData.type);
 
             const response = await axios.post(
-                'http://localhost:8080/lms/chapter/create',
+                `${ADD_CHAPTER_API}`,
                 formDataToSend,
                 {
                     headers: {

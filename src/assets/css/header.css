@@ -361,7 +361,7 @@
 /* CSS cho chức năng tìm kiếm */
 .teacher-header-search-box {
     position: relative;
-    width: 28%;
+    width: 100%;
 }
 
 .search-inputs {
@@ -403,9 +403,15 @@
     z-index: 2;
 }
 
+.teacher-search-box {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 20px;
+}
+
 .teacher-header-search-box input {
     width: 100%;
-    max-width: 400px;
     padding: 8px 16px 8px 40px;
     border: 1px solid #ddd;
     border-radius: 999px;

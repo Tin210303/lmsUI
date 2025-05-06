@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Document, Page } from '@react-pdf/renderer';
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
+import { API_BASE_URL } from '../../services/apiService';
 
 const LearningContent = ({ currentLesson, onVideoEnded, onDownload }) => {
     const token = localStorage.getItem('authToken');
@@ -43,8 +44,7 @@ const LearningContent = ({ currentLesson, onVideoEnded, onDownload }) => {
     };
 
     const getContentUrl = (type, path) => {
-        const baseUrl = 'http://localhost:8080';
-        return `${baseUrl}${path}`;
+        return `${API_BASE_URL}${path}`;
     };
 
     const getMimeType = (extension) => {

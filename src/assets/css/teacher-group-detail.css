@@ -3,145 +3,216 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
     z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .tgd-file-preview-modal {
-    background-color: white;
-    border-radius: 8px;
     width: 90%;
     max-width: 900px;
     height: 90vh;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    overflow: hidden; /* Để đảm bảo không có nội dung tràn ra */
+    overflow: hidden;
 }
 
 .tgd-file-preview-modal-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 16px 20px;
     border-bottom: 1px solid #e0e0e0;
-    background-color: #f8f9fa;
-    z-index: 2; /* Đảm bảo header luôn nằm trên cùng */
+    background-color: #fff;
+    z-index: 10;
 }
 
 .tgd-file-preview-modal-header h3 {
     margin: 0;
-    font-size: 18px;
-    color: #333;
-    max-width: 70%;
+    font-size: 16px;
+    font-weight: 500;
+    color: #202124;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    max-width: 60%;
 }
 
 .tgd-file-preview-modal-actions {
     display: flex;
-    gap: 10px;
-}
-
-.tgd-file-download-button {
-    display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 8px 12px;
-    background-color: #1a73e8;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    color: white;
-    font-size: 14px;
-    transition: background-color 0.2s;
+    gap: 8px;
 }
 
-.tgd-file-download-button:hover {
-    background-color: #1669d6;
-}
-
+.tgd-file-download-button, 
 .tgd-file-close-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #666;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 5px;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
+    background: none;
+    border: none;
+    padding: 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.tgd-file-download-button {
+    background-color: #f1f3f4;
+    color: #202124;
+    gap: 8px;
+}
+
+.tgd-file-download-button:hover {
+    background-color: #e8eaed;
+}
+
+.tgd-file-close-button {
+    color: #5f6368;
 }
 
 .tgd-file-close-button:hover {
-    background-color: #f0f0f0;
-    color: #333;
+    background-color: #f1f3f4;
 }
 
 .tgd-file-preview-modal-content {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
     overflow: auto;
     position: relative;
-    max-height: calc(90vh - 60px); /* 60px là chiều cao ước lượng của header */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+/* Loading spinner */
 .tgd-preview-loading {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;
-    width: 100%;
+    padding: 40px;
+    color: #5f6368;
 }
 
 .tgd-preview-loading-spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #f0f0f0;
+    border: 3px solid #f3f3f3;
     border-top: 3px solid #1a73e8;
     border-radius: 50%;
-    animation: tgd-spin 1s linear infinite;
-    margin-bottom: 10px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
 }
 
-@keyframes tgd-spin {
+@keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
+/* Not available */
 .tgd-preview-not-available {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 40px;
+    color: #5f6368;
     text-align: center;
-    padding: 50px 0;
-    color: #666;
-    height: 100%;
-    width: 100%;
 }
 
-/* Styles cho các loại file */
-.tgd-image-preview {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.tgd-preview-not-available svg {
+    margin-bottom: 16px;
+    color: #dadce0;
+}
+
+/* Text preview */
+.tgd-text-preview {
     width: 100%;
     height: 100%;
-    padding: 20px;
+    padding: 24px;
     overflow: auto;
+    font-family: monospace;
+    white-space: pre-wrap;
+    color: #202124;
+    line-height: 1.5;
+    background-color: #f8f9fa;
+}
+
+/* DOCX preview */
+.tgd-docx-preview {
+    width: 100%;
+    height: 100%;
+    padding: 40px;
+    overflow: auto;
+    background-color: #f8f9fa;
+}
+
+.tgd-docx-preview .document-container {
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    padding: 40px;
+    margin: 0 auto;
+    max-width: 800px;
+}
+
+/* Excel preview */
+.tgd-excel-preview {
+    width: 100%;
+    height: 100%;
+    padding: 24px;
+    overflow: auto;
+}
+
+.tgd-excel-preview table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+
+.tgd-excel-preview th {
+    background-color: #f1f3f4;
+    font-weight: 500;
+    text-align: left;
+    padding: 8px;
+    border: 1px solid #dadce0;
+}
+
+.tgd-excel-preview td {
+    padding: 8px;
+    border: 1px solid #dadce0;
+}
+
+.tgd-excel-preview tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* PDF preview */
+.tgd-pdf-preview {
+    width: 100%;
+    height: 100%;
+}
+
+.tgd-pdf-preview iframe {
+    border: none;
+}
+
+/* Image preview */
+.tgd-image-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
 }
 
 .tgd-image-preview img {
@@ -150,13 +221,14 @@
     object-fit: contain;
 }
 
+/* Video preview */
 .tgd-video-preview {
     width: 100%;
     height: 100%;
     display: flex;
-    justify-content: center;
     align-items: center;
-    padding: 20px;
+    justify-content: center;
+    background-color: #000;
 }
 
 .tgd-video-preview video {
@@ -164,93 +236,28 @@
     max-height: 100%;
 }
 
-.tgd-pdf-preview {
-    width: 100%;
-    height: 100%;
-}
-
-.tgd-pdf-preview iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-.tgd-text-preview {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    padding: 20px;
-}
-
-.tgd-text-preview pre {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    margin: 0;
-    font-family: 'Courier New', Courier, monospace;
-    color: #333;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.tgd-docx-preview {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    padding: 20px;
-    background-color: #f8f9fa;
-}
-
-.tgd-excel-preview {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    padding: 20px;
-    background-color: #f8f9fa;
-}
-
-.tgd-excel-preview table {
-    border-collapse: collapse;
-    width: 100%;
-}
-
-.tgd-excel-preview th, .tgd-excel-preview td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-
-.tgd-excel-preview tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-
-.tgd-excel-preview th {
-    padding-top: 12px;
-    padding-bottom: 12px;
-    background-color: #1a73e8;
-    color: white;
-}
-
 /* Styles cho button file attachment trong bài đăng */
+.announcement_attachment_list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(48%, 1fr));
+    gap: 1rem;
+}
+
 .tgd-file-attachment-button {
     display: flex;
     align-items: center;
-    background-color: #f5f5f5;
+    background-color: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 6px;
-    padding: 10px 15px;
+    padding: 15px 20px;
     width: 100%;
     cursor: pointer;
     transition: background-color 0.2s;
     text-align: left;
-    margin-bottom: 15px;
-}
-
-.tgd-file-attachment-button:hover {
-    background-color: #ebebeb;
 }
 
 .tgd-file-icon {
-    margin-right: 12px;
+    margin-right: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -263,9 +270,15 @@
 }
 
 .tgd-file-name {
-    font-weight: 500;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.tgd-file-name:hover {
     color: #1a73e8;
-    margin-bottom: 2px;
+    text-decoration: underline;
 }
 
 .tgd-file-action {
@@ -284,3 +297,235 @@
     color: #174ea6;
 }
 
+/* CSS cho hiển thị file đã chọn trong editor */
+.selected-file-display {
+    display: inline-block;
+    background-color: #f0f2f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin: 5px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.editor-content .selected-file-display {
+    background-color: #e6f7ff;
+    border-color: #91d5ff;
+}
+
+/* CSS cho hiển thị file đã chọn trong editor - Giống Google Classroom */
+.file-attachment-preview {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+.file-preview-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+
+.file-preview-icon img {
+    width: 100%;
+    height: auto;
+}
+
+.file-preview-details {
+    flex-grow: 1;
+}
+
+.file-preview-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.file-preview-type {
+    font-size: 12px;
+    color: #5f6368;
+    font-weight: 400;
+}
+
+.file-preview-actions {
+    display: flex;
+    align-items: center;
+}
+
+.file-preview-menu {
+    font-size: 20px;
+    color: #5f6368;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.file-preview-menu:hover {
+    background-color: #f5f5f5;
+    border-radius: 50%;
+}
+
+/* CSS cho selected file card */
+.selected-file-card {
+    padding: 10px 15px;
+    margin: 1rem 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.selected-file-card .file-attachment-preview {
+    margin: 0;
+    box-shadow: none;
+    border: none;
+    background-color: transparent;
+    padding: 0;
+}
+
+.file-remove-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f6368;
+    transition: all 0.2s;
+}
+
+.file-remove-button:hover {
+    background-color: #e0e0e0;
+    color: #202124;
+}
+
+.no-posts {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 30px 5rem;
+}
+
+.Fnu4gf {
+    height: 5.625rem;
+    margin-right: 5rem;
+}
+
+.no-posts-title {
+    font-size: 1.375rem;
+    font-weight: 400;
+    line-height: 1.75rem;
+    margin-bottom: .5rem;
+    color: #3c4043;
+}
+
+.no-posts-subtitle {
+    letter-spacing: .0178571429em;
+    font-family: "Google Sans",Roboto,Arial,sans-serif;
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    color: #3c4043;
+}
+
+/* CSS cho menu options của bài đăng */
+.post-options-container {
+    position: relative;
+}
+
+.more-options {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: #5f6368;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.more-options:hover {
+    background-color: #f1f3f4;
+}
+
+.post-options-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    width: 180px;
+    z-index: 10;
+    overflow: hidden;
+    
+    /* Thêm các thuộc tính animation */
+    transform-origin: top right; /* Đặt điểm gốc ở góc trên bên phải */
+    animation: scaleInTopRight 0.2s ease-out forwards; /* 0.2s là thời gian của animation */
+    opacity: 0; /* Bắt đầu với độ mờ là 0 */
+}
+
+/* Keyframes cho animation xuất hiện từ góc trên bên phải */
+@keyframes scaleInTopRight {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Hiệu ứng biến mất khi menu đóng */
+.post-options-menu-exit {
+    animation: scaleOutTopRight 0.15s ease-in forwards;
+}
+
+@keyframes scaleOutTopRight {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+}
+
+.post-option-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 16px 20px;
+    border: none;
+    background: none;
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.post-option-item:hover {
+    background-color: #f1f3f4;
+}
+
+.post-delete-button:disabled {
+    color: #9aa0a6;
+    cursor: not-allowed;
+}
