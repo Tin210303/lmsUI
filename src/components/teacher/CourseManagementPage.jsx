@@ -32,8 +32,6 @@ const CourseManagementPage = () => {
         image: null,
         learningDurationType: 'Không thời hạn',
     });
-    console.log(formData);
-    
 
     const [alert, setAlert] = useState(null);
 
@@ -86,8 +84,8 @@ const CourseManagementPage = () => {
 
             setFormData({
                 name: courseResponse.data.result.name,
-                type: courseResponse.data.result.status,
-                major: courseResponse.data.result.major,
+                type: courseResponse.data.result.status === 'PUBLIC' ? 'Khóa học chung' : 'Khóa học riêng',
+                major: courseResponse.data.result.majorId || '',
                 endDate: courseResponse.data.result.endDate,
                 description: courseResponse.data.result.description,
                 image: courseResponse.data.result.image,
@@ -296,6 +294,7 @@ const CourseManagementPage = () => {
                         value={formData.major}
                         onChange={(e) => setFormData({...formData, major: e.target.value})}
                     >
+                        <option value="">-- Chọn chuyên ngành --</option>
                         {majors.map((major) => (
                             <option key={major.id} value={major.id}>{major.name}</option>
                         ))}
