@@ -42,7 +42,7 @@ const AddStudentsPage = () => {
 
     const handleSearch = async () => {
         // Kiểm tra ít nhất một trường đã được nhập
-        if (!fullName.trim() && !email.trim() && !majorName.trim()) {
+        if (!fullName.trim()) {
             showAlert('warning', 'Chú ý', 'Vui lòng nhập ít nhất một điều kiện tìm kiếm');
             return;
         }
@@ -52,21 +52,19 @@ const AddStudentsPage = () => {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
 
-            // Tạo formData với 5 trường theo yêu cầu
-            const formData = new FormData();
-            formData.append('fullName', fullName.trim());
-            formData.append('email', email.trim());
-            formData.append('majorName', majorName.trim());
-            formData.append('pageNumber', 0);
-            formData.append('pageSize', 10);
+            // Tạo URL params cho phương thức GET
+            const params = new URLSearchParams();
+            params.append('courseId', courseId);
+            params.append('keyword', fullName.trim());
+            params.append('pageNumber', 0);
+            params.append('pageSize', 10);
 
-            // Gọi API bằng phương thức POST
-            const response = await axios.post('http://localhost:8080/lms/student/search', 
-                formData,
+            // Gọi API bằng phương thức GET với params trong URL
+            const response = await axios.get(
+                `http://localhost:8080/lms/studentcourse/searchstudentnotin?${params.toString()}`,
                 {
                     headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
+                        'Authorization': `Bearer ${token}`
                     }
                 }
             );
@@ -74,7 +72,7 @@ const AddStudentsPage = () => {
             // Xử lý kết quả
             if (response.data && response.data.result) {
                 // Nếu API trả về dạng phân trang
-                const students = response.data.result.content || response.data.result;
+                const students = response.data.result.content;
                 setSearchResults(students);
             } else {
                 setSearchResults([]);
@@ -186,37 +184,13 @@ const AddStudentsPage = () => {
                         <h3>Tìm kiếm sinh viên</h3>
                         <div className="search-form-inputs">
                             <div className="search-form-group">
-                                <label htmlFor="fullName">Tên sinh viên</label>
+                                <label htmlFor="fullName">Tên sinh viên hoặc Email</label>
                                 <input
                                     id="fullName"
                                     type="text"
                                     placeholder="Nhập tên sinh viên..."
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                />
-                            </div>
-
-                            <div className="search-form-group">
-                                <label htmlFor="email">Email</label>
-                                <input
-                                    id="email"
-                                    type="email"
-                                    placeholder="Nhập email sinh viên..."
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                />
-                            </div>
-
-                            <div className="search-form-group">
-                                <label htmlFor="majorName">Chuyên ngành</label>
-                                <input
-                                    id="majorName"
-                                    type="text"
-                                    placeholder="Nhập chuyên ngành..."
-                                    value={majorName}
-                                    onChange={(e) => setMajorName(e.target.value)}
                                     onKeyPress={handleKeyPress}
                                 />
                             </div>

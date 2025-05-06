@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiMoreHorizontal } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, X } from 'lucide-react';
@@ -108,22 +108,23 @@ const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
 
 // Group Card Component
 const GroupCard = ({ data, onClick }) => {
+  console.log(data);
+  
   return (
     <div className="group-card" onClick={() => onClick(data)}>
       <div className="group-header">
         <h3>{data.name}</h3>
-        <p>{data.description}</p>
+        <p>{(data.description) ? data.description : data.teacher.fullName}</p>
       </div>
       
       <div className="group-content">
         <div className="teachers-section">
           <p className="group-section-title">Teachers</p>
           <div className="teachers-avatars">
-            {data.teachers.map((teacher, index) => (
-              <div className="avatar" key={index}>
-                <img src={teacher.avatar} alt={`Teacher ${index + 1}`} />
-              </div>
-            ))}
+            <div className="avatar">
+              <img src={data.teacher.avatar || "https://randomuser.me/api/portraits/men/1.jpg"} alt={`${data.teacher.fullName}`} />
+            </div>
+            <span>{data.teacher.fullName}</span>
           </div>
         </div>
 
@@ -132,7 +133,7 @@ const GroupCard = ({ data, onClick }) => {
         <div className="students-section">
           <p className="group-section-title">Top Students</p>
           <div className="students-avatars">
-            {data.topStudents.map((student, index) => (
+            {data.topStudents && data.topStudents.map((student, index) => (
               <div 
                 className="student-avatar" 
                 key={index} 
@@ -152,151 +153,128 @@ const GroupCard = ({ data, onClick }) => {
   );
 };
 
-// Sample data that closely matches the image
-const sampleGroups = [
-  {
-    id: 1,
-    name: "Group One",
-    description: "3 Teacher, 20 Students",
-    teachers: [
-      { id: 1, avatar: "https://randomuser.me/api/portraits/women/68.jpg" },
-      { id: 2, avatar: "https://randomuser.me/api/portraits/men/33.jpg" },
-      { id: 3, avatar: "https://randomuser.me/api/portraits/men/45.jpg" },
-    ],
-    topStudents: [
-      { id: 1, initial: "D", color: "#8a2be2" },
-      { id: 2, initial: "E", color: "#32cd32" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Group One",
-    description: "3 Teacher, 20 Students",
-    teachers: [
-      { id: 1, avatar: "https://randomuser.me/api/portraits/women/65.jpg" },
-      { id: 2, avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
-      { id: 3, avatar: "https://randomuser.me/api/portraits/men/43.jpg" },
-    ],
-    topStudents: [
-      { id: 1, initial: "D", color: "#8a2be2" },
-      { id: 2, initial: "E", color: "#32cd32" },
-    ],
-  },
-  {
-    id: 3,
-    name: "Group One",
-    description: "3 Quiz, 20 Students",
-    teachers: [
-      { id: 1, avatar: "https://randomuser.me/api/portraits/men/67.jpg" },
-      { id: 2, avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
-      { id: 3, avatar: "https://randomuser.me/api/portraits/men/41.jpg" },
-    ],
-    topStudents: [
-      { id: 1, initial: "D", color: "#ff3333" },
-      { id: 2, initial: "E", color: "#8a2be2" },
-    ],
-  },
-  {
-    id: 4,
-    name: "Group One",
-    description: "3 Teacher, 20 Students",
-    teachers: [
-      { id: 1, avatar: "https://randomuser.me/api/portraits/men/67.jpg" },
-      { id: 2, avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
-      { id: 3, avatar: "https://randomuser.me/api/portraits/men/41.jpg" },
-    ],
-    topStudents: [
-      { id: 1, initial: "D", color: "#00ced1" },
-      { id: 2, initial: "E", color: "#8a2be2" },
-    ],
-  },
-  {
-    id: 5,
-    name: "Group One",
-    description: "3 Teacher, 20 Students",
-    teachers: [
-      { id: 1, avatar: "https://randomuser.me/api/portraits/women/65.jpg" },
-      { id: 2, avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
-      { id: 3, avatar: "https://randomuser.me/api/portraits/men/43.jpg" },
-    ],
-    topStudents: [
-      { id: 1, initial: "D", color: "#8a2be2" },
-      { id: 2, initial: "E", color: "#32cd32" },
-    ],
-  },
-  {
-    id: 6,
-    name: "Group One",
-    description: "3 Teacher, 20 Students",
-    teachers: [
-      { id: 1, avatar: "https://randomuser.me/api/portraits/women/68.jpg" },
-      { id: 2, avatar: "https://randomuser.me/api/portraits/women/42.jpg" },
-      { id: 3, avatar: "https://randomuser.me/api/portraits/men/44.jpg" },
-    ],
-    topStudents: [
-      { id: 1, initial: "D", color: "#ffd700" },
-      { id: 2, initial: "E", color: "#32cd32" },
-    ],
-  },
-  {
-    id: 7,
-    name: "Group One",
-    description: "3 Teacher, 20 Students",
-    teachers: [
-      { id: 1, avatar: "https://randomuser.me/api/portraits/women/68.jpg" },
-      { id: 2, avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
-      { id: 3, avatar: "https://randomuser.me/api/portraits/men/43.jpg" },
-    ],
-    topStudents: [
-      { id: 1, initial: "D", color: "#8a2be2" },
-      { id: 2, initial: "E", color: "#32cd32" },
-    ],
-  },
-  {
-    id: 8,
-    name: "Group One",
-    description: "3 Quiz, 20 Students",
-    teachers: [
-      { id: 1, avatar: "https://randomuser.me/api/portraits/men/67.jpg" },
-      { id: 2, avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
-      { id: 3, avatar: "https://randomuser.me/api/portraits/men/41.jpg" },
-    ],
-    topStudents: [
-      { id: 1, initial: "D", color: "#ff3333" },
-      { id: 2, initial: "E", color: "#8a2be2" },
-    ],
-  },
-];
+// Tạo dữ liệu hiển thị từ API response
+const formatApiDataToDisplayData = (apiGroups) => {
+  return apiGroups.map(group => {
+    // Xử lý students
+    const students = group.students || [];
+    // Chọn 2 sinh viên đứng đầu
+    const topStudents = students.slice(0, 2).map((student, index) => {
+      // Tạo một màu ngẫu nhiên hoặc từ một danh sách màu cố định
+      const colors = ["#8a2be2", "#32cd32", "#ff3333", "#00ced1", "#ffd700", "#3e60ff"];
+      const initial = student.fullName ? student.fullName.charAt(0).toUpperCase() : 'S';
+      
+      return {
+        id: student.id,
+        initial: initial,
+        color: colors[index % colors.length]
+      };
+    });
+    
+    return {
+      id: group.id,
+      name: group.name,
+      description: group.description,
+      teacher: group.teacher,
+      topStudents: topStudents
+    };
+  });
+};
 
 const GroupPage = () => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [groups, setGroups] = useState(sampleGroups);
+    const [groups, setGroups] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [pagination, setPagination] = useState({
+      pageNumber: 0,
+      pageSize: 10,
+      totalPages: 0,
+      totalElements: 0
+    });
+    
+    const fetchGroups = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+        
+        // Tạo URLSearchParams để gửi tham số GET
+        const params = new URLSearchParams();
+        params.append('pageNumber', pagination.pageNumber.toString());
+        params.append('pageSize', pagination.pageSize.toString());
+        
+        // Gọi API với phương thức GET và params
+        const response = await axios.get(
+          `http://localhost:8080/lms/group/groupofteacher?${params.toString()}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+        
+        // Kiểm tra kết quả trả về
+        if (response.data && response.data.code === 0) {
+          const responseData = response.data.result;
+          
+          // Nếu kết quả trả về là dạng phân trang
+          if (responseData.content) {
+            const formattedGroups = formatApiDataToDisplayData(responseData.content);
+            setGroups(formattedGroups);
+            
+            // Cập nhật thông tin phân trang
+            setPagination({
+              ...pagination,
+              totalPages: responseData.totalPages,
+              totalElements: responseData.totalElements
+            });
+          } else {
+            // Nếu kết quả trả về là mảng thông thường
+            const formattedGroups = formatApiDataToDisplayData(responseData);
+            setGroups(formattedGroups);
+          }
+        } else {
+          throw new Error(response.data?.message || 'Failed to fetch groups');
+        }
+      } catch (err) {
+        console.error('Error fetching teacher groups:', err);
+        setError('Không thể tải danh sách nhóm. Vui lòng thử lại sau.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    useEffect(() => {
+      fetchGroups();
+    }, [pagination.pageNumber, pagination.pageSize]);
     
     const handleGroupClick = (group) => {
-        const key = `group_${group.id}`;
-        console.log("Saving group to localStorage with key:", key);
-        localStorage.setItem(key, JSON.stringify(group));
+      const key = `group_${group.id}`;
+      console.log("Saving group to localStorage with key:", key);
+      localStorage.setItem(key, JSON.stringify(group));
 
-        // Sau đó kiểm tra
-        console.log("Saved value:", localStorage.getItem(key));
-        
-        // Navigate to group detail page
-        setTimeout(() => {
-            navigate(`/groups/${group.id}`);
-        }, 100)
+      // Sau đó kiểm tra
+      console.log("Saved value:", localStorage.getItem(key));
+      
+      // Navigate to group detail page
+      setTimeout(() => {
+        navigate(`/teacher/groups/${group.id}`);
+      }, 100)
     };
 
     const handleAddGroup = (newGroup) => {
-      // In a real application, you would add the new group to your state
-      // and potentially fetch the updated list from the server
       console.log('New group created:', newGroup);
       
-      // For now, we'll just add a simplified version to our local state
+      // Tạo định dạng dữ liệu hiển thị cho nhóm mới tạo
       const createdGroup = {
         ...newGroup,
-        id: groups.length + 1,
         teachers: [
           { id: 1, avatar: "https://randomuser.me/api/portraits/women/68.jpg" },
         ],
@@ -305,7 +283,11 @@ const GroupPage = () => {
         ]
       };
       
+      // Thêm nhóm mới vào đầu danh sách
       setGroups([createdGroup, ...groups]);
+      
+      // Reload danh sách nhóm từ server
+      fetchGroups();
     };
 
     const filteredGroups = searchTerm 
@@ -314,6 +296,14 @@ const GroupPage = () => {
           group.description.toLowerCase().includes(searchTerm.toLowerCase())
         )
       : groups;
+
+    // Xử lý khi thay đổi trang
+    const handlePageChange = (newPage) => {
+      setPagination({
+        ...pagination,
+        pageNumber: newPage
+      });
+    };
 
     return (
         <div className="group-page-container">
@@ -340,15 +330,63 @@ const GroupPage = () => {
                     </button>
                 </div>
             </div>
-            <div className="group-grid">
-                {filteredGroups.map((group) => (
-                    <GroupCard 
-                        key={group.id} 
-                        data={group} 
-                        onClick={handleGroupClick}
-                    />
-                ))}
-            </div>
+            
+            {/* Loading và Error */}
+            {isLoading && (
+              <div className="group-loading">
+                <div className="group-loading-spinner"></div>
+                <p>Đang tải dữ liệu...</p>
+              </div>
+            )}
+            
+            {error && (
+              <div className="group-error">
+                <p>{error}</p>
+                <button onClick={fetchGroups}>Thử lại</button>
+              </div>
+            )}
+            
+            {/* Danh sách nhóm */}
+            {!isLoading && !error && (
+              <>
+                <div className="group-grid">
+                    {filteredGroups.length > 0 ? (
+                      filteredGroups.map((group) => (
+                          <GroupCard 
+                              key={group.id} 
+                              data={group} 
+                              onClick={handleGroupClick}
+                          />
+                      ))
+                    ) : (
+                      <div className="no-groups">
+                        <p>Không tìm thấy nhóm nào</p>
+                      </div>
+                    )}
+                </div>
+                
+                {/* Phân trang */}
+                {pagination.totalPages > 1 && (
+                  <div className="group-pagination">
+                    <button 
+                      disabled={pagination.pageNumber === 0}
+                      onClick={() => handlePageChange(pagination.pageNumber - 1)}
+                    >
+                      Trước
+                    </button>
+                    <span>
+                      Trang {pagination.pageNumber + 1} / {pagination.totalPages}
+                    </span>
+                    <button 
+                      disabled={pagination.pageNumber >= pagination.totalPages - 1}
+                      onClick={() => handlePageChange(pagination.pageNumber + 1)}
+                    >
+                      Sau
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
             
             {/* Add Group Modal */}
             <AddGroupModal 

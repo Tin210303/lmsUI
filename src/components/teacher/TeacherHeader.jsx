@@ -1,16 +1,49 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../assets/css/header.css';
 import { User, LogOut } from 'lucide-react';
 import {Search} from 'lucide-react'
 import logo from '../../assets/imgs/logo.png';
-import avatar from '../../logo.svg';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8080';
 
 const TeacherHeader = () => {
     const { user, logout } = useAuth();
+    
     const navigate = useNavigate();
     const [isDropdownOpen, setDropdownOpen] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [teacherData, setTeacherData] = useState({
+        name: '',
+        email: '',
+        avatar: null,
+        id: null
+    });
+
+    // Thêm state cho chức năng tìm kiếm
+    const [searchQueryCourse, setSearchQueryCourse] = useState('');
+    const [searchQueryTeacher, setSearchQueryTeacher] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const searchRef = useRef(null);
+    
+    // Thêm state cho debounce
+    const searchTimeoutRef = useRef(null);
+
+    // State cho phân trang và cuộn vô hạn tìm kiếm
+    const [searchPagination, setSearchPagination] = useState({
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0
+    });
+    const [loadingMoreResults, setLoadingMoreResults] = useState(false);
+    const searchResultsRef = useRef(null);
 
     const handleLogout = () => {
         logout();
@@ -40,6 +73,349 @@ const TeacherHeader = () => {
         };
     }, [isDropdownOpen]);
 
+    // lắng nghe sự kiện để set avatar ngay khi avatar được cập nhật
+    React.useEffect(() => {
+        const handleAvatarUpdate = (event) => {
+            setAvatarUrl(event.detail.avatarUrl);
+        };
+        
+        window.addEventListener('avatar_updated', handleAvatarUpdate);
+        
+        return () => {
+            window.removeEventListener('avatar_updated', handleAvatarUpdate);
+        };
+    }, []);
+
+    React.useEffect(() => {
+        const fetchStudentInfo = async () => {
+            try {
+                setLoading(true);
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                // Fetch student info
+                const teacherResponse = await axios.get(`${API_BASE_URL}/lms/teacher/myinfo`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                console.log(teacherResponse);
+                
+
+                // Check response
+                if (teacherResponse.data.code === 0 && teacherResponse.data.result) {
+                    const teacherInfo = teacherResponse.data.result;
+                    // Calculate joined days (using a placeholder - you might want to adjust this)
+                    const joinedDays = 3; // Placeholder
+
+                    setTeacherData({
+                        name: teacherInfo.fullName || '',
+                        email: teacherInfo.email || '',
+                        avatar: teacherInfo.avatar,
+                        id: teacherInfo.id
+                    });
+
+                    // Fetch avatar if available
+                    if (teacherInfo.avatar) {
+                        fetchAvatar(teacherInfo.avatar);
+                    }
+                }
+
+            } catch (err) {
+                console.error('Error fetching student data:', err);
+                setError('Failed to load student information. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudentInfo();
+    }, []);
+
+    // Hàm gọi API để lấy ra ảnh đại diện của sinh viên
+    const fetchAvatar = async (avatarPath) => {
+        if (!avatarPath) return;
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            // Fetch avatar with authorization header
+            const response = await axios.get(`http://localhost:8080${avatarPath}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob' // Important: we want the image as a blob
+            });
+
+            // Create a URL for the blob data
+            const imageUrl = URL.createObjectURL(response.data);
+            setAvatarUrl(imageUrl);
+        } catch (err) {
+            console.error('Error fetching avatar:', err);
+        }
+    };
+
+    // Tạo màu nền dựa trên ID khóa học (để luôn cố định cho mỗi khóa học)
+    const getConsistentColor = (id) => {
+        const colors = [
+            'linear-gradient(to right, #4b6cb7, #182848)',
+            'linear-gradient(to right, #1d75fb, #3e60ff)',
+            'linear-gradient(to right, #ff416c, #ff4b2b)',
+            'linear-gradient(to right, #11998e, #38ef7d)',
+            'linear-gradient(to right, #8e2de2, #4a00e0)',
+            'linear-gradient(to right, #fc4a1a, #f7b733)',
+            'linear-gradient(to right, #5433ff, #20bdff)',
+            'linear-gradient(to right, #2b5876, #4e4376)'
+        ];
+        if (!id) return colors[0]; 
+        const sum = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return colors[sum % colors.length];
+    };
+
+    // Hàm tìm kiếm khóa học với phân trang
+    const searchCourses = async (courseName, teacherName, pageNumber = 0, pageSize = 3, appendResults = false) => {
+        if ((!courseName || courseName.trim() === '') && (!teacherName || teacherName.trim() === '')) {
+            setSearchResults([]);
+            setIsSearchOpen(false);
+            return;
+        }
+        
+        if (!appendResults) {
+            setIsSearching(true);
+        } else {
+            setLoadingMoreResults(true);
+        }
+        
+        setIsSearchOpen(true);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('Không tìm thấy token xác thực');
+            }
+            
+            // Tạo form data theo yêu cầu của backend
+            console.log(`Tìm kiếm với: courseName=${courseName}, teacherName=${teacherName}, pageNumber=${pageNumber}, pageSize=${pageSize}`);
+            
+            const response = await axios.get(`${API_BASE_URL}/lms/course/search`, {
+                params: {
+                    courseName: courseName || '',
+                    teacherName: teacherName || '',
+                    pageNumber: pageNumber,
+                    pageSize: pageSize
+                },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                console.log('Kết quả tìm kiếm:', response.data.result);
+                
+                // Cập nhật thông tin phân trang
+                const pageInfo = response.data.result.page || {};
+                setSearchPagination({
+                    pageNumber: pageInfo.number || 0,
+                    pageSize: pageInfo.size || 3,
+                    totalPages: pageInfo.totalPages || 1,
+                    totalElements: pageInfo.totalElements || 0
+                });
+                
+                // Nếu là tải thêm, nối vào kết quả hiện tại
+                if (appendResults) {
+                    setSearchResults(prev => [...prev, ...(response.data.result.content || [])]);
+                } else {
+                    setSearchResults(response.data.result.content || []);
+                }
+            } else {
+                if (!appendResults) {
+                    setSearchResults([]);
+                }
+            }
+        } catch (error) {
+            console.error('Lỗi khi tìm kiếm khóa học:', error);
+            // Hiển thị thông tin chi tiết lỗi để gỡ lỗi
+            if (error.response) {
+                console.error('Response data:', error.response.data);
+                console.error('Response status:', error.response.status);
+                console.error('Response headers:', error.response.headers);
+            }
+            if (!appendResults) {
+                setSearchResults([]);
+            }
+        } finally {
+            setIsSearching(false);
+            setLoadingMoreResults(false);
+        }
+    };
+
+    // Cập nhật hàm xử lý thay đổi cho input tìm kiếm khóa học
+    const handleSearchCourseChange = (e) => {
+        const courseValue = e.target.value;
+        setSearchQueryCourse(courseValue);
+        console.log(teacherData);
+        
+        setSearchQueryTeacher(teacherData.name)
+        
+        // Xóa timeout hiện tại nếu có
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+        
+        // Tạo timeout mới để debounce
+        searchTimeoutRef.current = setTimeout(() => {
+            // Reset lại trang về 0 khi thực hiện tìm kiếm mới
+            setSearchPagination(prev => ({
+                ...prev,
+                pageNumber: 0
+            }));
+            searchCourses(courseValue, searchQueryTeacher, 0, searchPagination.pageSize);
+        }, 500); // Đợi 500ms sau khi người dùng ngừng gõ
+    };
+
+    // Xóa timeout khi component unmount
+    React.useEffect(() => {
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Hàm xử lý tìm kiếm khi nhấn nút
+    const handleSearch = () => {
+        // Reset lại trang về 0 khi thực hiện tìm kiếm mới
+        setSearchPagination(prev => ({
+            ...prev,
+            pageNumber: 0
+        }));
+        searchCourses(searchQueryCourse, searchQueryTeacher, 0, searchPagination.pageSize);
+    };
+
+    // Hàm xử lý tải thêm kết quả khi cuộn
+    const loadMoreSearchResults = () => {
+        if (searchPagination.pageNumber >= searchPagination.totalPages - 1) return;
+        
+        const nextPage = searchPagination.pageNumber + 1;
+        searchCourses(searchQueryCourse, searchQueryTeacher, nextPage, searchPagination.pageSize, true);
+    };
+
+    // Theo dõi sự kiện cuộn để tải thêm kết quả
+    React.useEffect(() => {
+        const handleScroll = (e) => {
+            if (!searchResultsRef.current || loadingMoreResults) return;
+            
+            const element = searchResultsRef.current;
+            const isBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 20;
+            
+            if (isBottom && searchPagination.pageNumber < searchPagination.totalPages - 1) {
+                loadMoreSearchResults();
+            }
+        };
+        
+        const searchResultsElement = searchResultsRef.current;
+        if (searchResultsElement) {
+            searchResultsElement.addEventListener('scroll', handleScroll);
+        }
+        
+        return () => {
+            if (searchResultsElement) {
+                searchResultsElement.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [loadingMoreResults, searchPagination.pageNumber, searchPagination.totalPages, searchQueryCourse, searchQueryTeacher]);
+
+
+    // Xử lý click vào kết quả tìm kiếm
+    const handleSearchResultClick = async (course) => {
+        setIsSearchOpen(false);
+        setSearchQueryCourse('');
+        setSearchQueryTeacher('');
+
+        // Chuyển hướng đến trang chi tiết khóa học
+        navigate('/teacher/course', {
+            state: { courseId: course.id }
+        });
+    };
+
+    // Render kết quả tìm kiếm
+    const renderSearchResults = () => {
+        if (isSearching && searchResults.length === 0) {
+            return (
+                <div className="search-results-loading">
+                    <div className="search-spinner"></div>
+                    <span>Đang tìm kiếm...</span>
+                </div>
+            );
+        }
+
+        if (searchResults.length === 0) {
+            return (
+                <div className="search-results-empty">
+                    <p>Không tìm thấy kết quả phù hợp</p>
+                </div>
+            );
+        }
+
+        return (
+            <>
+                <div className="search-results-list" ref={searchResultsRef}>
+                    {searchResults.map(course => (
+                        <div 
+                            key={course.id} 
+                            className="search-result-item"
+                            onClick={() => handleSearchResultClick(course)}
+                        >
+                            <div className="search-result-image">
+                                {course.image ? (
+                                    <img 
+                                        src={`${API_BASE_URL}/lms/course/image/${course.image}`} 
+                                        alt={course.name} 
+                                        className="search-result-img" 
+                                    />
+                                ) : (
+                                    <div className="search-result-placeholder" style={{ background: getConsistentColor(course.id) }}>
+                                        {course.name.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="search-result-content">
+                                <div className="search-result-info">
+                                    <div>
+                                        <h4 className="search-result-title">{course.name}</h4>
+                                        <span className="search-result-teacher">
+                                            {course.teacher ? `Giảng viên: ${course.teacher.fullName}` : 'Chưa có giảng viên'}
+                                        </span>
+                                    </div>
+                                    <span className={`search-result-status ${course.status.toLowerCase()}`}>
+                                        {course.status}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    
+                    {loadingMoreResults && (
+                        <div className="search-results-loading-more">
+                            <div className="search-spinner-small"></div>
+                            <span>Đang tải thêm...</span>
+                        </div>
+                    )}
+                </div>
+                
+                {searchResults.length > 0 && (
+                    <div className="search-results-count">
+                        Hiển thị: {searchResults.length}/{searchPagination.totalElements} kết quả
+                    </div>
+                )}
+            </>
+        );
+    };
+
     return (
         <header className="header">
             <div className="left-section">
@@ -47,15 +423,43 @@ const TeacherHeader = () => {
                 <span className="title">Hệ Thống Học Tập Trực Tuyến</span>
             </div>
 
-            <div className="search-box">
-                <span className="search-icon">
+            <div className="teacher-header-search-box">
+                <span className="teacher-header-search-icon">
                     <Search size={18} color='#787878'/>
                 </span>
                 <input
                     type="text"
-                    placeholder="Tìm kiếm khóa học, bài viết, video, ..."
+                    placeholder="Tìm kiếm khóa học..."
+                    value={searchQueryCourse}
+                    onChange={handleSearchCourseChange}
+                    onFocus={() => {
+                        if (searchQueryCourse || searchQueryTeacher) setIsSearchOpen(true);
+                    }}
                 />
             </div>
+            {isSearchOpen && (searchQueryCourse || searchQueryTeacher) && (
+                <div className="search-results-dropdown">
+                    <div className="search-results-header">
+                        <h3>Kết quả tìm kiếm</h3>
+                        <div className="search-results-close" onClick={() => setIsSearchOpen(false)}>
+                            ×
+                        </div>
+                    </div>
+                    {renderSearchResults()}
+                </div>
+            )}
+            <button 
+                className="search-button" 
+                onClick={handleSearch}
+                disabled={isSearching}
+            >
+                {isSearching ? (
+                    <div className="search-button-spinner"></div>
+                ) : (
+                    <Search size={18} color='#fff'/>
+                )}
+            </button>
+
             <div className='right-section'>
                 <Link to="/teacher/dashboard" className="my-courses">Quản lý khóa học</Link>
                 <div className="bell-icon">
@@ -73,13 +477,22 @@ const TeacherHeader = () => {
                 {user && (
                     <div className="profile-section">
                         <div className="profile-info" onClick={toggleDropdown} style={{ cursor: 'pointer' }}>
-                            <img 
-                                src={user.avatar || '/path/to/default-avatar.png'}
-                                alt="Ava" 
-                                className="avatar"
-                            />
-                            <span>{user.fullName}</span>
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt="Avatar" className='avatar'/>
+                            ) : (
+                                <svg className='avatar' width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                    <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                    <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                    <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                    <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                    <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                    <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                </svg>
+                                
+                            )}
                         </div>
+
                         {isDropdownOpen && (
                             <div className="profile-dropdown">
                                 <Link to="/teacher/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>

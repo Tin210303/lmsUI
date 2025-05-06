@@ -359,11 +359,9 @@
 }
 
 /* CSS cho chức năng tìm kiếm */
-.search-box {
+.teacher-header-search-box {
     position: relative;
-    width: 100%;
-    max-width: 600px;
-    margin: 0 20px;
+    width: 28%;
 }
 
 .search-inputs {
@@ -395,7 +393,7 @@
     box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
 }
 
-.search-icon {
+.teacher-header-search-icon {
     position: absolute;
     left: 12px;
     top: 50%;
@@ -403,6 +401,18 @@
     display: flex;
     align-items: center;
     z-index: 2;
+}
+
+.teacher-header-search-box input {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px 16px 8px 40px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    font-size: 14px;
+    outline: none;
+    color: #333;
+    font-family: inherit;
 }
 
 .search-button {
@@ -631,6 +641,11 @@
 .search-result-status.public {
     background-color: #e6f7e6;
     color: #28a745;
+}
+
+.search-result-status.request {
+    background-color: #cbe6ff;
+    color: #0056b3;
 }
 
 .search-result-status.private {

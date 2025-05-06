@@ -19,6 +19,7 @@ import TeacherAddMaterial from './components/teacher/TeacherAddMaterial';
 import CourseManagementPage from './components/teacher/CourseManagementPage';
 import AddStudentsPage from './components/teacher/AddStudentsPage';
 import TeacherGroup from './components/teacher/TeacherGroup';
+import TeacherGroupDetail from './components/teacher/TeacherGroupDetail'
 
 // Student Routes
 import CoursesPage from './components/student/CoursesPage';
@@ -179,6 +180,13 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <TeacherGroup />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/groups/:id" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherGroupDetail />
               </TeacherLayout>
             </ProtectedRoute>
           } />

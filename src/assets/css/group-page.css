@@ -64,6 +64,18 @@
   display: flex;
 }
 
+.teachers-avatars {
+  align-items: center;
+  gap: 16px;
+}
+
+.teachers-avatars span {
+  font-size: 14px;
+  color: #333;
+  margin: 0;
+  font-weight: 400;
+}
+
 .avatar {
   width: 32px;
   height: 32px;
