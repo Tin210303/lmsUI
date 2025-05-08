@@ -152,7 +152,7 @@
     align-items: center;
 }
 
-.student-info img {
+.student-info img, .student-info svg {
     width: 40px;
     height: 40px;
     border-radius: 50%;

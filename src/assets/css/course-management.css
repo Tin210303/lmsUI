@@ -185,8 +185,9 @@
     align-items: center;
     gap: 6px;
     border-radius: 50%;
-    padding: 6px;
+    padding: 10px;
     margin-bottom: 4px;
+    margin-right: 8px;
     transition: background-color 0.3s;
 }
 

@@ -1,0 +1,654 @@
+ /* Styles for CreateTask page */
+
+.create-task-container {
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Roboto', 'Arial', sans-serif;
+    color: #3c4043;
+    width: 100%;
+}
+
+.create-task-header {
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+}
+
+.create-task-header h1 {
+    font-size: 1.75rem;
+    font-weight: 400;
+    color: #3c4043;
+    margin: 0;
+}
+
+.create-task-content {
+    display: flex;
+    gap: 24px;
+}
+
+.create-task-form-container {
+    flex: 1;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    overflow: hidden;
+}
+
+.create-task-form {
+    padding: 24px;
+}
+
+.create-task-sidebar {
+    width: 350px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    padding: 24px;
+    height: fit-content;
+    position: sticky;
+    top: 6rem;
+}
+
+/* Form Elements */
+.tasks-form-group {
+    margin-bottom: 24px;
+}
+
+.tasks-form-group:last-child {
+    margin-bottom: 0;
+}
+
+.title-input {
+    width: 100%;
+    padding: 16px;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #333;
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    background: rgb(248,249,250);
+    transition: border-color 0.2s;
+}
+
+.title-input:focus {
+    outline: none;
+    border-color: #1a73e8;
+}
+
+.title-input::placeholder {
+    color: rgb(95,99,104);
+}
+
+.instructions-input {
+    width: 100%;
+    padding: 16px;
+    font-size: 0.875rem;
+    background: rgb(248,249,250);
+    color: #333;
+    border: none;
+    resize: vertical;
+    min-height: 100px;
+}
+
+.instructions-input:focus {
+    outline: none;
+}
+
+.instructions-input::placeholder {
+    color: rgb(95,99,104);
+}
+
+/* Materials Section */
+.materials-section {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 24px;
+}
+
+.add-material-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: transparent;
+    color: #1a73e8;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-material-button:hover {
+    background-color: rgba(26, 115, 232, 0.04);
+}
+
+.selected-files {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Dropdown styles */
+.dropdown-container {
+    position: relative;
+}
+
+.dropdown-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #5f6368;
+    margin-bottom: 8px;
+}
+
+.dropdown-toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px;
+    background-color: #f1f3f4;
+    border-radius: 4px;
+    border: none;
+    color: #333;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.dropdown-toggle:hover {
+    background-color: #e8eaed;
+}
+
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #666;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.dropdown-item:hover {
+    background-color: #f1f3f4;
+}
+
+.dropdown-item.active {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+/* Action buttons */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.cancel-button {
+    padding: 10px 24px;
+    background-color: transparent;
+    color: #5f6368;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+    background-color: #f1f3f4;
+}
+
+.assign-button {
+    padding: 10px 24px;
+    background-color: #1a73e8;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.assign-button:hover {
+    background-color: #1765cc;
+}
+
+.assign-button:disabled, .cancel-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* File attachment related styles */
+.file-attachment-preview {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 12px;
+}
+
+.file-preview-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.file-preview-icon img {
+    width: 100%;
+    height: auto;
+}
+
+.file-preview-details {
+    flex-grow: 1;
+}
+
+.file-preview-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #3c4043;
+    margin-bottom: 4px;
+}
+
+.file-preview-type {
+    font-size: 12px;
+    color: #5f6368;
+}
+
+.file-preview-actions {
+    display: flex;
+    align-items: center;
+}
+
+.file-remove-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f6368;
+    transition: all 0.2s;
+}
+
+.file-remove-button:hover {
+    background-color: #e0e0e0;
+    color: #202124;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .create-task-content {
+        flex-direction: column;
+    }
+    
+    .create-task-sidebar {
+        width: 100%;
+    }
+}
+
+/* --- QUESTIONS SECTION (Google Form style) --- */
+.questions-section {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.question-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(60,64,67,0.08), 0 1.5px 4px rgba(60,64,67,0.08);
+    border: 1.5px solid #e0e0e0;
+    padding: 32px 32px 16px 32px;
+    position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.question-card:focus-within {
+    border-color: #1a73e8;
+    box-shadow: 0 2px 12px rgba(26,115,232,0.10);
+}
+
+.question-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+.question-title-input {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 500;
+    border: none;
+    border-bottom: 2px solid #e0e0e0;
+    background: transparent;
+    padding: 8px 0;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.question-title-input:focus {
+    border-color: #1a73e8;
+}
+
+.css-b62m3t-container {
+    font-size: 1rem;
+    width: 18rem;
+}
+
+.question-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2px;
+}
+.option-row input[type="radio"] {
+    accent-color: #1a73e8;
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+}
+.option-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    padding: 6px 0;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.option-input:focus {
+    border-color: #1a73e8;
+}
+.remove-option-btn {
+    background: none;
+    border: none;
+    color: #5f6368;
+    border-radius: 50%;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.remove-option-btn:hover {
+    color: #d93025;
+    background: #fceded;
+}
+.add-option-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 0.97rem;
+    color: #5f6368;
+}
+.add-option-btn, .add-other-btn {
+    background: none;
+    border: none;
+    color: #1a73e8;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+.add-option-btn:hover, .add-other-btn:hover {
+    background: #e8f0fe;
+}
+
+.question-short-answer {
+    margin-bottom: 10px;
+}
+.short-answer-input {
+    width: 60%;
+    border: none;
+    border-bottom: 1.5px solid #e0e0e0;
+    background: transparent;
+    font-size: 1rem;
+    padding: 6px 0;
+    outline: none;
+    color: #5f6368;
+}
+.short-answer-input:focus {
+    border-color: #1a73e8;
+}
+
+.question-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 12px;
+}
+.answer-key {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    color: #1a73e8;
+    font-weight: 500;
+}
+.points-input {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 1rem;
+    width: 60px;
+    margin-left: 4px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.points-input:focus {
+    border-color: #1a73e8;
+}
+.question-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.duplicate-btn, .delete-btn {
+    background: none;
+    border: none;
+    color: #5f6368;
+    border-radius: 50%;
+    padding: 6px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.duplicate-btn:hover {
+    background: #e8f0fe;
+    color: #1a73e8;
+}
+.delete-btn:hover {
+    background: #fceded;
+    color: #d93025;
+}
+.required-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.97rem;
+    color: #5f6368;
+    margin-left: 12px;
+    user-select: none;
+}
+.required-toggle input[type="checkbox"] {
+    accent-color: #1a73e8;
+    margin-left: 4px;
+}
+
+.add-question-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+}
+.add-question-btn {
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 28px;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(60,64,67,0.10);
+    transition: background 0.2s;
+}
+.add-question-btn:hover {
+    background: #1765cc;
+}
+
+@media (max-width: 900px) {
+    .question-card {
+        padding: 18px 8px 8px 8px;
+    }
+    .questions-section {
+        gap: 18px;
+    }
+}
+
+/* --- Style cho due-date-dropdown-box và due-date-picker-popup (Hạn nộp) --- */
+.due-date-dropdown-box {
+    background: #f1f3f4;
+    border-radius: 6px;
+    padding: 12px;
+    border: none;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-top: 4px;
+    box-shadow: none;
+    transition: background 0.2s;
+}
+.due-date-dropdown-box:hover {
+    background: #e8eaed;
+}
+
+.due-date-picker-popup {
+    margin-top: 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    z-index: 20;
+    position: absolute;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(60,64,67,0.10);
+}
+.time-picker-inline {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #3c4043;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+.time-picker-inline:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.10);
+}
+
+.picker-inline-btn {
+    background: none;
+    color: rgb(26, 115, 232);
+    border: medium;
+    border-radius: 4px;
+    padding: 6px 16px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+@media (max-width: 900px) {
+    .due-date-dropdown-box {
+        font-size: 15px;
+        padding: 10px 10px;
+    }
+    .due-date-picker-popup {
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+    }
+}
+
+.due-date-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 16px;
+}
+
+.picker-inline-btn.remove-date {
+    color: #d93025;
+}
+
+.picker-inline-btn.remove-date:hover {
+    background-color: rgba(217, 48, 37, 0.04);
+}

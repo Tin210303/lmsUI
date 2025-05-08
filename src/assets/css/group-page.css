@@ -82,8 +82,8 @@
   border-radius: 50%;
   overflow: hidden;
   margin-right: -8px; /* Negative margin for overlapping effect */
-  border: 2px solid white;
   position: relative;
+  object-fit: cover;
 }
 
 .avatar:last-child {

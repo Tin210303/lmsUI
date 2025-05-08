@@ -282,14 +282,6 @@
     gap: 10px;
 }
 
-.avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid #eee;
-}
-
 .profile-info span {
     font-weight: 500;
     color: #333;

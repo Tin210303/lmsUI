@@ -529,3 +529,207 @@
     color: #9aa0a6;
     cursor: not-allowed;
 }
+
+/* CSS cho menu tùy chọn sinh viên */
+.student-options-container {
+    position: relative;
+    margin-left: auto;
+    z-index: 10;
+}
+
+.student-menu-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #5f6368;
+    padding: 6px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.student-menu-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #1a73e8;
+}
+
+.student-options-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    min-width: 150px;
+    z-index: 100;
+    transform-origin: top right;
+    animation: scaleInTopRight 0.15s ease-in-out forwards;
+}
+
+.student-options-menu-exit {
+    animation: scaleOutTopRight 0.15s ease-in-out forwards;
+}
+
+.student-option-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #3c4043;
+    transition: background-color 0.2s;
+}
+
+.student-option-item:hover {
+    background-color: #f1f3f4;
+}
+
+.student-delete-button {
+    color: #d93025;
+}
+
+.student-delete-button:hover {
+    background-color: #fceded;
+}
+
+.student-delete-button:disabled {
+    color: #9aa0a6;
+    cursor: not-allowed;
+}
+
+/* Animation cho menu tùy chọn */
+@keyframes scaleInTopRight {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleOutTopRight {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+/* CSS cho tab Tasks (Bài tập) */
+.tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.tasks-header h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #3c4043;
+    margin: 0;
+}
+
+.create-task-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.create-task-button:hover {
+    background-color: #1765cc;
+}
+
+.create-task-button:active {
+    background-color: #185abc;
+}
+
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    background-color: #fff;
+    transition: box-shadow 0.2s;
+}
+
+.task-item:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.task-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #1a73e8;
+    color: white;
+    margin-right: 16px;
+}
+
+.task-details {
+    flex-grow: 1;
+}
+
+.task-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #3c4043;
+    margin-bottom: 4px;
+}
+
+.task-deadline {
+    font-size: 14px;
+    color: #5f6368;
+}
+
+.task-actions {
+    margin-left: 16px;
+}
+
+.task-more-options {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #5f6368;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.task-more-options:hover {
+    background-color: #f1f3f4;
+}

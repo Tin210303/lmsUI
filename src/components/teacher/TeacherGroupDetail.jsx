@@ -3,8 +3,8 @@ import '../../assets/css/teacher-group-detail.css';
 import logo from '../../logo.svg';
 import axios from 'axios';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { X, Download, FileText, Video, Image, Upload, EllipsisVertical } from 'lucide-react';
-import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP } from '../../services/apiService';
+import { X, Download, FileText, Video, Image, Upload, EllipsisVertical, UserPlus, PlusCircle, Plus } from 'lucide-react';
+import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP, GET_STUDENTS_GROUP, DELETE_STUDENT_GROUP } from '../../services/apiService';
 // Thêm thư viện cần thiết để xử lý các loại file đặc biệt
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
@@ -53,6 +53,24 @@ const TeacherGroupDetail = () => {
     // Thêm state để quản lý animation đóng menu
     const [closingMenu, setClosingMenu] = useState(null);
     
+    // Thêm state quản lý sinh viên
+    const [students, setStudents] = useState([]);
+    const [studentsLoading, setStudentsLoading] = useState(false);
+    const [studentsError, setStudentsError] = useState(null);
+    const [studentsPagination, setStudentsPagination] = useState({
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0
+    });
+    const [avatarUrl, setAvatarUrl] = useState({});
+    const [teacherAvatarUrl, setTeacherAvatarUrl] = useState(null);
+    
+    // Thêm state để quản lý menu xóa sinh viên
+    const [activeStudentMenu, setActiveStudentMenu] = useState(null);
+    const [closingStudentMenu, setClosingStudentMenu] = useState(null);
+    const [studentDeleteLoading, setStudentDeleteLoading] = useState(false);
+    
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -77,6 +95,26 @@ const TeacherGroupDetail = () => {
                     }, 150); // 150ms - thời gian của animation đóng
                 }
             }
+            
+            // Xử lý menu sinh viên
+            if (activeStudentMenu !== null) {
+                // Kiểm tra xem click có phải là nút 3 chấm không
+                const isMoreOptionsButton = event.target.closest('.student-menu-button');
+                if (isMoreOptionsButton) {
+                    return;
+                }
+                
+                // Kiểm tra xem click có trong menu không
+                const isInsideMenu = event.target.closest('.student-options-menu');
+                if (!isInsideMenu) {
+                    // Thêm animation đóng menu
+                    setClosingStudentMenu(activeStudentMenu);
+                    setTimeout(() => {
+                        setActiveStudentMenu(null);
+                        setClosingStudentMenu(null);
+                    }, 150);
+                }
+            }
         };
         
         // Thêm event listener khi component mount
@@ -86,7 +124,7 @@ const TeacherGroupDetail = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [activeMenu, closingMenu]);
+    }, [activeMenu, closingMenu, activeStudentMenu, closingStudentMenu]);
     
     // Fetch group data
     useEffect(() => {
@@ -710,6 +748,207 @@ const TeacherGroupDetail = () => {
         };
     }, []);
 
+    // Hàm gọi API để lấy ra ảnh đại diện của giảng viên
+    const fetchTeacherAvatar = async (avatarPath) => {
+        
+        if (!avatarPath) return;
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            // Fetch avatar with authorization header
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob' 
+            });
+
+            // Create a URL for the blob data
+            const imageUrl = URL.createObjectURL(response.data);
+            setTeacherAvatarUrl(imageUrl);
+        } catch (err) {
+            console.error('Error fetching avatar:', err);
+        }
+    };
+
+    // Hàm gọi API để lấy ra ảnh đại diện của sinh viên
+    const fetchAvatar = async (avatarPath, studentId) => {
+        
+        if (!avatarPath) return;
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            // Fetch avatar with authorization header
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob' 
+            });
+
+            // Create a URL for the blob data
+            const imageUrl = URL.createObjectURL(response.data);
+            setAvatarUrl(prev => ({
+                ...prev,
+                [studentId]: imageUrl
+            }));
+        } catch (err) {
+            console.error('Error fetching avatar:', err);
+        }
+    };
+
+    // Fetch students data
+    const fetchStudents = async () => {
+        if (!id) return;
+        
+        setStudentsLoading(true);
+        setStudentsError(null);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Tạo URLSearchParams để gửi tham số GET
+            const params = new URLSearchParams();
+            params.append('groupId', id);
+            params.append('pageSize', studentsPagination.pageSize.toString());
+            params.append('pageNumber', studentsPagination.pageNumber.toString());
+            
+            // Gọi API với phương thức GET và params
+            const response = await axios.get(
+                `${GET_STUDENTS_GROUP}?${params.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                const responseData = response.data.result;
+                console.log(responseData);
+                
+                
+                // Nếu kết quả trả về là dạng phân trang
+                if (responseData.content) {
+                    setStudents(responseData.content);
+                    
+                    // Cập nhật thông tin phân trang
+                    setStudentsPagination({
+                        ...studentsPagination,
+                        totalPages: responseData.totalPages,
+                        totalElements: responseData.totalElements
+                    });
+                    
+                    responseData.content.forEach(student => {
+                        if (student.avatar) {
+                            fetchAvatar(student.avatar, student.id);
+                        }
+                    });
+                } else {
+                    // Nếu kết quả trả về là mảng thông thường
+                    setStudents(responseData);
+                }
+            } else {
+                throw new Error(response.data?.message || 'Failed to fetch students');
+            }
+        } catch (err) {
+            console.error('Error fetching students:', err);
+            setStudentsError('Không thể tải danh sách sinh viên. Vui lòng thử lại sau.');
+        } finally {
+            setStudentsLoading(false);
+        }
+    };
+
+    // Load students when tab changes to 'people'
+    useEffect(() => {
+        if (id && isActive === 'people') {
+            fetchStudents();
+        }
+    }, [id, isActive, studentsPagination.pageNumber, studentsPagination.pageSize]);
+
+    // Hàm xử lý khi thay đổi trang trong phần sinh viên
+    const handleStudentsPageChange = (newPage) => {
+        setStudentsPagination({
+            ...studentsPagination,
+            pageNumber: newPage
+        });
+    };
+
+    // Hàm xử lý hiển thị/ẩn menu xóa sinh viên
+    const toggleStudentMenu = (studentId) => {
+        if (activeStudentMenu === studentId) {
+            // Thêm animation đóng menu
+            setClosingStudentMenu(studentId);
+            setTimeout(() => {
+                setActiveStudentMenu(null);
+                setClosingStudentMenu(null);
+            }, 150);
+        } else {
+            if (closingStudentMenu) {
+                setClosingStudentMenu(null);
+            }
+            setActiveStudentMenu(studentId);
+        }
+    };
+    
+    // Hàm xử lý xóa sinh viên
+    const handleDeleteStudent = async (studentId) => {
+        if (studentDeleteLoading) return; // Tránh gọi lại khi đang xử lý
+        
+        try {
+            setStudentDeleteLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Tạo FormData để gửi dữ liệu
+            const formData = new FormData();
+            formData.append('groupId', id);
+            formData.append('studentId', studentId);
+            
+            // Gọi API xóa sinh viên với phương thức DELETE
+            const response = await axios.delete(
+                DELETE_STUDENT_GROUP,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    data: formData
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                // Xóa thành công, cập nhật lại danh sách sinh viên
+                fetchStudents();
+                // Đóng menu
+                setActiveStudentMenu(null);
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete student');
+            }
+        } catch (error) {
+            console.error('Error deleting student:', error);
+            // Có thể hiển thị thông báo lỗi ở đây
+        } finally {
+            setStudentDeleteLoading(false);
+        }
+    };
+
+    // Thêm hàm xử lý chuyển đến trang tạo bài tập
+    const handleCreateTask = () => {
+        navigate(`/teacher/groups/${id}/create-task`);
+    };
+
     // Render tab content based on active tab
     const renderTabContent = () => {
         switch(isActive) {
@@ -835,7 +1074,11 @@ const TeacherGroupDetail = () => {
                                     className='d-flex open-editor'
                                     onClick={openEditor}
                                 > 
-                                    <img src={logo} alt="Avatar" className="group-author-avatar" />
+                                    {teacherAvatarUrl ? (
+                                        <img src={teacherAvatarUrl} alt="Avatar" className="group-author-avatar"/>
+                                    ) : (
+                                        <img src='https://randomuser.me/api/portraits/men/1.jpg' className="group-author-avatar"/>
+                                    )}
                                     <input 
                                         type="text" 
                                         className="announcement_header-input" 
@@ -868,16 +1111,16 @@ const TeacherGroupDetail = () => {
                                         {posts.map((post) => (
                                             <>
                                                 <div key={post.id} className="announcement_item">
-                                <div className="announcement-author">
+                                                    <div className="announcement-author">
                                                         <img 
                                                             src={post.creator?.avatar || logo} 
                                                             alt="Avatar" 
                                                             className="group-author-avatar" 
                                                         />
-                                    <div className="author-info">
+                                                        <div className="author-info">
                                                             <div className="author-name">
                                                                 {post.creator?.fullName || 'Giáo viên'}
-                                    </div>
+                                                            </div>
                                                             <div className="announcement-time">
                                                                 {formatDateTime(post.createdAt)}
                                                             </div>
@@ -907,7 +1150,7 @@ const TeacherGroupDetail = () => {
                                                                 </div>
                                                             )}
                                                         </div>
-                                </div>
+                                                    </div>
 
                                                     <div className="announcement_content" dangerouslySetInnerHTML={{ __html: post.text }}></div>
 
@@ -936,18 +1179,18 @@ const TeacherGroupDetail = () => {
                                                     )}
                                                 </div>
                                                 <div className='group-comment-divided'>
-                                <div className="group-comment-section">
-                                    <img src={logo} alt="Avatar" className="comment-avatar" />
-                                    <input
-                                        type="text"
-                                        className="group-comment-input"
-                                        placeholder="Thêm nhận xét trong lớp học..."
-                                        value={comments}
-                                        onChange={handleCommentChange}
-                                        onKeyPress={handleCommentSubmit}
-                                    />
-                                </div>
-                            </div>
+                                                    <div className="group-comment-section">
+                                                        <img src={logo} alt="Avatar" className="comment-avatar" />
+                                                        <input
+                                                            type="text"
+                                                            className="group-comment-input"
+                                                            placeholder="Thêm nhận xét trong lớp học..."
+                                                            value={comments}
+                                                            onChange={handleCommentChange}
+                                                            onKeyPress={handleCommentSubmit}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </>
                                         ))}
                                         
@@ -989,7 +1232,22 @@ const TeacherGroupDetail = () => {
                                                 <path d="M10.7177 130.977C12.698 130.977 12.698 127.852 10.7177 127.852C8.73733 127.852 8.73733 130.977 10.7177 130.977Z" fill="#5F6368"></path>
                                                 <path d="M19.4368 106.921L8.49707 82.0967" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
                                                 <path d="M13.126 93.0719C13.126 90.9273 13.5467 89.2442 14.7268 87.1405C17.0871 82.9328 22.162 83.7743 22.8034 86.3398C23.2241 88.0229 22.3005 91.7688 19.7759 93.072C16.8301 94.5926 14.809 94.755 13.9675 94.755" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
-                                                <path d="M13.2331 93.6244C11.8849 91.9565 10.4997 90.9119 8.25948 90.0176C3.77892 88.2289 0.360966 92.0735 1.47485 94.4719C2.20559 96.0453 3.84062 97.8046 8.06124 97.8046C11.3764 97.8046 12.9821 95.9913 13.6366 95.4624" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path><path d="M26.5609 148.997C39.7431 148.997 50.4294 138.317 50.4294 125.143C50.4294 111.969 39.7431 101.289 26.5609 101.289C13.3787 101.289 2.69238 111.969 2.69238 125.143C2.69238 138.317 13.3787 148.997 26.5609 148.997Z" fill="#DADCE0"></path><path d="M16.8671 139.622C18.8475 139.622 18.8475 136.497 16.8671 136.497C14.8867 136.497 14.8867 139.622 16.8671 139.622Z" fill="#5F6368"></path><path d="M21.245 131.81C23.2254 131.81 23.2254 128.685 21.245 128.685C19.2647 128.685 19.2647 131.81 21.245 131.81Z" fill="#5F6368"></path><path d="M29.3749 138.685C31.3553 138.685 31.3553 135.56 29.3749 135.56C27.3946 135.56 27.3946 138.685 29.3749 138.685Z" fill="#5F6368"></path><path d="M23.538 143.477C25.5184 143.477 25.5184 140.352 23.538 140.352C21.5576 140.352 21.5576 143.477 23.538 143.477Z" fill="#5F6368"></path><path d="M18.3261 102.748C5.92283 107.227 -0.435161 120.977 4.0467 133.373C5.29745 136.914 7.38204 139.935 9.98777 142.435L34.0647 102.54C29.0617 100.873 23.6418 100.769 18.3261 102.748Z" fill="#5F6368"></path><path d="M149.451 35.8135C150.433 41.143 154.921 51.129 163.336 48.4362C171.751 45.7433 168.666 35.1122 165.861 29.9229" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path><path d="M167.374 31.082L148.926 37.4361C147.154 32.332 149.864 26.8112 154.971 25.0404C160.078 23.2696 165.602 25.9779 167.374 31.082Z" fill="#1E8E3E" class="P5VoX"></path><path d="M199.581 23.0616L194.474 8.99933C195.933 7.95767 197.184 6.60353 198.122 5.04105C198.539 4.31189 198.956 3.47857 198.956 2.64525C198.956 1.81193 198.33 0.87444 197.497 0.87444C197.184 0.87444 196.871 0.978606 196.559 1.08277C194.474 1.91609 193.119 3.89523 191.972 5.87437L189.784 6.70769C190.201 4.52022 189.575 2.12442 188.116 0.45778C187.907 0.249449 187.803 0.145284 187.491 0.0411187C186.969 -0.167212 186.448 0.45778 186.136 0.978606C184.885 3.16607 184.781 5.87437 185.614 8.27017L168.104 14.6242C165.811 15.4576 164.56 18.0617 165.394 20.3533L166.228 22.7491C166.957 24.8324 169.25 25.8741 171.335 25.1449L174.045 32.5407C171.231 33.0615 168.625 34.7281 166.228 36.3948C165.186 37.1239 164.143 37.9573 164.247 39.3114C164.352 40.4572 165.186 41.2905 166.228 41.7072C168.104 42.3322 169.876 41.603 171.648 40.978C173.211 40.3531 174.879 39.7281 176.442 39.1031L176.859 40.3531C173.732 43.0614 171.752 47.1238 171.752 51.6029C171.752 56.3945 173.941 60.6653 177.485 63.3736C175.713 63.5819 173.837 64.1027 172.273 64.936C171.752 65.1444 171.335 65.4569 171.127 65.9777C170.71 66.811 171.439 67.8527 172.377 68.1652C173.315 68.4777 174.253 68.2693 175.192 68.061C176.963 67.7485 184.676 67.2277 188.637 66.4985C194.474 66.4985 212.714 66.4985 216.258 66.4985C224.596 66.4985 231.267 56.8112 231.267 48.4779C231.267 43.478 228.765 38.9989 224.909 36.2906C224.596 30.4574 230.225 31.3948 231.996 31.7073C234.185 32.2282 236.374 33.8948 238.459 32.3323C239.293 31.7073 239.709 30.6657 239.918 29.7282C245.338 7.43685 204.688 -2.97967 199.581 23.0616Z" fill="#DADCE0"></path><path d="M185.302 16.0826C186.108 16.0826 186.761 15.4297 186.761 14.6243C186.761 13.8189 186.108 13.166 185.302 13.166C184.496 13.166 183.843 13.8189 183.843 14.6243C183.843 15.4297 184.496 16.0826 185.302 16.0826Z" fill="#5F6368"></path><path d="M211.303 27.3983C213.406 25.7153 218.96 22.8541 224.346 24.8738C229.732 26.8934 232.2 30.7644 232.761 32.4474M211.303 20.2454C213.266 18.0014 219.044 14.3548 226.45 17.7209C231.359 19.9521 236.969 24.8738 239.073 31.1852M200.363 21.9285C199.942 23.4713 199.101 27.4825 199.101 31.1852C199.101 34.8878 199.942 40.0211 200.363 42.1248" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path><path d="M165.172 18.1085L168.233 16.9138" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path><path d="M172.172 67.3701H216.351" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path><path d="M135.145 49.6982L127.151 65.687M116.211 11.8301L118.735 36.6548" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M13.2331 93.6244C11.8849 91.9565 10.4997 90.9119 8.25948 90.0176C3.77892 88.2289 0.360966 92.0735 1.47485 94.4719C2.20559 96.0453 3.84062 97.8046 8.06124 97.8046C11.3764 97.8046 12.9821 95.9913 13.6366 95.4624" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M26.5609 148.997C39.7431 148.997 50.4294 138.317 50.4294 125.143C50.4294 111.969 39.7431 101.289 26.5609 101.289C13.3787 101.289 2.69238 111.969 2.69238 125.143C2.69238 138.317 13.3787 148.997 26.5609 148.997Z" fill="#DADCE0"></path>
+                                                <path d="M16.8671 139.622C18.8475 139.622 18.8475 136.497 16.8671 136.497C14.8867 136.497 14.8867 139.622 16.8671 139.622Z" fill="#5F6368"></path>
+                                                <path d="M21.245 131.81C23.2254 131.81 23.2254 128.685 21.245 128.685C19.2647 128.685 19.2647 131.81 21.245 131.81Z" fill="#5F6368"></path>
+                                                <path d="M29.3749 138.685C31.3553 138.685 31.3553 135.56 29.3749 135.56C27.3946 135.56 27.3946 138.685 29.3749 138.685Z" fill="#5F6368"></path>
+                                                <path d="M23.538 143.477C25.5184 143.477 25.5184 140.352 23.538 140.352C21.5576 140.352 21.5576 143.477 23.538 143.477Z" fill="#5F6368"></path>
+                                                <path d="M18.3261 102.748C5.92283 107.227 -0.435161 120.977 4.0467 133.373C5.29745 136.914 7.38204 139.935 9.98777 142.435L34.0647 102.54C29.0617 100.873 23.6418 100.769 18.3261 102.748Z" fill="#5F6368"></path>
+                                                <path d="M149.451 35.8135C150.433 41.143 154.921 51.129 163.336 48.4362C171.751 45.7433 168.666 35.1122 165.861 29.9229" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M167.374 31.082L148.926 37.4361C147.154 32.332 149.864 26.8112 154.971 25.0404C160.078 23.2696 165.602 25.9779 167.374 31.082Z" fill="#1E8E3E" class="P5VoX"></path>
+                                                <path d="M199.581 23.0616L194.474 8.99933C195.933 7.95767 197.184 6.60353 198.122 5.04105C198.539 4.31189 198.956 3.47857 198.956 2.64525C198.956 1.81193 198.33 0.87444 197.497 0.87444C197.184 0.87444 196.871 0.978606 196.559 1.08277C194.474 1.91609 193.119 3.89523 191.972 5.87437L189.784 6.70769C190.201 4.52022 189.575 2.12442 188.116 0.45778C187.907 0.249449 187.803 0.145284 187.491 0.0411187C186.969 -0.167212 186.448 0.45778 186.136 0.978606C184.885 3.16607 184.781 5.87437 185.614 8.27017L168.104 14.6242C165.811 15.4576 164.56 18.0617 165.394 20.3533L166.228 22.7491C166.957 24.8324 169.25 25.8741 171.335 25.1449L174.045 32.5407C171.231 33.0615 168.625 34.7281 166.228 36.3948C165.186 37.1239 164.143 37.9573 164.247 39.3114C164.352 40.4572 165.186 41.2905 166.228 41.7072C168.104 42.3322 169.876 41.603 171.648 40.978C173.211 40.3531 174.879 39.7281 176.442 39.1031L176.859 40.3531C173.732 43.0614 171.752 47.1238 171.752 51.6029C171.752 56.3945 173.941 60.6653 177.485 63.3736C175.713 63.5819 173.837 64.1027 172.273 64.936C171.752 65.1444 171.335 65.4569 171.127 65.9777C170.71 66.811 171.439 67.8527 172.377 68.1652C173.315 68.4777 174.253 68.2693 175.192 68.061C176.963 67.7485 184.676 67.2277 188.637 66.4985C194.474 66.4985 212.714 66.4985 216.258 66.4985C224.596 66.4985 231.267 56.8112 231.267 48.4779C231.267 43.478 228.765 38.9989 224.909 36.2906C224.596 30.4574 230.225 31.3948 231.996 31.7073C234.185 32.2282 236.374 33.8948 238.459 32.3323C239.293 31.7073 239.709 30.6657 239.918 29.7282C245.338 7.43685 204.688 -2.97967 199.581 23.0616Z" fill="#DADCE0"></path>
+                                                <path d="M185.302 16.0826C186.108 16.0826 186.761 15.4297 186.761 14.6243C186.761 13.8189 186.108 13.166 185.302 13.166C184.496 13.166 183.843 13.8189 183.843 14.6243C183.843 15.4297 184.496 16.0826 185.302 16.0826Z" fill="#5F6368"></path>
+                                                <path d="M211.303 27.3983C213.406 25.7153 218.96 22.8541 224.346 24.8738C229.732 26.8934 232.2 30.7644 232.761 32.4474M211.303 20.2454C213.266 18.0014 219.044 14.3548 226.45 17.7209C231.359 19.9521 236.969 24.8738 239.073 31.1852M200.363 21.9285C199.942 23.4713 199.101 27.4825 199.101 31.1852C199.101 34.8878 199.942 40.0211 200.363 42.1248" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M165.172 18.1085L168.233 16.9138" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M172.172 67.3701H216.351" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M135.145 49.6982L127.151 65.687M116.211 11.8301L118.735 36.6548" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                
                                             </svg>
                                         </div>
                                         <div>
@@ -1006,6 +1264,17 @@ const TeacherGroupDetail = () => {
             case 'tasks':
                 return (
                     <div className="tasks-content">
+                        {/* Thêm nút tạo bài tập */}
+                        <div className="tasks-header">
+                            <button 
+                                className="create-task-button"
+                                onClick={handleCreateTask}
+                            >
+                                <Plus size={20} />
+                                <span>Tạo bài kiểm tra</span>
+                            </button>
+                        </div>
+
                         <div className="tasks-list">
                             <div className="task-item">
                                 <div className="task-icon">
@@ -1054,17 +1323,23 @@ const TeacherGroupDetail = () => {
                         <div className="people-section" style={{marginBottom: '12px'}}>
                             <div className="group-section-header">
                                 <h3>Giáo Viên</h3>
-                                <button className="add-person-button">
-                                    <span>+</span>
-                                </button>
                             </div>
                             <div className="people-list teacher-list">
                                 <div className="teacher-item">
                                     <div className="person-avatar">
-                                        <img src={selectedGroup.teacher?.avatar || logo} alt="Avatar" />
+                                        {teacherAvatarUrl ? (
+                                            <img src={teacherAvatarUrl} alt="Avatar"/>
+                                        ) : (
+                                            <img src='https://randomuser.me/api/portraits/men/1.jpg'/>
+                                        )}
                                     </div>
-                                    <div className="person-name">
-                                        {selectedGroup.teacher?.fullName || 'Giáo viên'}
+                                    <div className='person-info'>
+                                        <div className="person-name">
+                                            {selectedGroup.teacher?.fullName || 'Giáo viên'}
+                                        </div>
+                                        <div className="person-email">
+                                            {selectedGroup.teacher?.email || ''}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1073,32 +1348,109 @@ const TeacherGroupDetail = () => {
                         <div className="people-section">
                             <div className="group-section-header">
                                 <h3>Sinh Viên</h3>
-                                <button className="add-person-button">
-                                    <span>+</span>
+                                <button className="add-student-btn" onClick={() => navigate(`/teacher/groups/${id}/add-students`)}>
+                                    <UserPlus size={20} enableBackground={0}/>
                                 </button>
                             </div>
                             <div className="people-list-container">
-                                <div className="people-list student-list">
-                                    {selectedGroup.students && selectedGroup.students.length > 0 ? (
-                                        selectedGroup.students.map((student, index) => (
-                                            <div className="person-item" key={student.id || index}>
-                                        <div className="person-avatar">
-                                                    <img src={student.avatar || logo} alt="Avatar" />
-                                        </div>
-                                        <div className="person-name">
-                                                    {student.fullName || `Học sinh ${index + 1}`}
-                                        </div>
+                                {studentsLoading && (
+                                    <div className="students-loading">
+                                        <div className="students-loading-spinner"></div>
+                                        <p>Đang tải danh sách sinh viên...</p>
                                     </div>
-                                        ))
-                                    ) : (
-                                        <div className="no-students">
-                                            <p>Chưa có học sinh nào trong nhóm này</p>
-                                        </div>
-                                    )}
-                                        </div>
+                                )}
+                                
+                                {studentsError && (
+                                    <div className="students-error">
+                                        <p>{studentsError}</p>
+                                        <button onClick={fetchStudents}>Thử lại</button>
                                     </div>
+                                )}
+                                
+                                {!studentsLoading && !studentsError && (
+                                    <>
+                                        <div className="people-list student-list">
+                                            {students.length > 0 ? (
+                                                students.map((student, index) => (
+                                                    <div className="person-item" key={student.id || index}>
+                                                        <div className="person-avatar">
+                                                            {avatarUrl[student.id] ? (
+                                                                <img src={avatarUrl[student.id]} alt="Avatar"/>
+                                                            ) : (
+                                                                <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                                                    <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                                                    <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                                                    <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                                                    <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                                                    <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                                                    <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                                                    <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                        <div className="person-info">
+                                                            <div className="person-name">
+                                                                {student.fullName || `Học sinh ${index + 1}`}
+                                                            </div>
+                                                            <div className="person-email">
+                                                                {student.email || ''}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Thêm nút 3 chấm và menu xóa sinh viên */}
+                                                        <div className="student-options-container">
+                                                            <button 
+                                                                className="student-menu-button" 
+                                                                onClick={() => toggleStudentMenu(student.id)}
+                                                            >
+                                                                <EllipsisVertical size={20}/>
+                                                            </button>
+                                                            {(activeStudentMenu === student.id || closingStudentMenu === student.id) && (
+                                                                <div className={`student-options-menu ${closingStudentMenu === student.id ? 'student-options-menu-exit' : ''}`}>
+                                                                    <button 
+                                                                        className="student-option-item student-delete-button"
+                                                                        onClick={() => handleDeleteStudent(student.id)}
+                                                                        disabled={studentDeleteLoading}
+                                                                    >
+                                                                        {studentDeleteLoading && activeStudentMenu === student.id ? 'Đang xóa...' : 'Xóa khỏi nhóm'}
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="no-students">
+                                                    <p>Chưa có học sinh nào trong nhóm này</p>
+                                                </div>
+                                            )}
                                         </div>
-                                        </div>
+                                        
+                                        {/* Pagination - giữ nguyên */}
+                                        {studentsPagination.totalPages > 1 && (
+                                            <div className="students-pagination">
+                                                <button 
+                                                    disabled={studentsPagination.pageNumber === 0}
+                                                    onClick={() => handleStudentsPageChange(studentsPagination.pageNumber - 1)}
+                                                >
+                                                    Trước
+                                                </button>
+                                                <span>
+                                                    Trang {studentsPagination.pageNumber + 1} / {studentsPagination.totalPages}
+                                                </span>
+                                                <button 
+                                                    disabled={studentsPagination.pageNumber >= studentsPagination.totalPages - 1}
+                                                    onClick={() => handleStudentsPageChange(studentsPagination.pageNumber + 1)}
+                                                >
+                                                    Sau
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 );
             case 'marks':
                 return <div className="marks-content">Nội dung Điểm</div>;
@@ -1117,7 +1469,7 @@ const TeacherGroupDetail = () => {
                     <div className="tgd-preview-loading">
                         <div className="tgd-preview-loading-spinner"></div>
                         <p>Đang tải nội dung...</p>
-                                    </div>
+                    </div>
                 );
             }
             
@@ -1127,7 +1479,7 @@ const TeacherGroupDetail = () => {
                         <FileText size={48} />
                         <p>Không thể xem trước nội dung file này</p>
                         <p>Vui lòng tải xuống để xem</p>
-                                        </div>
+                    </div>
                 );
             }
             
@@ -1137,7 +1489,7 @@ const TeacherGroupDetail = () => {
                     return (
                         <div className="tgd-text-preview">
                             <pre>{previewContent}</pre>
-                                        </div>
+                        </div>
                     );
                     
                 case 'docx':
@@ -1166,7 +1518,7 @@ const TeacherGroupDetail = () => {
                                 width="100%"
                                 height="100%"
                             />
-                                    </div>
+                        </div>
                     );
                     
                 case 'jpg':
@@ -1178,7 +1530,7 @@ const TeacherGroupDetail = () => {
                     return (
                         <div className="tgd-image-preview">
                             <img src={previewContent} alt="Preview" />
-                                        </div>
+                        </div>
                     );
                     
                 case 'mp4':
@@ -1190,7 +1542,7 @@ const TeacherGroupDetail = () => {
                                 <source src={previewContent} type={getMimeType(previewType)} />
                                 Your browser does not support the video tag.
                             </video>
-                                        </div>
+                        </div>
                     );
                     
                 default:
@@ -1199,7 +1551,7 @@ const TeacherGroupDetail = () => {
                             <FileText size={48} />
                             <p>Định dạng file không được hỗ trợ xem trước</p>
                             <p>Vui lòng tải xuống để xem</p>
-                                    </div>
+                        </div>
                     );
             }
         };
@@ -1223,14 +1575,14 @@ const TeacherGroupDetail = () => {
                             >
                                 <X size={18} />
                             </button>
-                                        </div>
-                                        </div>
-                    <div className="tgd-file-preview-modal-content">
-                        {renderPreviewContent()}
-                                    </div>
                         </div>
                     </div>
-                );
+                    <div className="tgd-file-preview-modal-content">
+                        {renderPreviewContent()}
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -1254,7 +1606,7 @@ const TeacherGroupDetail = () => {
                         className={isActive === 'tasks' ? 'tab-active' : ''}
                         onClick={() => handleTabChange('tasks')}
                         >
-                        Bài Tập Trên Lớp
+                        Bài Kiểm Tra
                     </button>
                     <button
                         className={isActive === 'people' ? 'tab-active' : ''}

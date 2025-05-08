@@ -19,7 +19,9 @@ import TeacherAddMaterial from './components/teacher/TeacherAddMaterial';
 import CourseManagementPage from './components/teacher/CourseManagementPage';
 import AddStudentsPage from './components/teacher/AddStudentsPage';
 import TeacherGroup from './components/teacher/TeacherGroup';
-import TeacherGroupDetail from './components/teacher/TeacherGroupDetail'
+import TeacherGroupDetail from './components/teacher/TeacherGroupDetail';
+import AddStudentsGroup from './components/teacher/AddStudentsGroup';
+import CreateTask from './components/teacher/CreateTask';
 
 // Student Routes
 import CoursesPage from './components/student/CoursesPage';
@@ -187,6 +189,20 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <TeacherGroupDetail />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/groups/:id/add-students" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <AddStudentsGroup />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/groups/:id/create-task" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <CreateTask />
               </TeacherLayout>
             </ProtectedRoute>
           } />

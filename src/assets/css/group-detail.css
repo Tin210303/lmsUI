@@ -420,7 +420,7 @@
   margin-right: 15px;
 }
 
-.person-avatar img {
+.person-avatar img, .person-avatar svg {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -429,6 +429,11 @@
 
 .person-name {
   font-size: 14px;
+  font-weight: 400;
+}
+
+.person-email {
+  font-size: 12px;
   font-weight: 400;
 }
 
