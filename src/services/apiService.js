@@ -1,4 +1,3 @@
-
 export const API_BASE_URL = 'http://localhost:8080';
 
 // STUDENT API
@@ -16,6 +15,8 @@ export const GET_STUDENT_COURSE = `${API_BASE_URL}/lms/studentcourse/studentofco
 export const GET_JOINCLASS_REQUEST = `${API_BASE_URL}/lms/joinclass/studentrequest`;
 export const GET_POST_GROUP = `${API_BASE_URL}/lms/post`;
 export const GET_STUDENTS_GROUP = `${API_BASE_URL}/lms/studentgroup/getstudent`;
+export const GET_TESTS_IN_GROUP = `${API_BASE_URL}/lms/testingroup/getalltest`;
+export const GET_GROUPS_OF_STUDENT = `${API_BASE_URL}/lms/studentgroup/getgroup`;
 export const JOINCLASS_APPROVED_API = `${API_BASE_URL}/lms/joinclass/approved`;
 export const JOINCLASS_REJECTED_API = `${API_BASE_URL}/lms/joinclass/rejected`;
 export const ADD_LESSON_API = `${API_BASE_URL}/lms/lesson/create`;

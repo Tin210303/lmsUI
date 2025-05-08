@@ -1,35 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../../assets/css/group-detail.css';
 import logo from '../../logo.svg';
-import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { X, Download, FileText, Video, Image, NotepadText } from 'lucide-react';
+import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP, GET_STUDENTS_GROUP, DELETE_STUDENT_GROUP, GET_TESTS_IN_GROUP } from '../../services/apiService';
+// Thêm thư viện cần thiết để xử lý các loại file đặc biệt
+import { renderAsync } from 'docx-preview';
+import * as XLSX from 'xlsx';
 
-// Sample announcements data
-const announcements = [
-{
-    id: 1,
-    author: 'Tín Nguyễn',
-    time: '09:12',
-    content: 'Tin đẹp trai vãi chưởng',
-    formattedContent: '<strong>A</strong>',
-    avatar: '/api/placeholder/40/40'
-},
-{
-    id: 2,
-    author: 'Tín Nguyễn',
-    time: '09:12',
-    content: 'Tin đẹp trai vãi chưởng Tin đẹp trai vãi chưởng Tin đẹp trai vãi chưởng Tin đẹp trai vãi chưởng Tin đẹp trai vãi chưởng Tin đẹp trai vãi chưởng Tin đẹp trai vãi chưởng Tin đẹp trai vãi chưởngTin đẹp trai vãi chưởng Tin đẹp trai vãi chưởng',
-    formattedContent: '<strong>A</strong>',
-    avatar: '/api/placeholder/40/40'
-}
-];
-
-function GroupDetailPage() {
+const TeacherGroupDetail = () => {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const { id } = useParams();
     const editorRef = useRef(null);
     const [isInputFocused, setIsInputFocused] = useState(false);
     const [isActive, setisActive] = useState('wall');
-    const [selectedCourse, setSelectedCourse] = useState({});
+    const [selectedGroup, setSelectedGroup] = useState({});
     const [comments, setComments] = useState('');
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [announcementText, setAnnouncementText] = useState('');
@@ -39,17 +26,124 @@ function GroupDetailPage() {
         underline: false,
         list: false
     });
-    console.log('Current ID:', id);
+    const [posts, setPosts] = useState([]);
+    const [postLoading, setPostLoading] = useState(false);
+    const [postError, setPostError] = useState(null);
+    const [pagination, setPagination] = useState({
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0
+    });
+    
+    // Thêm state để quản lý menu dropdown
+    const [activeMenu, setActiveMenu] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    
+    // Thêm state để quản lý file đã chọn
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    
+    // Thêm state để quản lý modal xem trước file
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [previewFile, setPreviewFile] = useState(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [previewContent, setPreviewContent] = useState(null);
+    const [previewType, setPreviewType] = useState(null);
+    
+    // Thêm state để quản lý animation đóng menu
+    const [closingMenu, setClosingMenu] = useState(null);
+    
+    // Thêm state quản lý sinh viên
+    const [students, setStudents] = useState([]);
+    const [studentsLoading, setStudentsLoading] = useState(false);
+    const [studentsError, setStudentsError] = useState(null);
+    const [studentsPagination, setStudentsPagination] = useState({
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0
+    });
+    const [avatarUrl, setAvatarUrl] = useState({});
+    const [teacherAvatarUrl, setTeacherAvatarUrl] = useState(null);
+    
+    // Thêm state để quản lý menu xóa sinh viên
+    const [activeStudentMenu, setActiveStudentMenu] = useState(null);
+    const [closingStudentMenu, setClosingStudentMenu] = useState(null);
+    const [studentDeleteLoading, setStudentDeleteLoading] = useState(false);
+    
+    // Thêm state để quản lý danh sách bài kiểm tra và phân trang
+    const [tests, setTests] = useState([]);
+    const [testsLoading, setTestsLoading] = useState(false);
+    const [testsError, setTestsError] = useState(null);
+    const [testsPagination, setTestsPagination] = useState({
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0
+    });
+    
+    // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
-        // Fetch group data from localStorage (in a real app, you would fetch from API)
+        const handleClickOutside = (event) => {
+            // Chỉ xử lý khi có menu đang mở
+            if (activeMenu !== null) {
+                // Kiểm tra xem click có phải là nút more-options không
+                const isMoreOptionsButton = event.target.closest('.more-options');
+                // Nếu click vào nút more-options thì không đóng menu (đã xử lý trong togglePostMenu)
+                if (isMoreOptionsButton) {
+                    return;
+                }
+                
+                // Kiểm tra xem click có trong menu không
+                const isInsideMenu = event.target.closest('.post-options-menu');
+                if (!isInsideMenu) {
+                    // Thêm animation đóng menu khi click ra ngoài
+                    setClosingMenu(activeMenu);
+                    // Đợi animation hoàn thành rồi mới đóng menu
+                    setTimeout(() => {
+                        setActiveMenu(null);
+                        setClosingMenu(null);
+                    }, 150); // 150ms - thời gian của animation đóng
+                }
+            }
+            
+            // Xử lý menu sinh viên
+            if (activeStudentMenu !== null) {
+                // Kiểm tra xem click có phải là nút 3 chấm không
+                const isMoreOptionsButton = event.target.closest('.student-menu-button');
+                if (isMoreOptionsButton) {
+                    return;
+                }
+                
+                // Kiểm tra xem click có trong menu không
+                const isInsideMenu = event.target.closest('.student-options-menu');
+                if (!isInsideMenu) {
+                    // Thêm animation đóng menu
+                    setClosingStudentMenu(activeStudentMenu);
+                    setTimeout(() => {
+                        setActiveStudentMenu(null);
+                        setClosingStudentMenu(null);
+                    }, 150);
+                }
+            }
+        };
+        
+        // Thêm event listener khi component mount
+        document.addEventListener('mousedown', handleClickOutside);
+        
+        // Cleanup khi component unmount
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [activeMenu, closingMenu, activeStudentMenu, closingStudentMenu]);
+    
+    // Fetch group data
+    useEffect(() => {
         const fetchGroup = () => {
             try {
-                console.log('Current ID:', id);
                 const groupData = localStorage.getItem(`group_${id}`);
-                console.log('check group dâta',groupData);
-                
                 if (groupData) {
-                    setSelectedCourse(JSON.parse(groupData));
+                    setSelectedGroup(JSON.parse(groupData));
                 }
             } catch (error) {
                 console.error('Error fetching group data:', error);
@@ -61,10 +155,80 @@ function GroupDetailPage() {
         fetchGroup();
     }, [id]);
 
+    // Fetch posts for this group
+    const fetchPosts = async () => {
+        setPostLoading(true);
+        setPostError(null);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Tạo URLSearchParams để gửi tham số GET
+            const params = new URLSearchParams();
+            params.append('groupId', id);
+            params.append('pageNumber', pagination.pageNumber.toString());
+            params.append('pageSize', pagination.pageSize.toString());
+            
+            // Gọi API với phương thức GET và params
+            const response = await axios.get(
+                `${GET_POST_GROUP}?${params.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                const responseData = response.data.result;
+                
+                // Nếu kết quả trả về là dạng phân trang
+                if (responseData.content) {
+                    // Sắp xếp bài đăng mới nhất lên đầu (dựa vào trường createdAt)
+                    const sortedPosts = [...responseData.content].sort((a, b) => {
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                    });
+                    
+                    setPosts(sortedPosts);
+                    
+                    // Cập nhật thông tin phân trang
+                    setPagination({
+                        ...pagination,
+                        totalPages: responseData.totalPages,
+                        totalElements: responseData.totalElements
+                    });
+                } else {
+                    // Nếu kết quả trả về là mảng thông thường, cũng sắp xếp
+                    const sortedPosts = [...responseData].sort((a, b) => {
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                    });
+                    
+                    setPosts(sortedPosts);
+                }
+            } else {
+                throw new Error(response.data?.message || 'Failed to fetch posts');
+            }
+        } catch (err) {
+            console.error('Error fetching posts:', err);
+            setPostError('Không thể tải danh sách bài đăng. Vui lòng thử lại sau.');
+        } finally {
+            setPostLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        if (id && isActive === 'wall') {
+            fetchPosts();
+        }
+    }, [id, pagination.pageNumber, pagination.pageSize, isActive]);
 
-    // Back to courses list
-    const backToCousesList = () => {
-        setSelectedCourse(null);
+    // Back to groups list
+    const backToGroupsList = () => {
+        navigate('/teacher/groups');
     }
 
     // Handle change tabs
@@ -108,6 +272,7 @@ function GroupDetailPage() {
     const closeEditor = () => {
         setIsEditorOpen(false);
         setAnnouncementText('');
+        setSelectedFiles([]);
     };
 
     // Function to handle text changes in the contenteditable div
@@ -144,32 +309,737 @@ function GroupDetailPage() {
     };
 
     // Function to handle announcement submission
-    const submitAnnouncement = () => {
-        if (announcementText.trim()) {
-        // Create a new announcement
-        const newAnnouncement = {
-            id: Date.now(),
-            author: 'Giáo viên',
-            time: new Date().toLocaleString('vi-VN'),
-            content: announcementText
+    const submitAnnouncement = async () => {
+        if (announcementText.trim() || selectedFiles.length > 0) {
+            try {
+                const token = localStorage.getItem('authToken');
+                const formData = new FormData();
+                formData.append('groupId', id);
+                formData.append('title', '');
+                formData.append('text', announcementText);
+                // Gửi từng file theo dạng fileUploadRequests[i].file và fileUploadRequests[i].type
+                selectedFiles.forEach((file, idx) => {
+                    formData.append(`fileUploadRequests[${idx}].file`, file);
+                    // Xác định type
+                    const mimeType = file.type;
+                    let type = 'file';
+                    if (mimeType.startsWith('image/')) type = 'image';
+                    else if (mimeType.startsWith('video/')) type = 'video';
+                    formData.append(`fileUploadRequests[${idx}].type`, type);
+                });
+                const response = await axios.post(
+                    `${ADD_POST_GROUP}`,
+                    formData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
+                );
+                if (response.data && response.data.code === 0) {
+                    fetchPosts();
+                    closeEditor();
+                    setAnnouncementText('');
+                    setSelectedFiles([]);
+                } else {
+                    console.error('Error creating post:', response.data?.message);
+                }
+            } catch (error) {
+                console.error('Error creating post:', error);
+            }
+        }
+    };
+
+    // Hàm để tạo đường dẫn đầy đủ cho file
+    const getFullFilePath = (path) => {
+        if (!path) return '';
+        // Kiểm tra xem path đã có tiền tố http:// hoặc https:// chưa
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+            return path;
+        }
+        // Thêm tiền tố server nếu path chỉ là đường dẫn tương đối
+        return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+    };
+
+    // Hàm để lấy tên file từ đường dẫn
+    const getFileNameFromPath = (path) => {
+        if (!path) return 'Tệp đính kèm';
+        const parts = path.split('/');
+        return parts[parts.length - 1];
+    };
+
+    // Hàm để lấy phần mở rộng của file từ đường dẫn
+    const getFileExtension = (filename) => {
+        if (!filename) return '';
+        return filename.split('.').pop().toLowerCase();
+    };
+
+    // Hàm để xác định kiểu MIME dựa trên phần mở rộng
+    const getMimeType = (extension) => {
+        switch (extension.toLowerCase()) {
+            case 'pdf':
+                return 'application/pdf';
+            case 'doc':
+                return 'application/msword';
+            case 'docx':
+                return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            case 'xls':
+                return 'application/vnd.ms-excel';
+            case 'xlsx':
+                return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            case 'txt':
+                return 'text/plain';
+            case 'png':
+                return 'image/png';
+            case 'jpg':
+            case 'jpeg':
+                return 'image/jpeg';
+            case 'mp4':
+                return 'video/mp4';
+            case 'avi':
+                return 'video/x-msvideo';
+            case 'mov':
+                return 'video/quicktime';
+            default:
+                return 'application/octet-stream';
+        }
+    };
+
+    // Hàm để xác định loại file
+    const getFileType = (path) => {
+        if (!path) return 'unknown';
+        const extension = getFileExtension(path);
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+        const videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'];
+        const documentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
+
+        if (imageExtensions.includes(extension)) return 'image';
+        if (videoExtensions.includes(extension)) return 'video';
+        if (documentExtensions.includes(extension)) return 'document';
+        return 'unknown';
+    };
+
+    // Hàm để mở modal xem trước file
+    const openPreviewModal = async (path) => {
+        if (!path) return;
+        
+        setPreviewFile(path);
+        setPreviewModalOpen(true);
+        setPreviewLoading(true);
+        setPreviewContent(null);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                alert('Bạn cần đăng nhập để xem file');
+                return;
+            }
+            
+            const fullPath = getFullFilePath(path);
+            const extension = getFileExtension(path);
+            setPreviewType(extension);
+            
+            const response = await axios.get(fullPath, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob'
+            });
+            
+            const blob = response.data;
+            
+            // Xử lý theo loại file
+            switch (extension) {
+                case 'txt':
+                    const text = await blob.text();
+                    setPreviewContent(text);
+                    break;
+                    
+                case 'docx':
+                    try {
+                        const container = document.createElement('div');
+                        await renderAsync(blob, container);
+                        setPreviewContent(container.innerHTML);
+                    } catch (error) {
+                        console.error('Error rendering docx:', error);
+                        setPreviewContent(null);
+                    }
+                    break;
+                    
+                case 'xlsx':
+                case 'xls':
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const data = new Uint8Array(e.target.result);
+                                const workbook = XLSX.read(data, { type: 'array' });
+                                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                                const htmlTable = XLSX.utils.sheet_to_html(firstSheet);
+                                setPreviewContent(htmlTable);
+                                setPreviewLoading(false);
+                            } catch (error) {
+                                console.error('Error processing Excel data:', error);
+                                setPreviewContent(null);
+                                setPreviewLoading(false);
+                            }
+                        };
+                        reader.onerror = () => {
+                            console.error('Error reading Excel file');
+                            setPreviewContent(null);
+                            setPreviewLoading(false);
+                        };
+                        reader.readAsArrayBuffer(blob);
+                        // Không đặt loading = false ở đây vì đang xử lý bất đồng bộ
+                        return;
+                    } catch (error) {
+                        console.error('Error with Excel file:', error);
+                        setPreviewContent(null);
+                    }
+                    break;
+                    
+                case 'pdf':
+                    const url = URL.createObjectURL(blob);
+                    setPreviewContent(url);
+                    break;
+                    
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'gif':
+                case 'bmp':
+                case 'webp':
+                    const imageUrl = URL.createObjectURL(blob);
+                    setPreviewContent(imageUrl);
+                    break;
+                    
+                case 'mp4':
+                case 'webm':
+                case 'ogg':
+                    const videoUrl = URL.createObjectURL(blob);
+                    setPreviewContent(videoUrl);
+                    break;
+                    
+                default:
+                    // Các loại file không được hỗ trợ xem trước
+                    setPreviewContent(null);
+                    break;
+            }
+        } catch (error) {
+            console.error('Error previewing file:', error);
+            setPreviewContent(null);
+        } finally {
+            // Với các loại file như Excel, setting loading sẽ được xử lý bởi callback
+            if (getFileExtension(path) !== 'xlsx' && getFileExtension(path) !== 'xls') {
+                setPreviewLoading(false);
+            }
+        }
+    };
+
+    // Hàm để đóng modal xem trước
+    const closePreviewModal = () => {
+        setPreviewModalOpen(false);
+        // Nếu có URL blob, giải phóng nó
+        if (previewContent && (previewType === 'pdf' || getFileType(previewFile) === 'image' || getFileType(previewFile) === 'video')) {
+            URL.revokeObjectURL(previewContent);
+        }
+        setPreviewContent(null);
+        setPreviewFile(null);
+    };
+
+    // Hàm để tải file với Bearer token
+    const downloadFile = async (path) => {
+        if (!path) return;
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                alert('Bạn cần đăng nhập để tải file');
+                return;
+            }
+            
+            const fullPath = getFullFilePath(path);
+            const extension = getFileExtension(path);
+            const mimeType = getMimeType(extension);
+            
+            // Sử dụng axios để gửi yêu cầu GET với token xác thực
+            const response = await axios.get(fullPath, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob'
+            });
+            
+            // Tạo blob với MIME type phù hợp
+            const blob = new Blob([response.data], { type: mimeType });
+            
+            // Tạo URL tạm thời cho blob
+            const url = window.URL.createObjectURL(blob);
+            
+            // Tạo một thẻ a ẩn và kích hoạt sự kiện click để tải xuống
+            const link = document.createElement('a');
+            link.href = url;
+            // Lấy tên file từ đường dẫn
+            link.setAttribute('download', getFileNameFromPath(path));
+            document.body.appendChild(link);
+            link.click();
+            
+            // Dọn dẹp
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(link);
+            }, 100);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            alert('Lỗi khi tải file. Vui lòng thử lại sau.');
+        }
+    };
+
+    // Xử lý khi chọn file
+    const handleFileChange = (event) => {
+        const files = Array.from(event.target.files);
+        if (files.length > 0) {
+            setSelectedFiles((prev) => [...prev, ...files]);
+        }
+    };
+    
+    // Xóa file đã chọn theo index
+    const removeSelectedFile = (index) => {
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    // Hàm để lấy URL icon tương ứng với loại file
+    const getFileIconUrl = (mimeType, extension) => {
+        // Url cơ bản cho icon Google Drive
+        const baseUrl = "https://drive-thirdparty.googleusercontent.com/16/type/";
+        
+        if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || extension === 'docx') {
+            return `${baseUrl}application/vnd.openxmlformats-officedocument.wordprocessingml.document`;
+        } else if (mimeType === 'application/msword' || extension === 'doc') {
+            return `${baseUrl}application/msword`;
+        } else if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || extension === 'xlsx') {
+            return `${baseUrl}application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
+        } else if (mimeType === 'application/vnd.ms-excel' || extension === 'xls') {
+            return `${baseUrl}application/vnd.ms-excel`;
+        } else if (mimeType === 'application/pdf' || extension === 'pdf') {
+            return `${baseUrl}application/pdf`;
+        } else if (mimeType.startsWith('image/')) {
+            return `${baseUrl}image/${mimeType.split('/')[1]}`;
+        } else if (mimeType.startsWith('video/')) {
+            return `${baseUrl}video/${mimeType.split('/')[1]}`;
+        } else if (mimeType === 'text/plain' || extension === 'txt') {
+            return `${baseUrl}text/plain`;
+        } else {
+            // Icon mặc định cho các loại file khác
+            return `${baseUrl}application/octet-stream`;
+        }
+    };
+    
+    // Hàm trả về mô tả loại file dựa trên MIME type
+    const getMimeTypeDescription = (mimeType) => {
+        if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            return 'Microsoft Word';
+        } else if (mimeType === 'application/msword') {
+            return 'Microsoft Word';
+        } else if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+            return 'Microsoft Excel';
+        } else if (mimeType === 'application/vnd.ms-excel') {
+            return 'Microsoft Excel';
+        } else if (mimeType === 'application/pdf') {
+            return 'PDF Document';
+        } else if (mimeType.startsWith('image/')) {
+            return 'Image';
+        } else if (mimeType.startsWith('video/')) {
+            return 'Video';
+        } else if (mimeType === 'text/plain') {
+            return 'Text Document';
+        } else {
+            return 'File';
+        }
+    };
+
+    // Hàm format thời gian
+    const formatDateTime = (dateTimeStr) => {
+        try {
+            const date = new Date(dateTimeStr);
+            return date.toLocaleString('vi-VN', {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return dateTimeStr;
+        }
+    };
+
+    // Xử lý khi thay đổi trang
+    const handlePageChange = (newPage) => {
+        setPagination({
+            ...pagination,
+            pageNumber: newPage
+        });
+    };
+
+    // Hàm xử lý hiển thị/ẩn menu cho từng bài viết
+    const togglePostMenu = (postId) => {
+        if (activeMenu === postId) {
+            // Xử lý animation đóng menu
+            setClosingMenu(postId);
+            // Đợi animation hoàn thành rồi mới đóng menu
+            setTimeout(() => {
+                setActiveMenu(null);
+                setClosingMenu(null);
+            }, 150); // 150ms - thời gian của animation đóng
+        } else {
+            if (closingMenu) {
+                // Nếu đang có menu đang đóng, hủy animation
+                setClosingMenu(null);
+            }
+            setActiveMenu(postId); // Hiển thị menu của bài viết được chọn
+        }
+    };
+    
+    // Hàm xử lý xóa bài viết
+    const handleDeletePost = async (postId) => {
+        if (deleteLoading) return; // Tránh gọi lại khi đang xử lý
+        
+        try {
+            setDeleteLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Tạo FormData để gửi postId
+            const formData = new FormData();
+            formData.append('postId', postId);
+            
+            // Gọi API xóa bài viết với phương thức DELETE
+            const response = await axios.delete(
+                `${DELETE_POST_GROUP}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    data: formData
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                // Xóa thành công, cập nhật lại danh sách bài viết
+                fetchPosts();
+                // Đóng menu
+                setActiveMenu(null);
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete post');
+            }
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            // Có thể hiển thị thông báo lỗi ở đây
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
+    // Khi component mount, thêm hàm download global để có thể gọi từ HTML
+    useEffect(() => {
+        // Expose the download function to window so it can be called from HTML content
+        window.downloadAttachment = (path) => {
+            downloadFile(path);
         };
         
-        // Add to announcements array
-        announcements.push(newAnnouncement)
+        // Cleanup function
+        return () => {
+            delete window.downloadAttachment;
+        };
+    }, []);
+
+    // Hàm gọi API để lấy ra ảnh đại diện của giảng viên
+    const fetchTeacherAvatar = async (avatarPath) => {
         
-        closeEditor();
+        if (!avatarPath) return;
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            // Fetch avatar with authorization header
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob' 
+            });
+
+            // Create a URL for the blob data
+            const imageUrl = URL.createObjectURL(response.data);
+            setTeacherAvatarUrl(imageUrl);
+        } catch (err) {
+            console.error('Error fetching avatar:', err);
         }
     };
 
-    // xử lý up ảnh
-    const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-        // Xử lý tệp đã chọn
-        console.log('Tệp đã chọn:', file);
+    // Hàm gọi API để lấy ra ảnh đại diện của sinh viên
+    const fetchAvatar = async (avatarPath, studentId) => {
+        
+        if (!avatarPath) return;
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            // Fetch avatar with authorization header
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob' 
+            });
+
+            // Create a URL for the blob data
+            const imageUrl = URL.createObjectURL(response.data);
+            setAvatarUrl(prev => ({
+                ...prev,
+                [studentId]: imageUrl
+            }));
+        } catch (err) {
+            console.error('Error fetching avatar:', err);
         }
     };
 
+    // Fetch students data
+    const fetchStudents = async () => {
+        if (!id) return;
+        
+        setStudentsLoading(true);
+        setStudentsError(null);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Tạo URLSearchParams để gửi tham số GET
+            const params = new URLSearchParams();
+            params.append('groupId', id);
+            params.append('pageSize', studentsPagination.pageSize.toString());
+            params.append('pageNumber', studentsPagination.pageNumber.toString());
+            
+            // Gọi API với phương thức GET và params
+            const response = await axios.get(
+                `${GET_STUDENTS_GROUP}?${params.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                const responseData = response.data.result;
+                console.log(responseData);
+                
+                
+                // Nếu kết quả trả về là dạng phân trang
+                if (responseData.content) {
+                    setStudents(responseData.content);
+                    
+                    // Cập nhật thông tin phân trang
+                    setStudentsPagination({
+                        ...studentsPagination,
+                        totalPages: responseData.totalPages,
+                        totalElements: responseData.totalElements
+                    });
+                    
+                    responseData.content.forEach(student => {
+                        if (student.avatar) {
+                            fetchAvatar(student.avatar, student.id);
+                        }
+                    });
+                } else {
+                    // Nếu kết quả trả về là mảng thông thường
+                    setStudents(responseData);
+                }
+            } else {
+                throw new Error(response.data?.message || 'Failed to fetch students');
+            }
+        } catch (err) {
+            console.error('Error fetching students:', err);
+            setStudentsError('Không thể tải danh sách sinh viên. Vui lòng thử lại sau.');
+        } finally {
+            setStudentsLoading(false);
+        }
+    };
+
+    // Load students when tab changes to 'people'
+    useEffect(() => {
+        if (id && isActive === 'people') {
+            fetchStudents();
+        }
+    }, [id, isActive, studentsPagination.pageNumber, studentsPagination.pageSize]);
+
+    // Hàm xử lý khi thay đổi trang trong phần sinh viên
+    const handleStudentsPageChange = (newPage) => {
+        setStudentsPagination({
+            ...studentsPagination,
+            pageNumber: newPage
+        });
+    };
+
+    // Hàm xử lý hiển thị/ẩn menu xóa sinh viên
+    const toggleStudentMenu = (studentId) => {
+        if (activeStudentMenu === studentId) {
+            // Thêm animation đóng menu
+            setClosingStudentMenu(studentId);
+            setTimeout(() => {
+                setActiveStudentMenu(null);
+                setClosingStudentMenu(null);
+            }, 150);
+        } else {
+            if (closingStudentMenu) {
+                setClosingStudentMenu(null);
+            }
+            setActiveStudentMenu(studentId);
+        }
+    };
+    
+    // Hàm xử lý xóa sinh viên
+    const handleDeleteStudent = async (studentId) => {
+        if (studentDeleteLoading) return; // Tránh gọi lại khi đang xử lý
+        
+        try {
+            setStudentDeleteLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Tạo FormData để gửi dữ liệu
+            const formData = new FormData();
+            formData.append('groupId', id);
+            formData.append('studentId', studentId);
+            
+            // Gọi API xóa sinh viên với phương thức DELETE
+            const response = await axios.delete(
+                DELETE_STUDENT_GROUP,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    data: formData
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                // Xóa thành công, cập nhật lại danh sách sinh viên
+                fetchStudents();
+                // Đóng menu
+                setActiveStudentMenu(null);
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete student');
+            }
+        } catch (error) {
+            console.error('Error deleting student:', error);
+            // Có thể hiển thị thông báo lỗi ở đây
+        } finally {
+            setStudentDeleteLoading(false);
+        }
+    };
+
+    // Sửa lại hàm fetchTests để gửi tham số qua form-data
+    const fetchTests = async () => {
+        if (!id) return;
+        
+        setTestsLoading(true);
+        setTestsError(null);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Tạo FormData để gửi tham số
+            const formData = new FormData();
+            formData.append('groupId', id);
+            formData.append('pageSize', testsPagination.pageSize.toString());
+            formData.append('pageNumber', testsPagination.pageNumber.toString());
+            
+            // Tạo URL với query parameters từ FormData
+            let url = GET_TESTS_IN_GROUP;
+            let searchParams = new URLSearchParams();
+            for (let [key, value] of formData.entries()) {
+                searchParams.append(key, value);
+            }
+            url = `${url}?${searchParams.toString()}`;
+            
+            // Gọi API với phương thức GET
+            const response = await axios.get(
+                url,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                const responseData = response.data.result;
+                
+                // Nếu kết quả trả về là dạng phân trang
+                if (responseData.content) {
+                    setTests(responseData.content);
+                    
+                    // Cập nhật thông tin phân trang
+                    setTestsPagination({
+                        ...testsPagination,
+                        totalPages: responseData.totalPages,
+                        totalElements: responseData.totalElements
+                    });
+                } else {
+                    // Nếu kết quả trả về là mảng thông thường
+                    setTests(responseData);
+                }
+            } else {
+                throw new Error(response.data?.message || 'Failed to fetch tests');
+            }
+        } catch (err) {
+            console.error('Error fetching tests:', err);
+            setTestsError('Không thể tải danh sách bài kiểm tra. Vui lòng thử lại sau.');
+        } finally {
+            setTestsLoading(false);
+        }
+    };
+
+    // Thêm useEffect để gọi API khi vào tab "tasks"
+    useEffect(() => {
+        if (id && isActive === 'tasks') {
+            fetchTests();
+        }
+    }, [id, testsPagination.pageNumber, testsPagination.pageSize, isActive]);
+
+    // Hàm xử lý khi thay đổi trang
+    const handleTestsPageChange = (newPage) => {
+        setTestsPagination({
+            ...testsPagination,
+            pageNumber: newPage
+        });
+    };
+
+    // Thêm hàm xử lý khi click vào bài kiểm tra
+    const handleTaskClick = (testId) => {
+        navigate(`/groups/tests/${testId}`);
+    };
 
     // Render tab content based on active tab
     const renderTabContent = () => {
@@ -178,176 +1048,238 @@ function GroupDetailPage() {
                 return (
                 <div className="wall-content">
                     <div className="class-info">
-                        <div className="class-code">
-                            <div className="label">Mã Lớp</div>
-                            <div className="value">Tin221436</div>
-                        </div>
                         <div className="upcoming-deadline">
-                            <div className="label">Sắp đến hạn</div>
-                            <div className="value">Không có bài tập nào sắp đến hạn</div>
-                            <a className="view-all" onClick={() => handleTabChange('tasks')}>Xem tất cả</a>
+                            <div className="label">Thông tin nhóm</div>
+                            <div className="value">{selectedGroup.description || 'Chưa có mô tả'}</div>
+                            <a className="view-all" onClick={() => handleTabChange('people')}>Xem thành viên</a>
                         </div>
                     </div>
                     
                     <div className="class-announcement">
-                        <div className="announcement_header">
-                            {isEditorOpen ? (
-                                <div className="announcement-editor">
-                                    <div className="editor-recipient">Dành cho: Tất cả học viên</div>
-                                    <div
-                                        className={`editor ${isInputFocused ? 'active' : ''}`} 
-                                        onFocus={() => setIsInputFocused(true)}
-                                        onBlur={() => setIsInputFocused(editorRef.current.textContent !== '')}
-                                    >
-                                        <div 
-                                            ref={editorRef}
-                                            className="editor-content" 
-                                            contentEditable="true"
-                                            placeholder="Thông báo nội dung cho lớp học của bạn"
-                                            onInput={handleEditorChange}
-                                            onSelect={checkFormatting}
-                                            onMouseUp={checkFormatting}
-                                            onKeyUp={checkFormatting}
-                                        ></div>
+                        {/* Loading và Error */}
+                        {postLoading && (
+                            <div className="post-loading">
+                                <div className="post-loading-spinner"></div>
+                                <p>Đang tải bài đăng...</p>
+                            </div>
+                        )}
+                        
+                        {postError && (
+                            <div className="tests-error">
+                                <p>{postError}</p>
+                                <button onClick={fetchPosts}>Thử lại</button>
+                            </div>
+                        )}
+                        
+                        {/* Danh sách bài đăng */}
+                        {!postLoading && !postError && (
+                            <>
+                                {posts.length > 0 ? (
+                                    <>
+                                        {posts.map((post) => (
+                                            <>
+                                                <div key={post.id} className="announcement_item">
+                                                    <div className="announcement-author">
+                                                        <img 
+                                                            src={post.creator?.avatar || logo} 
+                                                            alt="Avatar" 
+                                                            className="group-author-avatar" 
+                                                        />
+                                                        <div className="author-info">
+                                                            <div className="author-name">
+                                                                {post.creator?.fullName || 'Giáo viên'}
+                                                            </div>
+                                                            <div className="announcement-time">
+                                                                {formatDateTime(post.createdAt)}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="announcement_content" dangerouslySetInnerHTML={{ __html: post.text }}></div>
+
+                                                    {/* Hiển thị tất cả file đính kèm */}
+                                                    {Array.isArray(post.files) && post.files.length > 0 && (
+                                                        <div className="announcement_attachment_list">
+                                                            {post.files.map((file, idx) => (
+                                                                <div key={idx} className="announcement_attachment">
+                                                                    <button 
+                                                                        onClick={() => openPreviewModal(file.fileUrl)}
+                                                                        className="tgd-file-attachment-button"
+                                                                    >
+                                                                        <div className="tgd-file-icon">
+                                                                            {file.fileType === 'image' ? <Image size={20} /> : 
+                                                                                file.fileType === 'video' ? <Video size={20} /> : 
+                                                                                <FileText size={20} />}
+                                                                        </div>
+                                                                        <div className="tgd-file-info">
+                                                                            <div className="tgd-file-name">{file.fileName}</div>
+                                                                            <div className="tgd-file-action">Nhấn để xem trước</div>
+                                                                        </div>
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className='group-comment-divided'>
+                                                    <div className="group-comment-section">
+                                                        <img src={logo} alt="Avatar" className="comment-avatar" />
+                                                        <input
+                                                            type="text"
+                                                            className="group-comment-input"
+                                                            placeholder="Thêm nhận xét trong lớp học..."
+                                                            value={comments}
+                                                            onChange={handleCommentChange}
+                                                            onKeyPress={handleCommentSubmit}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ))}
                                         
-                                        <div className="editor-toolbar">
-                                            <button 
-                                                className={`toolbar-button bold ${activeFormats.bold ? 'active' : ''}`}
-                                                title="In đậm"
-                                                onClick={() => toggleFormatting('bold', 'bold')}
-                                            >
-                                                B
-                                            </button>
-                                            <button 
-                                                className={`toolbar-button italic ${activeFormats.italic ? 'active' : ''}`}
-                                                title="In nghiêng"
-                                                onClick={() => toggleFormatting('italic', 'italic')}
-                                            >
-                                                I
-                                            </button>
-                                            <button 
-                                                className={`toolbar-button underline ${activeFormats.underline ? 'active' : ''}`}
-                                                title="Gạch chân"
-                                                onClick={() => toggleFormatting('underline', 'underline')}
-                                            >
-                                                U
-                                            </button>
-                                            <button 
-                                                className={`toolbar-button list ${activeFormats.list ? 'active' : ''}`}
-                                                title="Danh sách"
-                                                onClick={() => toggleFormatting('insertUnorderedList', 'list')}
-                                            >
-                                                ☰
-                                            </button>
-                                            {/* Nút tải tệp */}
-                                            <button
-                                                className="toolbar-button upload-file"
-                                                title="Tải lên tệp"
-                                                onClick={() => document.getElementById('file-input').click()}
-                                            >
-                                                📎
-                                            </button>
-                                            <input
-                                                id="file-input"
-                                                type="file"
-                                                style={{ display: 'none' }}
-                                                onChange={handleFileChange}
-                                            />
+                                        {/* Phân trang */}
+                                        {pagination.totalPages > 1 && (
+                                            <div className="posts-pagination">
+                                                <button 
+                                                    disabled={pagination.pageNumber === 0}
+                                                    onClick={() => handlePageChange(pagination.pageNumber - 1)}
+                                                >
+                                                    Trước
+                                                </button>
+                                                <span>
+                                                    Trang {pagination.pageNumber + 1} / {pagination.totalPages}
+                                                </span>
+                                                <button 
+                                                    disabled={pagination.pageNumber >= pagination.totalPages - 1}
+                                                    onClick={() => handlePageChange(pagination.pageNumber + 1)}
+                                                >
+                                                    Sau
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="no-posts">
+                                        <div className='no-posts-icon'>
+                                            <svg viewBox="0 0 241 149" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="Fnu4gf">
+                                                <path d="M138.19 145.143L136.835 145.664C134.646 146.498 132.249 145.352 131.519 143.164L82.4271 8.37444C81.5933 6.18697 82.7398 3.79117 84.9286 3.06201L86.2836 2.54118C88.4724 1.70786 90.8697 2.85368 91.5993 5.04115L140.691 139.831C141.421 142.018 140.379 144.414 138.19 145.143Z" stroke="#5F6368" stroke-width="2"></path>
+                                                <path d="M76.6602 10.5686C78.2029 12.2516 83.3923 14.7762 88.4414 13.0932C98.5395 9.72709 96.8565 2.57422 96.8565 2.57422" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path fill-rule="evenodd" clip-rule="evenodd" d="M60.1224 147.643C94.7266 135.143 112.55 96.9147 99.938 62.4361C87.4305 27.8532 49.1783 10.1451 14.5742 22.6449L60.1224 147.643ZM65.855 98.4772C77.3203 94.3106 83.2613 81.4983 79.0922 70.0401C74.923 58.4777 62.207 52.5403 50.6376 56.8111L65.855 98.4772Z" fill="#CEEAD6" class="rTGbBf"></path>
+                                                <path d="M58.1473 128.38L52.2567 130.905M52.2567 110.288L45.5246 112.812M44.6831 92.6157L39.2132 94.7195M38.3717 74.5232L32.9019 76.6269M32.4811 56.4306L26.5905 58.5344M25.749 38.7588L19.8584 40.8626" stroke="white" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M87.5996 128.38C94.472 121.227 105.86 101.199 103.168 78.3098C100.475 55.4206 89.7034 42.1247 84.6543 38.3379" stroke="#5F6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                <path d="M225.952 147.956H157.994C154.554 147.956 151.74 145.143 151.74 141.706V73.79C151.74 70.3525 154.554 67.54 157.994 67.54H225.952C229.391 67.54 232.205 70.3525 232.205 73.79V141.706C232.205 145.247 229.495 147.956 225.952 147.956Z" stroke="#5F6368" stroke-width="2"></path>
+                                                <path d="M232.205 73.79C232.205 70.3525 229.391 67.54 225.952 67.54H157.994C154.554 67.54 151.74 70.3525 151.74 73.79V100.977L232.205 81.4982V73.79Z" fill="#5F6368"></path>
+                                                <path d="M191.66 131.497C204.957 131.497 215.737 120.724 215.737 107.435C215.737 94.146 204.957 83.373 191.66 83.373C178.363 83.373 167.583 94.146 167.583 107.435C167.583 120.724 178.363 131.497 191.66 131.497Z" fill="white" stroke="#5F6368" stroke-width="2"></path>
+                                                <path d="M211.303 90.0912L207.095 93.4573M191.527 82.5176V87.1459M174.697 88.8289L178.063 93.4573M165.44 106.921L170.91 107.763M178.063 122.49L174.697 126.697M191.527 128.801V133.429M205.833 122.49L209.62 126.697M213.407 107.763H218.456" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M191.66 114.935C195.804 114.935 199.164 111.578 199.164 107.435C199.164 103.293 195.804 99.9355 191.66 99.9355C187.515 99.9355 184.155 103.293 184.155 107.435C184.155 111.578 187.515 114.935 191.66 114.935Z" fill="#5F6368"></path>
+                                                <path d="M10.7177 130.977C12.698 130.977 12.698 127.852 10.7177 127.852C8.73733 127.852 8.73733 130.977 10.7177 130.977Z" fill="#5F6368"></path>
+                                                <path d="M19.4368 106.921L8.49707 82.0967" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M13.126 93.0719C13.126 90.9273 13.5467 89.2442 14.7268 87.1405C17.0871 82.9328 22.162 83.7743 22.8034 86.3398C23.2241 88.0229 22.3005 91.7688 19.7759 93.072C16.8301 94.5926 14.809 94.755 13.9675 94.755" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M13.2331 93.6244C11.8849 91.9565 10.4997 90.9119 8.25948 90.0176C3.77892 88.2289 0.360966 92.0735 1.47485 94.4719C2.20559 96.0453 3.84062 97.8046 8.06124 97.8046C11.3764 97.8046 12.9821 95.9913 13.6366 95.4624" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M26.5609 148.997C39.7431 148.997 50.4294 138.317 50.4294 125.143C50.4294 111.969 39.7431 101.289 26.5609 101.289C13.3787 101.289 2.69238 111.969 2.69238 125.143C2.69238 138.317 13.3787 148.997 26.5609 148.997Z" fill="#DADCE0"></path>
+                                                <path d="M16.8671 139.622C18.8475 139.622 18.8475 136.497 16.8671 136.497C14.8867 136.497 14.8867 139.622 16.8671 139.622Z" fill="#5F6368"></path>
+                                                <path d="M21.245 131.81C23.2254 131.81 23.2254 128.685 21.245 128.685C19.2647 128.685 19.2647 131.81 21.245 131.81Z" fill="#5F6368"></path>
+                                                <path d="M29.3749 138.685C31.3553 138.685 31.3553 135.56 29.3749 135.56C27.3946 135.56 27.3946 138.685 29.3749 138.685Z" fill="#5F6368"></path>
+                                                <path d="M23.538 143.477C25.5184 143.477 25.5184 140.352 23.538 140.352C21.5576 140.352 21.5576 143.477 23.538 143.477Z" fill="#5F6368"></path>
+                                                <path d="M18.3261 102.748C5.92283 107.227 -0.435161 120.977 4.0467 133.373C5.29745 136.914 7.38204 139.935 9.98777 142.435L34.0647 102.54C29.0617 100.873 23.6418 100.769 18.3261 102.748Z" fill="#5F6368"></path>
+                                                <path d="M149.451 35.8135C150.433 41.143 154.921 51.129 163.336 48.4362C171.751 45.7433 168.666 35.1122 165.861 29.9229" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M167.374 31.082L148.926 37.4361C147.154 32.332 149.864 26.8112 154.971 25.0404C160.078 23.2696 165.602 25.9779 167.374 31.082Z" fill="#1E8E3E" class="P5VoX"></path>
+                                                <path d="M199.581 23.0616L194.474 8.99933C195.933 7.95767 197.184 6.60353 198.122 5.04105C198.539 4.31189 198.956 3.47857 198.956 2.64525C198.956 1.81193 198.33 0.87444 197.497 0.87444C197.184 0.87444 196.871 0.978606 196.559 1.08277C194.474 1.91609 193.119 3.89523 191.972 5.87437L189.784 6.70769C190.201 4.52022 189.575 2.12442 188.116 0.45778C187.907 0.249449 187.803 0.145284 187.491 0.0411187C186.969 -0.167212 186.448 0.45778 186.136 0.978606C184.885 3.16607 184.781 5.87437 185.614 8.27017L168.104 14.6242C165.811 15.4576 164.56 18.0617 165.394 20.3533L166.228 22.7491C166.957 24.8324 169.25 25.8741 171.335 25.1449L174.045 32.5407C171.231 33.0615 168.625 34.7281 166.228 36.3948C165.186 37.1239 164.143 37.9573 164.247 39.3114C164.352 40.4572 165.186 41.2905 166.228 41.7072C168.104 42.3322 169.876 41.603 171.648 40.978C173.211 40.3531 174.879 39.7281 176.442 39.1031L176.859 40.3531C173.732 43.0614 171.752 47.1238 171.752 51.6029C171.752 56.3945 173.941 60.6653 177.485 63.3736C175.713 63.5819 173.837 64.1027 172.273 64.936C171.752 65.1444 171.335 65.4569 171.127 65.9777C170.71 66.811 171.439 67.8527 172.377 68.1652C173.315 68.4777 174.253 68.2693 175.192 68.061C176.963 67.7485 184.676 67.2277 188.637 66.4985C194.474 66.4985 212.714 66.4985 216.258 66.4985C224.596 66.4985 231.267 56.8112 231.267 48.4779C231.267 43.478 228.765 38.9989 224.909 36.2906C224.596 30.4574 230.225 31.3948 231.996 31.7073C234.185 32.2282 236.374 33.8948 238.459 32.3323C239.293 31.7073 239.709 30.6657 239.918 29.7282C245.338 7.43685 204.688 -2.97967 199.581 23.0616Z" fill="#DADCE0"></path>
+                                                <path d="M185.302 16.0826C186.108 16.0826 186.761 15.4297 186.761 14.6243C186.761 13.8189 186.108 13.166 185.302 13.166C184.496 13.166 183.843 13.8189 183.843 14.6243C183.843 15.4297 184.496 16.0826 185.302 16.0826Z" fill="#5F6368"></path>
+                                                <path d="M211.303 27.3983C213.406 25.7153 218.96 22.8541 224.346 24.8738C229.732 26.8934 232.2 30.7644 232.761 32.4474M211.303 20.2454C213.266 18.0014 219.044 14.3548 226.45 17.7209C231.359 19.9521 236.969 24.8738 239.073 31.1852M200.363 21.9285C199.942 23.4713 199.101 27.4825 199.101 31.1852C199.101 34.8878 199.942 40.0211 200.363 42.1248" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M165.172 18.1085L168.233 16.9138" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M172.172 67.3701H216.351" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                <path d="M135.145 49.6982L127.151 65.687M116.211 11.8301L118.735 36.6548" stroke="#5F6368" stroke-width="2" stroke-linecap="round"></path>
+                                                
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h2 className='no-posts-title'>Đây là nơi bạn giao tiếp với group của mình</h2>
+                                            <p className='no-posts-subtitle'>Sử dụng bảng tin để thông báo, đăng bài tập và trả lời câu hỏi của sinh viên</p>
                                         </div>
                                     </div>
-                                    
-                                    <div className="editor-actions">
-                                        <button className="cancel-button" onClick={closeEditor}>Hủy</button>
-                                        <button className="post-button" onClick={submitAnnouncement}>Đăng</button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div 
-                                    className='d-flex open-editor'
-                                    onClick={openEditor}
-                                > 
-                                    <img src={logo} alt="Avatar" className="group-author-avatar" />
-                                    <input 
-                                        type="text" 
-                                        className="announcement_header-input" 
-                                        placeholder="Thông báo nội dung cho lớp học phần"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                        
-                        {announcements.map((announcement) => (
-                            <div key={announcement.id} className="announcement_item">
-                                <div className="announcement-author">
-                                    <img src={logo} alt="Avatar" className="group-author-avatar" />
-                                    <div className="author-info">
-                                        <div className="author-name">{announcement.author}</div>
-                                        <div className="announcement-time">{announcement.time}</div>
-                                    </div>
-                                    <button className="more-options">⋮</button>
-                                </div>
-
-                                <div className="announcement_content" dangerouslySetInnerHTML={{ __html: announcement.content }}></div>
-                                
-                                <div className="group-comment-section">
-                                    <img src={logo} alt="Avatar" className="comment-avatar" />
-                                    <input
-                                        type="text"
-                                        className="group-comment-input"
-                                        placeholder="Thêm nhận xét trong lớp học..."
-                                        value={comments}
-                                        onChange={handleCommentChange}
-                                        onKeyPress={handleCommentSubmit}
-                                    />
-                                </div>
-                            </div>
-                        ))}
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
                 );
             case 'tasks':
                 return (
                     <div className="tasks-content">
-                        <div className="tasks-list">
-                            <div className="task-item">
-                                <div className="task-icon">
-                                    <i className="fa-solid fa-clipboard task-icon-img"></i>
-                                </div>
-                                <div className="task-details">
-                                    <div className="task-title">Kiểm tra giữa kì</div>
-                                    <div className="task-deadline">Đến hạn 21 thg 3</div>
-                                </div>
-                                <div className="task-actions">
-                                    <button className="task-more-options">⋮</button>
-                                </div>
+                        {/* Loading và Error */}
+                        {testsLoading && (
+                            <div className="tests-loading">
+                                <div className="tests-loading-spinner"></div>
+                                <p>Đang tải danh sách bài kiểm tra...</p>
                             </div>
-                    
-                            <div className="task-item">
-                                <div className="task-icon">
-                                    <i className="fa-solid fa-clipboard task-icon-img"></i>
-                                </div>
-                                <div className="task-details">
-                                    <div className="task-title">Kiểm tra 15p</div>
-                                    <div className="task-deadline">Không có ngày đến hạn</div>
-                                </div>
-                                <div className="task-actions">
-                                    <button className="task-more-options">⋮</button>
-                                </div>
+                        )}
+                        
+                        {testsError && (
+                            <div className="tests-error">
+                                <p>{testsError}</p>
+                                <button onClick={fetchTests}>Thử lại</button>
                             </div>
-                    
-                            <div className="task-item">
-                                <div className="task-icon">
-                                    <i className="fa-solid fa-clipboard task-icon-img"></i>
+                        )}
+                        
+                        {/* Danh sách bài kiểm tra */}
+                        {!testsLoading && !testsError && (
+                            <>
+                                <div className="tasks-list">
+                                    {tests.length > 0 ? (
+                                        tests.map((test) => (
+                                            <div 
+                                                className="task-item" 
+                                                key={test.id}
+                                                onClick={() => handleTaskClick(test.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <div className="task-icon">
+                                                    <NotepadText size={24}/>
+                                                </div>
+                                                <div className="task-details">
+                                                    <div className="task-title">{test.title}</div>
+                                                    <div className="task-deadline">
+                                                        {test.expiredAt 
+                                                            ? `Đến hạn ${formatDateTime(test.expiredAt).split(',')[0]}` 
+                                                            : 'Không có ngày đến hạn'}
+                                                    </div>
+                                                </div>
+                                                <div className="task-actions">
+                                                    <button className="task-more-options">⋮</button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="no-tasks">
+                                            <p>Chưa có bài kiểm tra nào trong nhóm này</p>
+                                            <p>Nhấn vào nút "Tạo bài kiểm tra" để tạo bài kiểm tra mới</p>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="task-details">
-                                    <div className="task-title">Kiểm tra cuối kì</div>
-                                    <div className="task-deadline">Đến hạn 21 thg 5</div>
-                                </div>
-                                <div className="task-actions">
-                                    <button className="task-more-options">⋮</button>
-                                </div>
-                            </div>
-                        </div>
+                                
+                                {/* Phân trang */}
+                                {testsPagination.totalPages > 1 && (
+                                    <div className="tests-pagination">
+                                        <button 
+                                            disabled={testsPagination.pageNumber === 0}
+                                            onClick={() => handleTestsPageChange(testsPagination.pageNumber - 1)}
+                                        >
+                                            Trước
+                                        </button>
+                                        <span>
+                                            Trang {testsPagination.pageNumber + 1} / {testsPagination.totalPages}
+                                        </span>
+                                        <button 
+                                            disabled={testsPagination.pageNumber >= testsPagination.totalPages - 1}
+                                            onClick={() => handleTestsPageChange(testsPagination.pageNumber + 1)}
+                                        >
+                                            Sau
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 );
             case 'people':
@@ -356,17 +1288,23 @@ function GroupDetailPage() {
                         <div className="people-section" style={{marginBottom: '12px'}}>
                             <div className="group-section-header">
                                 <h3>Giáo Viên</h3>
-                                <button className="add-person-button">
-                                    <span>+</span>
-                                </button>
                             </div>
                             <div className="people-list teacher-list">
                                 <div className="teacher-item">
                                     <div className="person-avatar">
-                                        <img src={logo} alt="Avatar" />
+                                        {teacherAvatarUrl ? (
+                                            <img src={teacherAvatarUrl} alt="Avatar"/>
+                                        ) : (
+                                            <img src='https://randomuser.me/api/portraits/men/1.jpg'/>
+                                        )}
                                     </div>
-                                    <div className="person-name">
-                                        Tín Nguyễn
+                                    <div className='person-info'>
+                                        <div className="person-name">
+                                            {selectedGroup.teacher?.fullName || 'Giáo viên'}
+                                        </div>
+                                        <div className="person-email">
+                                            {selectedGroup.teacher?.email || ''}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -375,78 +1313,82 @@ function GroupDetailPage() {
                         <div className="people-section">
                             <div className="group-section-header">
                                 <h3>Sinh Viên</h3>
-                                <button className="add-person-button">
-                                    <span>+</span>
-                                </button>
                             </div>
                             <div className="people-list-container">
-                                <div className="people-list student-list">
-                                    <div className="person-item">
-                                        <div className="person-avatar">
-                                            <img src={logo} alt="Avatar" />
-                                        </div>
-                                        <div className="person-name">
-                                            Tiến Lê Văn
-                                        </div>
+                                {studentsLoading && (
+                                    <div className="students-loading">
+                                        <div className="students-loading-spinner"></div>
+                                        <p>Đang tải danh sách sinh viên...</p>
                                     </div>
-                                    <div className="person-item">
-                                        <div className="person-avatar">
-                                            <img src={logo} alt="Avatar" />
-                                        </div>
-                                        <div className="person-name">
-                                            Tân Ngô
-                                        </div>
+                                )}
+                                
+                                {studentsError && (
+                                    <div className="students-error">
+                                        <p>{studentsError}</p>
+                                        <button onClick={fetchStudents}>Thử lại</button>
                                     </div>
-                                    <div className="person-item">
-                                        <div className="person-avatar">
-                                            <img src={logo} alt="Avatar" />
+                                )}
+                                
+                                {!studentsLoading && !studentsError && (
+                                    <>
+                                        <div className="people-list student-list">
+                                            {students.length > 0 ? (
+                                                students.map((student, index) => (
+                                                    <div className="person-item" key={student.id || index}>
+                                                        <div className="person-avatar">
+                                                            {avatarUrl[student.id] ? (
+                                                                <img src={avatarUrl[student.id]} alt="Avatar"/>
+                                                            ) : (
+                                                                <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                                                    <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                                                    <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                                                    <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                                                    <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                                                    <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                                                    <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                                                    <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                        <div className="person-info">
+                                                            <div className="person-name">
+                                                                {student.fullName || `Học sinh ${index + 1}`}
+                                                            </div>
+                                                            <div className="person-email">
+                                                                {student.email || ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="no-students">
+                                                    <p>Chưa có sinh viên nào trong nhóm này</p>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="person-name">
-                                            Tiến Nguyễn Đình
-                                        </div>
-                                    </div>
-                                    <div className="person-item">
-                                        <div className="person-avatar">
-                                            <img src={logo} alt="Avatar" />
-                                        </div>
-                                        <div className="person-name">
-                                            Thành Nguyễn Hoàng Quang Minh
-                                        </div>
-                                    </div>
-                                    <div className="person-item">
-                                        <div className="person-avatar">
-                                            <img src={logo} alt="Avatar" />
-                                        </div>
-                                        <div className="person-name">
-                                            Quang Trần Đại
-                                        </div>
-                                    </div>
-                                    {/* Additional students to demonstrate scrolling */}
-                                    <div className="person-item">
-                                        <div className="person-avatar">
-                                            <img src={logo} alt="Avatar" />
-                                        </div>
-                                        <div className="person-name">
-                                            Huy Phan Quốc
-                                        </div>
-                                    </div>
-                                    <div className="person-item">
-                                        <div className="person-avatar">
-                                            <img src={logo} alt="Avatar" />
-                                        </div>
-                                        <div className="person-name">
-                                            Nhật Võ Minh
-                                        </div>
-                                    </div>
-                                    <div className="person-item">
-                                        <div className="person-avatar">
-                                            <img src={logo} alt="Avatar" />
-                                        </div>
-                                        <div className="person-name">
-                                            Dũng Trần Văn
-                                        </div>
-                                    </div>
-                                </div>
+                                        
+                                        {/* Pagination - giữ nguyên */}
+                                        {studentsPagination.totalPages > 1 && (
+                                            <div className="students-pagination">
+                                                <button 
+                                                    disabled={studentsPagination.pageNumber === 0}
+                                                    onClick={() => handleStudentsPageChange(studentsPagination.pageNumber - 1)}
+                                                >
+                                                    Trước
+                                                </button>
+                                                <span>
+                                                    Trang {studentsPagination.pageNumber + 1} / {studentsPagination.totalPages}
+                                                </span>
+                                                <button 
+                                                    disabled={studentsPagination.pageNumber >= studentsPagination.totalPages - 1}
+                                                    onClick={() => handleStudentsPageChange(studentsPagination.pageNumber + 1)}
+                                                >
+                                                    Sau
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -458,14 +1400,140 @@ function GroupDetailPage() {
         }
     };
 
+    // Component Modal xem trước file
+    const FilePreviewModal = () => {
+        if (!previewModalOpen) return null;
+        
+        const renderPreviewContent = () => {
+            if (previewLoading) {
+                return (
+                    <div className="tgd-preview-loading">
+                        <div className="tgd-preview-loading-spinner"></div>
+                        <p>Đang tải nội dung...</p>
+                    </div>
+                );
+            }
+            
+            if (!previewContent) {
+                return (
+                    <div className="tgd-preview-not-available">
+                        <FileText size={48} />
+                        <p>Không thể xem trước nội dung file này</p>
+                        <p>Vui lòng tải xuống để xem</p>
+                    </div>
+                );
+            }
+            
+            // Xác định cách hiển thị dựa trên loại file
+            switch (previewType) {
+                case 'txt':
+                    return (
+                        <div className="tgd-text-preview">
+                            <pre>{previewContent}</pre>
+                        </div>
+                    );
+                    
+                case 'docx':
+                    return (
+                        <div 
+                            className="tgd-docx-preview"
+                            dangerouslySetInnerHTML={{ __html: previewContent }}
+                        />
+                    );
+                    
+                case 'xlsx':
+                case 'xls':
+                    return (
+                        <div 
+                            className="tgd-excel-preview"
+                            dangerouslySetInnerHTML={{ __html: previewContent }}
+                        />
+                    );
+                    
+                case 'pdf':
+                    return (
+                        <div className="tgd-pdf-preview">
+                            <iframe
+                                src={previewContent}
+                                title="PDF Viewer"
+                                width="100%"
+                                height="100%"
+                            />
+                        </div>
+                    );
+                    
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'gif':
+                case 'bmp':
+                case 'webp':
+                    return (
+                        <div className="tgd-image-preview">
+                            <img src={previewContent} alt="Preview" />
+                        </div>
+                    );
+                    
+                case 'mp4':
+                case 'webm':
+                case 'ogg':
+                    return (
+                        <div className="tgd-video-preview">
+                            <video controls>
+                                <source src={previewContent} type={getMimeType(previewType)} />
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    );
+                    
+                default:
+                    return (
+                        <div className="tgd-preview-not-available">
+                            <FileText size={48} />
+                            <p>Định dạng file không được hỗ trợ xem trước</p>
+                            <p>Vui lòng tải xuống để xem</p>
+                        </div>
+                    );
+            }
+        };
+        
+        return (
+            <div className="tgd-file-preview-modal-overlay">
+                <div className="tgd-file-preview-modal">
+                    <div className="tgd-file-preview-modal-header">
+                        <h3>Xem trước: {getFileNameFromPath(previewFile)}</h3>
+                        <div className="tgd-file-preview-modal-actions">
+                            <button 
+                                className="tgd-file-download-button"
+                                onClick={() => downloadFile(previewFile)}
+                            >
+                                <Download size={18} />
+                                <span>Tải xuống</span>
+                            </button>
+                            <button 
+                                className="tgd-file-close-button"
+                                onClick={closePreviewModal}
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="tgd-file-preview-modal-content">
+                        {renderPreviewContent()}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className='content-container'>
             <div className='course-detail-section'> 
                 <div className='group-detail-header'> 
                     <div className='back-nav'> 
-                        <button onClick={backToCousesList} className="back_button">Lớp Học</button>  
+                        <button onClick={backToGroupsList} className="back_button">Lớp Học</button>  
                         &gt; 
-                        <span style={{ marginLeft: '16px' , color: '#000'}}>{selectedCourse.name}</span>
+                        <span style={{ marginLeft: '16px' , color: '#000'}}>{selectedGroup.name}</span>
                     </div>
                 </div>
                 <div className='course-tabs'> 
@@ -479,7 +1547,7 @@ function GroupDetailPage() {
                         className={isActive === 'tasks' ? 'tab-active' : ''}
                         onClick={() => handleTabChange('tasks')}
                         >
-                        Bài Tập Trên Lớp
+                        Bài Kiểm Tra
                     </button>
                     <button
                         className={isActive === 'people' ? 'tab-active' : ''}
@@ -499,17 +1567,11 @@ function GroupDetailPage() {
                     {renderTabContent()}
                 </div>
             </div>
+            
+            {/* Modal Xem trước file */}
+            <FilePreviewModal />
         </div>
     );
 }
 
-export default GroupDetailPage;
-
-
-
-
-
-
-
-
-
+export default TeacherGroupDetail;

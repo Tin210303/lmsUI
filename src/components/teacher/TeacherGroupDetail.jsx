@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import '../../assets/css/teacher-group-detail.css';
 import logo from '../../logo.svg';
 import axios from 'axios';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { X, Download, FileText, Video, Image, Upload, EllipsisVertical, UserPlus, PlusCircle, Plus } from 'lucide-react';
-import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP, GET_STUDENTS_GROUP, DELETE_STUDENT_GROUP } from '../../services/apiService';
+import { useParams, useNavigate } from 'react-router-dom';
+import { X, Download, FileText, Video, Image, Upload, EllipsisVertical, UserPlus, NotepadText, Plus } from 'lucide-react';
+import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP, GET_STUDENTS_GROUP, DELETE_STUDENT_GROUP, GET_TESTS_IN_GROUP } from '../../services/apiService';
 // Thêm thư viện cần thiết để xử lý các loại file đặc biệt
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
@@ -70,6 +70,17 @@ const TeacherGroupDetail = () => {
     const [activeStudentMenu, setActiveStudentMenu] = useState(null);
     const [closingStudentMenu, setClosingStudentMenu] = useState(null);
     const [studentDeleteLoading, setStudentDeleteLoading] = useState(false);
+    
+    // Thêm state để quản lý danh sách bài kiểm tra và phân trang
+    const [tests, setTests] = useState([]);
+    const [testsLoading, setTestsLoading] = useState(false);
+    const [testsError, setTestsError] = useState(null);
+    const [testsPagination, setTestsPagination] = useState({
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0
+    });
     
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
@@ -949,6 +960,92 @@ const TeacherGroupDetail = () => {
         navigate(`/teacher/groups/${id}/create-task`);
     };
 
+    // Sửa lại hàm fetchTests để gửi tham số qua form-data
+    const fetchTests = async () => {
+        if (!id) return;
+        
+        setTestsLoading(true);
+        setTestsError(null);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Tạo FormData để gửi tham số
+            const formData = new FormData();
+            formData.append('groupId', id);
+            formData.append('pageSize', testsPagination.pageSize.toString());
+            formData.append('pageNumber', testsPagination.pageNumber.toString());
+            
+            // Tạo URL với query parameters từ FormData
+            let url = GET_TESTS_IN_GROUP;
+            let searchParams = new URLSearchParams();
+            for (let [key, value] of formData.entries()) {
+                searchParams.append(key, value);
+            }
+            url = `${url}?${searchParams.toString()}`;
+            
+            // Gọi API với phương thức GET
+            const response = await axios.get(
+                url,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                const responseData = response.data.result;
+                
+                // Nếu kết quả trả về là dạng phân trang
+                if (responseData.content) {
+                    setTests(responseData.content);
+                    
+                    // Cập nhật thông tin phân trang
+                    setTestsPagination({
+                        ...testsPagination,
+                        totalPages: responseData.totalPages,
+                        totalElements: responseData.totalElements
+                    });
+                } else {
+                    // Nếu kết quả trả về là mảng thông thường
+                    setTests(responseData);
+                }
+            } else {
+                throw new Error(response.data?.message || 'Failed to fetch tests');
+            }
+        } catch (err) {
+            console.error('Error fetching tests:', err);
+            setTestsError('Không thể tải danh sách bài kiểm tra. Vui lòng thử lại sau.');
+        } finally {
+            setTestsLoading(false);
+        }
+    };
+
+    // Thêm useEffect để gọi API khi vào tab "tasks"
+    useEffect(() => {
+        if (id && isActive === 'tasks') {
+            fetchTests();
+        }
+    }, [id, testsPagination.pageNumber, testsPagination.pageSize, isActive]);
+
+    // Hàm xử lý khi thay đổi trang
+    const handleTestsPageChange = (newPage) => {
+        setTestsPagination({
+            ...testsPagination,
+            pageNumber: newPage
+        });
+    };
+
+    // Thêm hàm xử lý khi click vào bài kiểm tra
+    const handleTaskClick = (testId) => {
+        navigate(`/teacher/tests/${testId}`);
+    };
+
     // Render tab content based on active tab
     const renderTabContent = () => {
         switch(isActive) {
@@ -1097,7 +1194,7 @@ const TeacherGroupDetail = () => {
                         )}
                         
                         {postError && (
-                            <div className="post-error">
+                            <div className="tests-error">
                                 <p>{postError}</p>
                                 <button onClick={fetchPosts}>Thử lại</button>
                             </div>
@@ -1111,16 +1208,16 @@ const TeacherGroupDetail = () => {
                                         {posts.map((post) => (
                                             <>
                                                 <div key={post.id} className="announcement_item">
-                                                    <div className="announcement-author">
+                                <div className="announcement-author">
                                                         <img 
                                                             src={post.creator?.avatar || logo} 
                                                             alt="Avatar" 
                                                             className="group-author-avatar" 
                                                         />
-                                                        <div className="author-info">
+                                    <div className="author-info">
                                                             <div className="author-name">
                                                                 {post.creator?.fullName || 'Giáo viên'}
-                                                            </div>
+                                    </div>
                                                             <div className="announcement-time">
                                                                 {formatDateTime(post.createdAt)}
                                                             </div>
@@ -1150,7 +1247,7 @@ const TeacherGroupDetail = () => {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    </div>
+                                </div>
 
                                                     <div className="announcement_content" dangerouslySetInnerHTML={{ __html: post.text }}></div>
 
@@ -1179,18 +1276,18 @@ const TeacherGroupDetail = () => {
                                                     )}
                                                 </div>
                                                 <div className='group-comment-divided'>
-                                                    <div className="group-comment-section">
-                                                        <img src={logo} alt="Avatar" className="comment-avatar" />
-                                                        <input
-                                                            type="text"
-                                                            className="group-comment-input"
-                                                            placeholder="Thêm nhận xét trong lớp học..."
-                                                            value={comments}
-                                                            onChange={handleCommentChange}
-                                                            onKeyPress={handleCommentSubmit}
-                                                        />
-                                                    </div>
-                                                </div>
+                                <div className="group-comment-section">
+                                    <img src={logo} alt="Avatar" className="comment-avatar" />
+                                    <input
+                                        type="text"
+                                        className="group-comment-input"
+                                        placeholder="Thêm nhận xét trong lớp học..."
+                                        value={comments}
+                                        onChange={handleCommentChange}
+                                        onKeyPress={handleCommentSubmit}
+                                    />
+                                </div>
+                            </div>
                                             </>
                                         ))}
                                         
@@ -1264,7 +1361,7 @@ const TeacherGroupDetail = () => {
             case 'tasks':
                 return (
                     <div className="tasks-content">
-                        {/* Thêm nút tạo bài tập */}
+                        {/* Nút tạo bài kiểm tra */}
                         <div className="tasks-header">
                             <button 
                                 className="create-task-button"
@@ -1273,48 +1370,87 @@ const TeacherGroupDetail = () => {
                                 <Plus size={20} />
                                 <span>Tạo bài kiểm tra</span>
                             </button>
-                        </div>
-
-                        <div className="tasks-list">
-                            <div className="task-item">
-                                <div className="task-icon">
-                                    <i className="fa-solid fa-clipboard task-icon-img"></i>
                                 </div>
-                                <div className="task-details">
-                                    <div className="task-title">Kiểm tra giữa kì</div>
-                                    <div className="task-deadline">Đến hạn 21 thg 3</div>
+                        
+                        {/* Loading và Error */}
+                        {testsLoading && (
+                            <div className="tests-loading">
+                                <div className="tests-loading-spinner"></div>
+                                <p>Đang tải danh sách bài kiểm tra...</p>
                                 </div>
-                                <div className="task-actions">
-                                    <button className="task-more-options">⋮</button>
+                        )}
+                        
+                        {testsError && (
+                            <div className="tests-error">
+                                <p>{testsError}</p>
+                                <button onClick={fetchTests}>Thử lại</button>
                                 </div>
-                            </div>
-                    
-                            <div className="task-item">
-                                <div className="task-icon">
-                                    <i className="fa-solid fa-clipboard task-icon-img"></i>
+                        )}
+                        
+                        {/* Danh sách bài kiểm tra */}
+                        {!testsLoading && !testsError && (
+                            <>
+                                <div className="tasks-list">
+                                    {tests.length > 0 ? (
+                                        tests.map((test) => (
+                                            <div 
+                                                className="task-item" 
+                                                key={test.id} 
+                                                onClick={() => handleTaskClick(test.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <div className="task-icon">
+                                                    <NotepadText size={24}/>
+                                                </div>
+                                                <div className="task-details">
+                                                    <div className="task-title">{test.title}</div>
+                                                    <div className="task-deadline">
+                                                        {test.expiredAt 
+                                                            ? `Đến hạn ${formatDateTime(test.expiredAt).split(',')[0]}` 
+                                                            : 'Không có ngày đến hạn'}
+                                                    </div>
+                                                </div>
+                                                <div className="task-actions">
+                                                    <button 
+                                                        className="task-more-options"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Ngăn event bubble lên parent
+                                                            // Xử lý menu options cho test
+                                                        }}
+                                                    >⋮</button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="no-tasks">
+                                            <p>Chưa có bài kiểm tra nào trong nhóm này</p>
+                                            <p>Nhấn vào nút "Tạo bài kiểm tra" để tạo bài kiểm tra mới</p>
                                 </div>
-                                <div className="task-details">
-                                    <div className="task-title">Kiểm tra 15p</div>
-                                    <div className="task-deadline">Không có ngày đến hạn</div>
+                                    )}
                                 </div>
-                                <div className="task-actions">
-                                    <button className="task-more-options">⋮</button>
+                                
+                                {/* Phân trang */}
+                                {testsPagination.totalPages > 1 && (
+                                    <div className="tests-pagination">
+                                        <button 
+                                            disabled={testsPagination.pageNumber === 0}
+                                            onClick={() => handleTestsPageChange(testsPagination.pageNumber - 1)}
+                                        >
+                                            Trước
+                                        </button>
+                                        <span>
+                                            Trang {testsPagination.pageNumber + 1} / {testsPagination.totalPages}
+                                        </span>
+                                        <button 
+                                            disabled={testsPagination.pageNumber >= testsPagination.totalPages - 1}
+                                            onClick={() => handleTestsPageChange(testsPagination.pageNumber + 1)}
+                                        >
+                                            Sau
+                                        </button>
                                 </div>
-                            </div>
-                    
-                            <div className="task-item">
-                                <div className="task-icon">
-                                    <i className="fa-solid fa-clipboard task-icon-img"></i>
-                                </div>
-                                <div className="task-details">
-                                    <div className="task-title">Kiểm tra cuối kì</div>
-                                    <div className="task-deadline">Đến hạn 21 thg 5</div>
-                                </div>
-                                <div className="task-actions">
-                                    <button className="task-more-options">⋮</button>
-                                </div>
-                            </div>
-                        </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 );
             case 'people':
@@ -1334,7 +1470,7 @@ const TeacherGroupDetail = () => {
                                         )}
                                     </div>
                                     <div className='person-info'>
-                                        <div className="person-name">
+                                    <div className="person-name">
                                             {selectedGroup.teacher?.fullName || 'Giáo viên'}
                                         </div>
                                         <div className="person-email">
@@ -1357,14 +1493,14 @@ const TeacherGroupDetail = () => {
                                     <div className="students-loading">
                                         <div className="students-loading-spinner"></div>
                                         <p>Đang tải danh sách sinh viên...</p>
-                                    </div>
+                                        </div>
                                 )}
                                 
                                 {studentsError && (
                                     <div className="students-error">
                                         <p>{studentsError}</p>
                                         <button onClick={fetchStudents}>Thử lại</button>
-                                    </div>
+                                        </div>
                                 )}
                                 
                                 {!studentsLoading && !studentsError && (
@@ -1373,7 +1509,7 @@ const TeacherGroupDetail = () => {
                                             {students.length > 0 ? (
                                                 students.map((student, index) => (
                                                     <div className="person-item" key={student.id || index}>
-                                                        <div className="person-avatar">
+                                        <div className="person-avatar">
                                                             {avatarUrl[student.id] ? (
                                                                 <img src={avatarUrl[student.id]} alt="Avatar"/>
                                                             ) : (
@@ -1387,15 +1523,15 @@ const TeacherGroupDetail = () => {
                                                                     <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
                                                                 </svg>
                                                             )}
-                                                        </div>
+                                        </div>
                                                         <div className="person-info">
-                                                            <div className="person-name">
+                                        <div className="person-name">
                                                                 {student.fullName || `Học sinh ${index + 1}`}
-                                                            </div>
+                                        </div>
                                                             <div className="person-email">
                                                                 {student.email || ''}
-                                                            </div>
-                                                        </div>
+                                    </div>
+                                        </div>
                                                         
                                                         {/* Thêm nút 3 chấm và menu xóa sinh viên */}
                                                         <div className="student-options-container">
@@ -1414,17 +1550,17 @@ const TeacherGroupDetail = () => {
                                                                     >
                                                                         {studentDeleteLoading && activeStudentMenu === student.id ? 'Đang xóa...' : 'Xóa khỏi nhóm'}
                                                                     </button>
-                                                                </div>
+                                        </div>
                                                             )}
-                                                        </div>
-                                                    </div>
+                                    </div>
+                                        </div>
                                                 ))
                                             ) : (
                                                 <div className="no-students">
-                                                    <p>Chưa có học sinh nào trong nhóm này</p>
-                                                </div>
-                                            )}
+                                                    <p>Chưa có sinh viên nào trong nhóm này</p>
                                         </div>
+                                            )}
+                                    </div>
                                         
                                         {/* Pagination - giữ nguyên */}
                                         {studentsPagination.totalPages > 1 && (
@@ -1444,13 +1580,13 @@ const TeacherGroupDetail = () => {
                                                 >
                                                     Sau
                                                 </button>
-                                            </div>
+                                        </div>
                                         )}
                                     </>
                                 )}
-                            </div>
-                        </div>
-                    </div>
+                                        </div>
+                                    </div>
+                                        </div>
                 );
             case 'marks':
                 return <div className="marks-content">Nội dung Điểm</div>;
@@ -1469,7 +1605,7 @@ const TeacherGroupDetail = () => {
                     <div className="tgd-preview-loading">
                         <div className="tgd-preview-loading-spinner"></div>
                         <p>Đang tải nội dung...</p>
-                    </div>
+                                        </div>
                 );
             }
             
@@ -1479,7 +1615,7 @@ const TeacherGroupDetail = () => {
                         <FileText size={48} />
                         <p>Không thể xem trước nội dung file này</p>
                         <p>Vui lòng tải xuống để xem</p>
-                    </div>
+                                    </div>
                 );
             }
             
@@ -1489,7 +1625,7 @@ const TeacherGroupDetail = () => {
                     return (
                         <div className="tgd-text-preview">
                             <pre>{previewContent}</pre>
-                        </div>
+                                        </div>
                     );
                     
                 case 'docx':
@@ -1518,7 +1654,7 @@ const TeacherGroupDetail = () => {
                                 width="100%"
                                 height="100%"
                             />
-                        </div>
+                                        </div>
                     );
                     
                 case 'jpg':
@@ -1530,7 +1666,7 @@ const TeacherGroupDetail = () => {
                     return (
                         <div className="tgd-image-preview">
                             <img src={previewContent} alt="Preview" />
-                        </div>
+                                    </div>
                     );
                     
                 case 'mp4':
@@ -1542,7 +1678,7 @@ const TeacherGroupDetail = () => {
                                 <source src={previewContent} type={getMimeType(previewType)} />
                                 Your browser does not support the video tag.
                             </video>
-                        </div>
+                                        </div>
                     );
                     
                 default:
@@ -1551,7 +1687,7 @@ const TeacherGroupDetail = () => {
                             <FileText size={48} />
                             <p>Định dạng file không được hỗ trợ xem trước</p>
                             <p>Vui lòng tải xuống để xem</p>
-                        </div>
+                                        </div>
                     );
             }
         };
@@ -1575,14 +1711,14 @@ const TeacherGroupDetail = () => {
                             >
                                 <X size={18} />
                             </button>
-                        </div>
-                    </div>
+                                    </div>
+                                </div>
                     <div className="tgd-file-preview-modal-content">
                         {renderPreviewContent()}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        );
+                );
     };
 
     return (

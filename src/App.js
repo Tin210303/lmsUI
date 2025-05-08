@@ -22,6 +22,7 @@ import TeacherGroup from './components/teacher/TeacherGroup';
 import TeacherGroupDetail from './components/teacher/TeacherGroupDetail';
 import AddStudentsGroup from './components/teacher/AddStudentsGroup';
 import CreateTask from './components/teacher/CreateTask';
+import TeacherTaskDetail from './components/teacher/TeacherTaskDetail';
 
 // Student Routes
 import CoursesPage from './components/student/CoursesPage';
@@ -31,6 +32,7 @@ import ChatboxPage from './components/student/ChatboxPage';
 import StudentInfo from './components/student/StudentInfo';
 import GroupPage from './components/student/GroupPage';
 import GroupDetailPage from './components/student/GroupDetailPage';
+import TaskDetail from './components/student/TaskDetail';
 
 // Common Routes
 import Header from './components/Header';
@@ -111,6 +113,13 @@ function App() {
               <StudentLayout>
                 <GroupDetailPage />
               </StudentLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/groups/tests/:id" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <TeacherLayout>
+                <TaskDetail />
+              </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/documents" element={
@@ -203,6 +212,13 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <CreateTask />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/tests/:id" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherTaskDetail />
               </TeacherLayout>
             </ProtectedRoute>
           } />
