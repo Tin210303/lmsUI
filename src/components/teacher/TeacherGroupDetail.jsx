@@ -8,6 +8,7 @@ import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP, GET_ST
 // Thêm thư viện cần thiết để xử lý các loại file đặc biệt
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
+import Alert from '../common/Alert';
 
 const TeacherGroupDetail = () => {
     const navigate = useNavigate();
@@ -35,6 +36,12 @@ const TeacherGroupDetail = () => {
         totalPages: 0,
         totalElements: 0
     });
+
+    // Alert state
+    const [alert, setAlert] = useState(null);
+    const showAlert = (type, title, message) => {
+        setAlert({ type, title, message });
+    };
     
     // Thêm state để quản lý menu dropdown
     const [activeMenu, setActiveMenu] = useState(null);
@@ -940,11 +947,13 @@ const TeacherGroupDetail = () => {
             
             // Kiểm tra kết quả trả về
             if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', `Xóa sinh viên thành công`);
                 // Xóa thành công, cập nhật lại danh sách sinh viên
                 fetchStudents();
                 // Đóng menu
                 setActiveStudentMenu(null);
             } else {
+                showAlert('error', 'Lỗi', `${response.data?.message}`);
                 throw new Error(response.data?.message || 'Failed to delete student');
             }
         } catch (error) {
@@ -1208,16 +1217,16 @@ const TeacherGroupDetail = () => {
                                         {posts.map((post) => (
                                             <>
                                                 <div key={post.id} className="announcement_item">
-                                <div className="announcement-author">
+                                                    <div className="announcement-author">
                                                         <img 
                                                             src={post.creator?.avatar || logo} 
                                                             alt="Avatar" 
                                                             className="group-author-avatar" 
                                                         />
-                                    <div className="author-info">
+                                                        <div className="author-info">
                                                             <div className="author-name">
                                                                 {post.creator?.fullName || 'Giáo viên'}
-                                    </div>
+                                                            </div>
                                                             <div className="announcement-time">
                                                                 {formatDateTime(post.createdAt)}
                                                             </div>
@@ -1247,7 +1256,7 @@ const TeacherGroupDetail = () => {
                                                                 </div>
                                                             )}
                                                         </div>
-                                </div>
+                                                    </div>
 
                                                     <div className="announcement_content" dangerouslySetInnerHTML={{ __html: post.text }}></div>
 
@@ -1276,18 +1285,18 @@ const TeacherGroupDetail = () => {
                                                     )}
                                                 </div>
                                                 <div className='group-comment-divided'>
-                                <div className="group-comment-section">
-                                    <img src={logo} alt="Avatar" className="comment-avatar" />
-                                    <input
-                                        type="text"
-                                        className="group-comment-input"
-                                        placeholder="Thêm nhận xét trong lớp học..."
-                                        value={comments}
-                                        onChange={handleCommentChange}
-                                        onKeyPress={handleCommentSubmit}
-                                    />
-                                </div>
-                            </div>
+                                                    <div className="group-comment-section">
+                                                        <img src={logo} alt="Avatar" className="comment-avatar" />
+                                                        <input
+                                                            type="text"
+                                                            className="group-comment-input"
+                                                            placeholder="Thêm nhận xét trong lớp học..."
+                                                            value={comments}
+                                                            onChange={handleCommentChange}
+                                                            onKeyPress={handleCommentSubmit}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </>
                                         ))}
                                         
@@ -1425,7 +1434,7 @@ const TeacherGroupDetail = () => {
                                         <div className="no-tasks">
                                             <p>Chưa có bài kiểm tra nào trong nhóm này</p>
                                             <p>Nhấn vào nút "Tạo bài kiểm tra" để tạo bài kiểm tra mới</p>
-                                </div>
+                                        </div>
                                     )}
                                 </div>
                                 
@@ -1447,7 +1456,7 @@ const TeacherGroupDetail = () => {
                                         >
                                             Sau
                                         </button>
-                                </div>
+                                    </div>
                                 )}
                             </>
                         )}
@@ -1493,14 +1502,14 @@ const TeacherGroupDetail = () => {
                                     <div className="students-loading">
                                         <div className="students-loading-spinner"></div>
                                         <p>Đang tải danh sách sinh viên...</p>
-                                        </div>
+                                    </div>
                                 )}
                                 
                                 {studentsError && (
                                     <div className="students-error">
                                         <p>{studentsError}</p>
                                         <button onClick={fetchStudents}>Thử lại</button>
-                                        </div>
+                                    </div>
                                 )}
                                 
                                 {!studentsLoading && !studentsError && (
@@ -1509,7 +1518,7 @@ const TeacherGroupDetail = () => {
                                             {students.length > 0 ? (
                                                 students.map((student, index) => (
                                                     <div className="person-item" key={student.id || index}>
-                                        <div className="person-avatar">
+                                                        <div className="person-avatar">
                                                             {avatarUrl[student.id] ? (
                                                                 <img src={avatarUrl[student.id]} alt="Avatar"/>
                                                             ) : (
@@ -1523,15 +1532,15 @@ const TeacherGroupDetail = () => {
                                                                     <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
                                                                 </svg>
                                                             )}
-                                        </div>
+                                                        </div>
                                                         <div className="person-info">
-                                        <div className="person-name">
+                                                            <div className="person-name">
                                                                 {student.fullName || `Học sinh ${index + 1}`}
-                                        </div>
+                                                            </div>
                                                             <div className="person-email">
                                                                 {student.email || ''}
-                                    </div>
-                                        </div>
+                                                            </div>
+                                                        </div>
                                                         
                                                         {/* Thêm nút 3 chấm và menu xóa sinh viên */}
                                                         <div className="student-options-container">
@@ -1550,17 +1559,17 @@ const TeacherGroupDetail = () => {
                                                                     >
                                                                         {studentDeleteLoading && activeStudentMenu === student.id ? 'Đang xóa...' : 'Xóa khỏi nhóm'}
                                                                     </button>
-                                        </div>
+                                                                </div>
                                                             )}
-                                    </div>
-                                        </div>
+                                                        </div>
+                                                    </div>
                                                 ))
                                             ) : (
                                                 <div className="no-students">
                                                     <p>Chưa có sinh viên nào trong nhóm này</p>
-                                        </div>
+                                                </div>
                                             )}
-                                    </div>
+                                        </div>
                                         
                                         {/* Pagination - giữ nguyên */}
                                         {studentsPagination.totalPages > 1 && (
@@ -1580,13 +1589,13 @@ const TeacherGroupDetail = () => {
                                                 >
                                                     Sau
                                                 </button>
-                                        </div>
+                                            </div>
                                         )}
                                     </>
                                 )}
-                                        </div>
-                                    </div>
-                                        </div>
+                            </div>
+                        </div>
+                    </div>
                 );
             case 'marks':
                 return <div className="marks-content">Nội dung Điểm</div>;
@@ -1723,10 +1732,20 @@ const TeacherGroupDetail = () => {
 
     return (
         <div className='content-container'>
+            {alert && (
+                <div className="alert-container">
+                    <Alert
+                        type={alert.type}
+                        title={alert.title}
+                        message={alert.message}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
             <div className='course-detail-section'> 
                 <div className='group-detail-header'> 
                     <div className='back-nav'> 
-                        <button onClick={backToGroupsList} className="back_button">Lớp Học</button>  
+                        <button onClick={backToGroupsList} className="back_button">GROUP</button>  
                         &gt; 
                         <span style={{ marginLeft: '16px' , color: '#000'}}>{selectedGroup.name}</span>
                     </div>

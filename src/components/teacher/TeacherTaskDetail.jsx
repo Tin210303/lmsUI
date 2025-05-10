@@ -111,9 +111,9 @@ const TaskDetail = () => {
     const isCorrectOption = (question, optionLabel) => {
         if (!question.correctAnswers) return false;
         
-        if (question.type === 'single_choice') {
+        if (question.type === 'SINGLE_CHOICE') {
             return question.correctAnswers === optionLabel;
-        } else if (question.type === 'multiple_choice') {
+        } else if (question.type === 'MULTIPLE_CHOICE') {
             return question.correctAnswers.split(',').includes(optionLabel);
         }
         
@@ -125,7 +125,7 @@ const TaskDetail = () => {
         const options = parseOptions(question.options);
         
         switch (question.type) {
-            case 'single_choice':
+            case 'SINGLE_CHOICE':
                 return (
                     <div className="question-options-list">
                         {options.map((option, idx) => (
@@ -147,7 +147,7 @@ const TaskDetail = () => {
                     </div>
                 );
                 
-            case 'multiple_choice':
+            case 'MULTIPLE_CHOICE':
                 return (
                     <div className="question-options-list">
                         {options.map((option, idx) => (

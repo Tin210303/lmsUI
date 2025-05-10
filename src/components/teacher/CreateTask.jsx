@@ -1,20 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { X, ChevronDown, Calendar, Copy, Plus, CircleCheck, SquareCheck, ListCheck } from 'lucide-react';
+import { X, ChevronDown, Calendar, Copy, Plus, CircleCheck, SquareCheck, ListCheck, AlertCircle } from 'lucide-react';
 import { API_BASE_URL, CREATE_TEST_API } from '../../services/apiService';
 import '../../assets/css/create-task.css';
 import Select from 'react-select';
+import Alert from '../common/Alert';
 
 const QUESTION_TYPES = [
-    { value: 'single_choice', label: 'Trắc nghiệm 1 đáp án', icon: <CircleCheck size={16}/> },
-    { value: 'multiple_choice', label: 'Trắc nghiệm nhiều đáp án', icon: <SquareCheck size={16}/> },
-    { value: 'text', label: 'Câu hỏi tự luận', icon: <ListCheck size={16}/> },
+    { value: 'SINGLE_CHOICE', label: 'Trắc nghiệm 1 đáp án', icon: <CircleCheck size={16}/> },
+    { value: 'MULTIPLE_CHOICE', label: 'Trắc nghiệm nhiều đáp án', icon: <SquareCheck size={16}/> }
 ];
 
 const DEFAULT_QUESTION = () => ({
     title: '',
-    type: 'single_choice',
+    type: 'SINGLE_CHOICE',
     options: [''],
     correctAnswer: null,
     correctAnswers: [],
@@ -27,6 +27,13 @@ const CreateTask = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [groupName, setGroupName] = useState('');
+    const [error, setError] = useState(null);
+
+    // Alert state
+    const [alert, setAlert] = useState(null);
+    const showAlert = (type, title, message) => {
+        setAlert({ type, title, message });
+    };
     
     // Form state
     const [title, setTitle] = useState('');
@@ -40,8 +47,21 @@ const CreateTask = () => {
     const dd = String(today.getDate()).padStart(2, '0');
     const todayFormatted = `${yyyy}-${mm}-${dd}`;
 
+    const currentHour = String(today.getHours()).padStart(2, '0');
+    const currentMinute = String(today.getMinutes()).padStart(2, '0');
+    const currentTime = `${currentHour}:${currentMinute}`;
+
+    // Due date state
     const [dueDate, setDueDate] = useState(todayFormatted);
     const [dueDateText, setDueDateText] = useState(formatDueDateTime(todayFormatted, '23:59'));
+    const [dueTime, setDueTime] = useState('23:59');
+    const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+    
+    // Start date state
+    const [startDate, setStartDate] = useState(todayFormatted);
+    const [startTime, setStartTime] = useState(currentTime);
+    const [startDateText, setStartDateText] = useState(formatDueDateTime(todayFormatted, currentTime));
+    const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     
     // Dropdowns state
     const [showPointsDropdown, setShowPointsDropdown] = useState(false);
@@ -57,9 +77,8 @@ const CreateTask = () => {
     
     const [questions, setQuestions] = useState([DEFAULT_QUESTION()]);
     
-    // Thêm state cho giờ phút và popup
-    const [dueTime, setDueTime] = useState('23:59');
-    const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+    // Validation state
+    const [dateTimeError, setDateTimeError] = useState('');
     
     // Fetch group name when component mounts
     useEffect(() => {
@@ -78,6 +97,45 @@ const CreateTask = () => {
         
         fetchGroupName();
     }, [groupId]);
+
+    // Kiểm tra thời gian bắt đầu phải là tương lai
+    const validateStartDateTime = () => {
+        const startDateTime = new Date(`${startDate}T${startTime}`);
+        const currentDateTime = new Date();
+        
+        if (startDateTime <= currentDateTime) {
+            setDateTimeError('Thời gian bắt đầu phải là thời điểm trong tương lai');
+            return false;
+        }
+        
+        // Kiểm tra ngày hạn nộp phải sau ngày bắt đầu
+        if (dueDate) {
+            const dueDateTime = new Date(`${dueDate}T${dueTime}`);
+            if (dueDateTime <= startDateTime) {
+                setDateTimeError('Hạn nộp phải sau thời gian bắt đầu');
+                return false;
+            }
+        }
+        
+        setDateTimeError('');
+        return true;
+    };
+    
+    // Cập nhật state khi thay đổi thời gian bắt đầu
+    useEffect(() => {
+        if (startDate && startTime) {
+            setStartDateText(formatDueDateTime(startDate, startTime));
+            validateStartDateTime();
+        }
+    }, [startDate, startTime]);
+    
+    // Cập nhật state khi thay đổi hạn nộp
+    useEffect(() => {
+        if (dueDate && dueTime) {
+            setDueDateText(formatDueDateTime(dueDate, dueTime));
+            validateStartDateTime();
+        }
+    }, [dueDate, dueTime]);
     
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -97,18 +155,35 @@ const CreateTask = () => {
             return;
         }
         
+        // Kiểm tra thời gian bắt đầu và hạn nộp
+        if (!validateStartDateTime()) {
+            return;
+        }
+        
         setLoading(true);
         
         try {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
             
+            // Format startedAt date
+            const startDateTime = new Date(`${startDate}T${startTime}`);
+            // Cộng 7 tiếng
+            startDateTime.setHours(startDateTime.getHours() + 7);
+            const startedAt = startDateTime.toISOString().split('.')[0];
+            console.log('aaaaaaaaaa', startDateTime);
+            console.log('aaaaaaaaaa', startedAt);
+            
             // Format expiredAt date if provided
             let expiredAt = null;
             if (dueDate) {
                 const dateObj = new Date(`${dueDate}T${dueTime}`);
+                // Cộng 7 tiếng
+                dateObj.setHours(dateObj.getHours() + 7);
                 expiredAt = dateObj.toISOString().split('.')[0];
             }
+            console.log('bbbbbbbbbb',expiredAt);
+            
             
             // Format questions for API
             const listQuestionRequest = questions.map(q => {
@@ -119,22 +194,18 @@ const CreateTask = () => {
                 };
                 
                 // For single and multiple choice questions
-                if (q.type === 'single_choice' || q.type === 'multiple_choice') {
+                if (q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') {
                     // Format options as "A. Option1;B. Option2;C. Option3"
                     const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
                     const options = q.options.map((opt, idx) => `${letters[idx]}. ${opt}`).join(';');
                     formattedQuestion.options = options;
                     
                     // Format correct answers
-                    if (q.type === 'single_choice' && q.correctAnswer !== null) {
+                    if (q.type === 'SINGLE_CHOICE' && q.correctAnswer !== null) {
                         formattedQuestion.correctAnswers = letters[q.correctAnswer];
-                    } else if (q.type === 'multiple_choice' && q.correctAnswers.length > 0) {
+                    } else if (q.type === 'MULTIPLE_CHOICE' && q.correctAnswers.length > 0) {
                         formattedQuestion.correctAnswers = q.correctAnswers.map(idx => letters[idx]).join(',');
                     }
-                } else if (q.type === 'text') {
-                    // For text/essay, no options needed
-                    formattedQuestion.options = "";
-                    formattedQuestion.correctAnswers = "";
                 }
                 
                 return formattedQuestion;
@@ -145,6 +216,7 @@ const CreateTask = () => {
                 groupId: groupId,
                 title: title,
                 description: instructions,
+                startedAt: startedAt,
                 expiredAt: expiredAt,
                 listQuestionRequest: listQuestionRequest
             };
@@ -162,14 +234,18 @@ const CreateTask = () => {
             );
             
             if (response.data && response.data.code === 0) {
-                // Navigate back to group detail page
-                navigate(`/teacher/groups/${groupId}`);
+                showAlert('success', 'Thành công', `Tạo bài kiểm tra thành công`);
+                setTimeout(() => {
+                    // Navigate back to group detail page
+                    navigate(`/teacher/groups/${groupId}`);
+                }, 1000)
             } else {
+                showAlert('error', 'Lỗi', `${response.data?.message}`);
                 throw new Error(response.data?.message || 'Failed to create test');
             }
         } catch (error) {
             console.error('Error creating test:', error);
-            alert('Có lỗi xảy ra khi tạo bài kiểm tra. Vui lòng thử lại sau.');
+            setError('Có lỗi xảy ra khi tạo bài kiểm tra. Vui lòng thử lại sau.');
         } finally {
             setLoading(false);
         }
@@ -177,21 +253,6 @@ const CreateTask = () => {
     
     const handleCancel = () => {
         navigate(`/teacher/groups/${groupId}`);
-    };
-    
-    const handleDateChange = (e) => {
-        const selectedDate = e.target.value;
-        if (selectedDate) {
-            setDueDate(selectedDate);
-            // Format date for display: DD/MM/YYYY
-            const date = new Date(selectedDate);
-            const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-            setDueDateText(formattedDate);
-        } else {
-            setDueDate('');
-            setDueDateText('Không có ngày đến hạn');
-        }
-        setShowDatePicker(false);
     };
     
     // Close dropdowns when clicking outside
@@ -227,12 +288,10 @@ const CreateTask = () => {
             if (i !== idx) return q;
             // Reset correctAnswer/correctAnswers if type changes
             if (newData.type && newData.type !== q.type) {
-                if (newData.type === 'single_choice') {
+                if (newData.type === 'SINGLE_CHOICE') {
                     return { ...q, ...newData, correctAnswer: null, correctAnswers: [] };
-                } else if (newData.type === 'multiple_choice') {
+                } else if (newData.type === 'MULTIPLE_CHOICE') {
                     return { ...q, ...newData, correctAnswers: [], correctAnswer: null };
-                } else {
-                    return { ...q, ...newData, correctAnswer: null, correctAnswers: [] };
                 }
             }
             return { ...q, ...newData };
@@ -290,6 +349,16 @@ const CreateTask = () => {
     
     return (
         <div className="create-task-container">
+            {alert && (
+                <div className="alert-container">
+                    <Alert
+                        type={alert.type}
+                        title={alert.title}
+                        message={alert.message}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
             <div className="create-task-header">
                 <h1>Bài kiểm tra</h1>
             </div>
@@ -344,7 +413,7 @@ const CreateTask = () => {
                                             />
                                         </div>
                                     </div>
-                                    {q.type === 'single_choice' && (
+                                    {q.type === 'SINGLE_CHOICE' && (
                                         <div className="question-options">
                                             {q.options.map((opt, optIdx) => (
                                                 <div className="option-row" key={optIdx}>
@@ -372,7 +441,7 @@ const CreateTask = () => {
                                             </div>
                                         </div>
                                     )}
-                                    {q.type === 'multiple_choice' && (
+                                    {q.type === 'MULTIPLE_CHOICE' && (
                                         <div className="question-options">
                                             {q.options.map((opt, optIdx) => (
                                                 <div className="option-row" key={optIdx}>
@@ -398,11 +467,6 @@ const CreateTask = () => {
                                                     <Plus size={16} /> Thêm tùy chọn
                                                 </button>
                                             </div>
-                                        </div>
-                                    )}
-                                    {q.type === 'text' && (
-                                        <div className="question-short-answer">
-                                            <input className="short-answer-input" placeholder="Câu trả lời ngắn" disabled />
                                         </div>
                                     )}
                                     <div className="question-footer">
@@ -433,6 +497,14 @@ const CreateTask = () => {
                 </div>
                 
                 <div className="create-task-sidebar">
+                    {/* Hiển thị thông báo lỗi */}
+                    {dateTimeError && (
+                        <div className="date-time-error">
+                            <AlertCircle size={16} />
+                            <span>{dateTimeError}</span>
+                        </div>
+                    )}
+                    
                     {/* Dành cho (Group name) */}
                     <div className="tasks-form-group">
                         <div className="dropdown-container for-group">
@@ -473,7 +545,51 @@ const CreateTask = () => {
                         </div>
                     </div>
                     
-                    {/* Hạn nộp (Due date) - Updated to match the image */}
+                    {/* Thời gian bắt đầu (Start time) */}
+                    <div className="tasks-form-group">
+                        <div className="dropdown-container start-date">
+                            <div className="dropdown-label">Thời gian bắt đầu</div>
+                            <div className="due-date-dropdown-box" onClick={() => setShowStartDatePicker(v => !v)}>
+                                <span className="due-date-formatted">
+                                    {startDateText}
+                                </span>
+                                <span style={{marginLeft: 'auto'}}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="#5f6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                </span>
+                            </div>
+                            {showStartDatePicker && (
+                                <div className="due-date-picker-popup">
+                                    <div className='d-flex align-center' style={{margin: 'auto'}}>
+                                        <input
+                                            type="date"
+                                            className="time-picker-inline"
+                                            value={startDate}
+                                            onChange={e => setStartDate(e.target.value)}
+                                            min={todayFormatted}
+                                        />
+                                        <input
+                                            type="time"
+                                            className="time-picker-inline"
+                                            value={startTime}
+                                            onChange={e => setStartTime(e.target.value)}
+                                            style={{marginLeft: 12}}
+                                        />
+                                    </div>
+                                    <div className="due-date-actions">
+                                        <button
+                                            type="button"
+                                            className="picker-inline-btn"
+                                            onClick={() => setShowStartDatePicker(false)}
+                                        >
+                                            Ok
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Hạn nộp (Due date) */}
                     <div className="tasks-form-group">
                         <div className="dropdown-container due-date">
                             <div className="dropdown-label">Hạn nộp</div>
@@ -508,6 +624,7 @@ const CreateTask = () => {
                                             className="time-picker-inline"
                                             value={dueDate}
                                             onChange={e => setDueDate(e.target.value)}
+                                            min={startDate}
                                         />
                                         <input
                                             type="time"
@@ -544,7 +661,7 @@ const CreateTask = () => {
                             type="button"
                             className="assign-button"
                             onClick={handleSubmit}
-                            disabled={loading || !title.trim()}
+                            disabled={loading || !title.trim() || !!dateTimeError}
                         >
                             {loading ? 'Đang xử lý...' : 'Tạo bài kiểm tra'}
                         </button>

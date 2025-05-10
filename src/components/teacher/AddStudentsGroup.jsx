@@ -82,6 +82,7 @@ const AddStudentsGroup = () => {
                 // Nếu API trả về dạng phân trang
                 const students = response.data.result.content;
                 setSearchResults(students);
+                
                 students.forEach(student => {
                     if (student.avatar) {
                         fetchAvatar(student.avatar, student.id);
@@ -142,7 +143,7 @@ const AddStudentsGroup = () => {
             if (response.data && response.data.code === 0) {
                 showAlert('success', 'Thành công', 'Đã thêm sinh viên vào khóa học');
                 setTimeout(() => {
-                    navigate(`/teacher/groups/:${id}`);
+                    navigate(`/teacher/groups/${id}`);
                 }, 1000);
             } else {
                 showAlert('error', 'Lỗi', response.data?.message || 'Không thể thêm sinh viên vào khóa học');

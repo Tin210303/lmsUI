@@ -117,9 +117,9 @@ function App() {
           } />
           <Route path="/groups/tests/:id" element={
             <ProtectedRoute allowedRoles={['student']}>
-              <TeacherLayout>
+              <StudentLayout>
                 <TaskDetail />
-              </TeacherLayout>
+              </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/documents" element={

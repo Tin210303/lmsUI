@@ -14,6 +14,7 @@ const AddStudentsPage = () => {
     
     // Thay searchTerm đơn bằng 3 state riêng biệt
     const [fullName, setFullName] = useState('');
+    const [avatarUrl, setAvatarUrl] = useState({});
     const [email, setEmail] = useState('');
     const [majorName, setMajorName] = useState('');
     
@@ -38,6 +39,34 @@ const AddStudentsPage = () => {
         } catch (error) {
             console.error('Error fetching course info:', error);
             showAlert('error', 'Lỗi', 'Không thể tải thông tin khóa học');
+        }
+    };
+
+    // Hàm gọi API để lấy ra ảnh đại diện của sinh viên
+    const fetchAvatar = async (avatarPath, studentId) => {
+        
+        if (!avatarPath) return;
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            // Fetch avatar with authorization header
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob' 
+            });
+
+            // Create a URL for the blob data
+            const imageUrl = URL.createObjectURL(response.data);
+            setAvatarUrl(prev => ({
+                ...prev,
+                [studentId]: imageUrl
+            }));
+        } catch (err) {
+            console.error('Error fetching avatar:', err);
         }
     };
 
@@ -75,6 +104,12 @@ const AddStudentsPage = () => {
                 // Nếu API trả về dạng phân trang
                 const students = response.data.result.content;
                 setSearchResults(students);
+
+                students.forEach(student => {
+                    if (student.avatar) {
+                        fetchAvatar(student.avatar, student.id);
+                    }
+                });
             } else {
                 setSearchResults([]);
             }
@@ -228,7 +263,19 @@ const AddStudentsPage = () => {
                                     searchResults.map(student => (
                                         <div key={student.id} className="student-result-item">
                                             <div className="student-info">
-                                                <img src={student.avatar || logo} alt={student.fullName} />
+                                                {avatarUrl[student.id] ? (
+                                                    <img src={avatarUrl[student.id]} alt="Avatar"/>
+                                                ) : (
+                                                    <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                                        <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                                        <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                                        <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                                        <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                                        <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                                        <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                                        <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                                    </svg>
+                                                )}
                                                 <div>
                                                     <div className="student-name">{student.fullName}</div>
                                                     <div className="student-email">{student.email}</div>
@@ -265,7 +312,19 @@ const AddStudentsPage = () => {
                             selectedStudents.map(student => (
                                 <div key={student.id} className="selected-student-item">
                                     <div className="student-info">
-                                        <img src={student.avatar || logo} alt={student.fullName} />
+                                        {avatarUrl[student.id] ? (
+                                            <img src={avatarUrl[student.id]} alt="Avatar"/>
+                                        ) : (
+                                            <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                                <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                                <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                                <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                                <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                                <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                                <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                                <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                            </svg>
+                                        )}
                                         <div>
                                             <div className="student-name">{student.fullName}</div>
                                             <div className="student-email">{student.email}</div>

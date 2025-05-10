@@ -86,7 +86,7 @@
     background: rgb(248,249,250);
     color: #333;
     border: none;
-    resize: vertical;
+    resize: none;
     min-height: 100px;
 }
 
@@ -651,4 +651,21 @@
 
 .picker-inline-btn.remove-date:hover {
     background-color: rgba(217, 48, 37, 0.04);
+}
+
+/* CSS cho thông báo lỗi thời gian */
+.date-time-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    background-color: #feeaea;
+    border-radius: 4px;
+    color: #d93025;
+    font-size: 14px;
+}
+
+.date-time-error svg {
+    flex-shrink: 0;
 }

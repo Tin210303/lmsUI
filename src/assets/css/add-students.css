@@ -339,12 +339,6 @@
 
 /* Responsive styles */
 @media (min-width: 768px) {
-    .search-form-inputs {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-    
     .search-buttons {
         grid-column: span 2;
         justify-content: flex-end;
@@ -352,10 +346,6 @@
 }
 
 @media (min-width: 992px) {
-    .search-form-inputs {
-        grid-template-columns: 1fr 1fr 1fr;
-    }
-    
     .search-buttons {
         grid-column: span 3;
     }

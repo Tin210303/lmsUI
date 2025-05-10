@@ -323,7 +323,7 @@
   padding: 10px 16px;
   background-color: #f5f5f5;
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 500;
   color: #555;
@@ -339,7 +339,7 @@
   padding: 10px 16px;
   background-color: #3e60ff;
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 500;
   color: white;

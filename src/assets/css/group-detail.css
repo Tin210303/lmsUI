@@ -13,7 +13,6 @@
 }
 
 .group-detail-header {
-  padding: 12px 12px 0 12px;
   border-bottom: 1px solid #eee;
 }
 
@@ -29,7 +28,7 @@
   align-items: center;
   font-size: 24px;
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .back_button {

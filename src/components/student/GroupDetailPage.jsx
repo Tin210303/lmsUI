@@ -81,6 +81,10 @@ const TeacherGroupDetail = () => {
         totalPages: 0,
         totalElements: 0
     });
+
+    const [testResult, setTestResult] = useState(null);
+    console.log(testResult);
+    
     
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
@@ -1010,6 +1014,10 @@ const TeacherGroupDetail = () => {
                     // Nếu kết quả trả về là mảng thông thường
                     setTests(responseData);
                 }
+                responseData.content.forEach(test => {
+                    // After getting test details, try to fetch the test result
+                    fetchTestResult(test.id, token);
+                })
             } else {
                 throw new Error(response.data?.message || 'Failed to fetch tests');
             }
@@ -1018,6 +1026,33 @@ const TeacherGroupDetail = () => {
             setTestsError('Không thể tải danh sách bài kiểm tra. Vui lòng thử lại sau.');
         } finally {
             setTestsLoading(false);
+        }
+    };
+
+    // Fetch test result
+    const fetchTestResult = async (testId, token) => {
+        try {
+            // Create form data with testId parameter
+            const params = new URLSearchParams();
+            params.append('testId', testId);
+            
+            // Call API to get test result
+            const resultResponse = await axios.get(
+                `${API_BASE_URL}/lms/teststudentresult/gettestdetail?${params.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            if (resultResponse.data && resultResponse.data.code === 0) {
+                setTestResult(resultResponse.data.result);
+            }
+        } catch (error) {
+            console.log('No test result found or not yet submitted');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -1245,8 +1280,11 @@ const TeacherGroupDetail = () => {
                                                             : 'Không có ngày đến hạn'}
                                                     </div>
                                                 </div>
-                                                <div className="task-actions">
-                                                    <button className="task-more-options">⋮</button>
+                                                <div className="task-status">
+                                                    {testResult ? 
+                                                        <span className="submitted-status">Đã hoàn thành</span> : 
+                                                        <span className="not-submitted-status">Chưa hoàn thành</span>
+                                                    }
                                                 </div>
                                             </div>
                                         ))
@@ -1531,7 +1569,7 @@ const TeacherGroupDetail = () => {
             <div className='course-detail-section'> 
                 <div className='group-detail-header'> 
                     <div className='back-nav'> 
-                        <button onClick={backToGroupsList} className="back_button">Lớp Học</button>  
+                        <button onClick={backToGroupsList} className="back_button">GROUP</button>  
                         &gt; 
                         <span style={{ marginLeft: '16px' , color: '#000'}}>{selectedGroup.name}</span>
                     </div>
@@ -1575,3 +1613,4 @@ const TeacherGroupDetail = () => {
 }
 
 export default TeacherGroupDetail;
+
