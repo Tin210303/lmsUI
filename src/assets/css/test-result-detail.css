@@ -1,0 +1,384 @@
+/* Trang Chi tiết kết quả kiểm tra */
+.test-result-detail-container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 60px;
+    font-family: 'Roboto', sans-serif;
+}
+
+.test-result-detail-header {
+    margin-bottom: 32px;
+}
+
+.test-result-detail-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    color: #202124;
+}
+
+/* Card thông tin sinh viên */
+.student-info-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.student-info-header {
+    display: flex;
+    padding: 24px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+}
+
+.student-avatar-container {
+    margin-right: 24px;
+}
+
+.student-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.student-avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #1a73e8;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.student-basic-info h2 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #202124;
+}
+
+.student-basic-info p {
+    margin: 0 0 6px 0;
+    color: #5f6368;
+    font-size: 14px;
+}
+
+.score-summary {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 24px;
+    background-color: white;
+}
+
+.score-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 24px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    margin-right: 20px;
+    text-align: center;
+    min-width: 120px;
+}
+
+.score-label {
+    font-size: 16px;
+    font-weight: 500;
+    color: #5f6368;
+    margin-bottom: 8px;
+}
+
+.score-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a73e8;
+}
+
+.submission-time {
+    flex: 1;
+    padding: 16px 24px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    color: #5f6368;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+}
+
+.submission-time div {
+    font-size: 14px;
+}
+
+/* Danh sách câu trả lời */
+.answers-list-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+    color: #202124;
+}
+
+.answer-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    overflow: hidden;
+    border-left: 4px solid #e0e0e0;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.answer-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.correct-answer {
+    border-left-color: #34a853;
+}
+
+.incorrect-answer {
+    border-left-color: #ea4335;
+}
+
+.answer-header {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.question-number {
+    font-weight: 500;
+    margin-right: 16px;
+    color: #5f6368;
+    min-width: 60px;
+}
+
+.question-content {
+    flex: 1;
+    font-weight: 500;
+    color: #202124;
+}
+
+.question-points {
+    margin: 0 16px;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.question-result {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-weight: 500;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+.correct-badge {
+    color: #34a853;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.incorrect-badge {
+    color: #ea4335;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.answer-content {
+    padding: 20px;
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.option-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.option-item:hover {
+    background-color: #f1f3f4;
+}
+
+.option-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    color: #5f6368;
+}
+
+.option-label {
+    font-weight: 500;
+    margin-right: 12px;
+    color: #5f6368;
+    min-width: 20px;
+}
+
+.option-text {
+    flex: 1;
+    color: #202124;
+}
+
+.correct-icon {
+    color: #34a853;
+}
+
+.incorrect-icon {
+    color: #ea4335;
+}
+
+.empty-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #5f6368;
+    border-radius: 2px;
+}
+
+.student-selected {
+    background-color: rgba(66, 133, 244, 0.08);
+}
+
+.correct-option {
+    background-color: rgba(52, 168, 83, 0.08);
+}
+
+.student-selected.correct-option {
+    background-color: rgba(52, 168, 83, 0.15);
+}
+
+/* Câu trả lời dạng text */
+.text-answer {
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.text-answer-label {
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #5f6368;
+}
+
+.text-answer-content {
+    padding: 12px;
+    background-color: white;
+    border-radius: 4px;
+    border: 1px solid #dadce0;
+    margin-bottom: 16px;
+    white-space: pre-wrap;
+}
+
+.correct-answer-label {
+    color: #34a853;
+}
+
+.correct-answer-content {
+    border-color: #34a853;
+    border-left: 3px solid #34a853;
+}
+
+/* Loading state */
+.test-result-detail-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    padding: 40px;
+}
+
+.test-result-detail-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(26, 115, 232, 0.2);
+    border-top-color: #1a73e8;
+    border-radius: 50%;
+    animation: spinner-rotate 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spinner-rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error state */
+.test-result-detail-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 50vh;
+    padding: 40px;
+    color: #5f6368;
+}
+
+.test-result-detail-error button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.test-result-detail-error button:hover {
+    background-color: #0d47a1;
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+    .test-result-detail-container {
+        padding: 20px;
+    }
+    
+    .student-info-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .student-avatar-container {
+        margin-right: 0;
+        margin-bottom: 16px;
+    }
+    
+    .score-summary {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .score-box, .submission-time {
+        width: 100%;
+        margin-right: 0;
+    }
+} 

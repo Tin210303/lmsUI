@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, LogOut, Bell, Check } from 'lucide-react';
+import { Search, User, LogOut, Bell, Check, KeySquare } from 'lucide-react';
 import logo from '../../assets/imgs/logo.png';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL, SEARCH_COURSE_API, GET_MY_COURSE, GET_PROGRESS_PERCENT, GET_STUDENT_INFO } from '../../services/apiService';
 import '../../assets/css/student-header.css'; // Use the shared header CSS
 import axios from 'axios';
-
 
 // Dữ liệu mẫu cho thông báo
 const sampleNotifications = [
@@ -104,6 +103,18 @@ const StudentHeader = () => {
     });
     const [loadingMoreCourses, setLoadingMoreCourses] = useState(false);
     const coursesListRef = useRef(null);
+
+    // State cho phần đổi mật khẩu
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+    const [changePasswordError, setChangePasswordError] = useState('');
+    const [changePasswordSuccess, setChangePasswordSuccess] = useState('');
+    
+    // State để quản lý hiệu ứng khi đóng modal
+    const [modalClosing, setModalClosing] = useState(false);
 
     // lắng nghe sự kiện để set avatar ngay khi avatar được cập nhật
     useEffect(() => {
@@ -807,6 +818,55 @@ const StudentHeader = () => {
         );
     };
 
+    const handleChangePassword = async () => {
+        setChangePasswordError('');
+        setChangePasswordSuccess('');
+        if (!oldPassword || !newPassword || !confirmPassword) {
+            setChangePasswordError('Vui lòng nhập đầy đủ thông tin.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setChangePasswordError('Mật khẩu xác nhận không khớp.');
+            return;
+        }
+        setChangePasswordLoading(true);
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await axios.put(
+                `${API_BASE_URL}/lms/account/changePassword`,
+                { oldPassword, newPassword },
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            if (response.data && response.data.code === 200) {
+                setChangePasswordSuccess('Đổi mật khẩu thành công!');
+                setTimeout(() => {
+                    closePasswordModal();
+                }, 500);
+            } else {
+                setChangePasswordError(response.data?.message || 'Đổi mật khẩu thất bại.');
+            }
+        } catch (err) {
+            setChangePasswordError('Đổi mật khẩu thất bại. Vui lòng thử lại.');
+        } finally {
+            setChangePasswordLoading(false);
+        }
+    };
+
+    // Hàm để đóng modal với hiệu ứng fade out
+    const closePasswordModal = () => {
+        setModalClosing(true);
+        setTimeout(() => {
+            setShowChangePassword(false);
+            setModalClosing(false);
+            // Reset các state khi đóng
+            setOldPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setChangePasswordError('');
+            setChangePasswordSuccess('');
+        }, 300); // thời gian phải khớp với thời gian animation
+    };
+
     if (error) {
         return <div className="error-container">{error}</div>;
     }
@@ -963,19 +1023,63 @@ const StudentHeader = () => {
                        
                         {isDropdownOpen && (
                             <div className="profile-dropdown">
-                                <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                                <Link to="/profile" className="header-dropdown-item" onClick={() => setDropdownOpen(false)}>
                                     <User size={16} />
                                     <span>Thông tin cá nhân</span>
                                 </Link>
-                                <button onClick={handleLogout} className="dropdown-item logout-button">
+                                <button onClick={() => setShowChangePassword(true)} className="header-dropdown-item">
+                                    <KeySquare size={16} />
+                                    <span>Đổi mật khẩu</span>
+                                </button>
+                                <button onClick={handleLogout} className="header-dropdown-item logout-button">
                                     <LogOut size={16} />
-                                    <span>Đăng Xuất</span>
+                                    <span>Đăng xuất</span>
                                 </button>
                             </div>
                         )}
                     </div>
                 )}
             </div>
+            
+            {/* Modal đổi mật khẩu với hiệu ứng fade */}
+            {showChangePassword && (
+                <div 
+                    className={`password-modal-overlay ${modalClosing ? 'modal-exit' : 'modal-enter'}`}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) closePasswordModal();
+                    }}
+                >
+                    <div className="password-modal" onClick={e => e.stopPropagation()}>
+                        <h2>Đổi Mật Khẩu</h2>
+                        <input
+                            type="password"
+                            placeholder="Mật khẩu cũ"
+                            value={oldPassword}
+                            onChange={e => setOldPassword(e.target.value)}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Mật khẩu mới"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Xác nhận mật khẩu mới"
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                        />
+                        {changePasswordError && <div className="password-error-message">{changePasswordError}</div>}
+                        {changePasswordSuccess && <div className="password-success-message">{changePasswordSuccess}</div>}
+                        <div className="password-modal-actions">
+                            <button onClick={closePasswordModal}>Hủy</button>
+                            <button onClick={handleChangePassword} disabled={changePasswordLoading}>
+                                {changePasswordLoading ? 'Đang xử lý...' : 'Xác nhận'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </header>
     );
 };

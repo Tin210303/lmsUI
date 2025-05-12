@@ -3,8 +3,8 @@ import '../../assets/css/teacher-group-detail.css';
 import logo from '../../logo.svg';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { X, Download, FileText, Video, Image, Upload, EllipsisVertical, UserPlus, NotepadText, Plus } from 'lucide-react';
-import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP, GET_STUDENTS_GROUP, DELETE_STUDENT_GROUP, GET_TESTS_IN_GROUP } from '../../services/apiService';
+import { X, Download, FileText, Video, Image, Upload, EllipsisVertical, UserPlus, NotepadText, Plus, Search, AlertCircle, HelpCircle } from 'lucide-react';
+import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP, GET_STUDENTS_GROUP, DELETE_STUDENT_GROUP, GET_TESTS_IN_GROUP, GET_STUDENT_TEST_RESULT } from '../../services/apiService';
 // Thêm thư viện cần thiết để xử lý các loại file đặc biệt
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
@@ -28,6 +28,7 @@ const TeacherGroupDetail = () => {
         list: false
     });
     const [posts, setPosts] = useState([]);
+    
     const [postLoading, setPostLoading] = useState(false);
     const [postError, setPostError] = useState(null);
     const [pagination, setPagination] = useState({
@@ -89,6 +90,19 @@ const TeacherGroupDetail = () => {
         totalElements: 0
     });
     
+    // Thêm state để quản lý dữ liệu điểm số
+    const [marksData, setMarksData] = useState({
+        tests: [],
+        students: [],
+        results: {},
+        loading: false,
+        error: null
+    });
+    
+    // Thêm state để quản lý hiển thị menu tùy chọn cho điểm số
+    const [activeMarkMenu, setActiveMarkMenu] = useState(null);
+    const [closingMarkMenu, setClosingMarkMenu] = useState(null);
+    
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -133,6 +147,26 @@ const TeacherGroupDetail = () => {
                     }, 150);
                 }
             }
+            
+            // Xử lý menu điểm số
+            if (activeMarkMenu !== null) {
+                // Kiểm tra xem click có phải là nút 3 chấm không
+                const isMoreOptionsButton = event.target.closest('.mark-menu-button');
+                if (isMoreOptionsButton) {
+                    return;
+                }
+                
+                // Kiểm tra xem click có trong menu không
+                const isInsideMenu = event.target.closest('.mark-options-menu');
+                if (!isInsideMenu) {
+                    // Thêm animation đóng menu
+                    setClosingMarkMenu(activeMarkMenu);
+                    setTimeout(() => {
+                        setActiveMarkMenu(null);
+                        setClosingMarkMenu(null);
+                    }, 150);
+                }
+            }
         };
         
         // Thêm event listener khi component mount
@@ -142,7 +176,7 @@ const TeacherGroupDetail = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [activeMenu, closingMenu, activeStudentMenu, closingStudentMenu]);
+    }, [activeMenu, closingMenu, activeStudentMenu, closingStudentMenu, activeMarkMenu, closingMarkMenu]);
     
     // Fetch group data
     useEffect(() => {
@@ -195,6 +229,8 @@ const TeacherGroupDetail = () => {
                 
                 // Nếu kết quả trả về là dạng phân trang
                 if (responseData.content) {
+                    console.log(responseData);
+                    
                     // Sắp xếp bài đăng mới nhất lên đầu (dựa vào trường createdAt)
                     const sortedPosts = [...responseData.content].sort((a, b) => {
                         return new Date(b.createdAt) - new Date(a.createdAt);
@@ -208,6 +244,11 @@ const TeacherGroupDetail = () => {
                         totalPages: responseData.totalPages,
                         totalElements: responseData.totalElements
                     });
+
+                    // Fetch avatar if available
+                    if (responseData.content.teacher?.avatar) {
+                        fetchTeacherAvatar(responseData.content.teacher.avatar);
+                    }
                 } else {
                     // Nếu kết quả trả về là mảng thông thường, cũng sắp xếp
                     const sortedPosts = [...responseData].sort((a, b) => {
@@ -1055,6 +1096,156 @@ const TeacherGroupDetail = () => {
         navigate(`/teacher/tests/${testId}`);
     };
 
+    // Hàm để lấy dữ liệu điểm số của tất cả sinh viên cho tất cả bài kiểm tra
+    const fetchMarksData = async () => {
+        if (!id) return;
+        
+        setMarksData(prev => ({ ...prev, loading: true, error: null }));
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // 1. Lấy danh sách các bài kiểm tra trong nhóm
+            const testsParams = new URLSearchParams();
+            testsParams.append('groupId', id);
+            testsParams.append('pageSize', 100); // Lấy tối đa 100 bài kiểm tra
+            testsParams.append('pageNumber', 0);
+            
+            const testsResponse = await axios.get(
+                `${GET_TESTS_IN_GROUP}?${testsParams.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            if (testsResponse.data && testsResponse.data.code !== 0) {
+                throw new Error(testsResponse.data?.message || 'Failed to fetch tests');
+            }
+            
+            // 2. Lấy danh sách sinh viên trong nhóm
+            const studentsParams = new URLSearchParams();
+            studentsParams.append('groupId', id);
+            studentsParams.append('pageSize', 100); // Lấy tối đa 100 sinh viên
+            studentsParams.append('pageNumber', 0);
+            
+            const studentsResponse = await axios.get(
+                `${GET_STUDENTS_GROUP}?${studentsParams.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            if (studentsResponse.data && studentsResponse.data.code !== 0) {
+                throw new Error(studentsResponse.data?.message || 'Failed to fetch students');
+            }
+            
+            const tests = testsResponse.data.result.content || [];
+            const students = studentsResponse.data.result.content || [];
+            
+            // Khởi tạo đối tượng lưu trữ kết quả
+            const results = {};
+            
+            // 3. Lấy kết quả bài kiểm tra cho từng sinh viên và từng bài kiểm tra
+            for (const student of students) {
+                results[student.id] = {};
+                
+                for (const test of tests) {
+                    try {
+                        const params = new URLSearchParams();
+                        params.append('testId', test.id);
+                        params.append('studentId', student.id);
+                        
+                        const resultResponse = await axios.get(
+                            `${GET_STUDENT_TEST_RESULT}?${params.toString()}`,
+                            {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            }
+                        );
+                        
+                        if (resultResponse.data && resultResponse.data.code === 0) {
+                            results[student.id][test.id] = resultResponse.data.result;
+                        } else {
+                            // Nếu không có kết quả, gán giá trị null
+                            results[student.id][test.id] = null;
+                        }
+                    } catch (error) {
+                        // Nếu API trả về lỗi, gán giá trị null (sinh viên chưa làm bài kiểm tra)
+                        results[student.id][test.id] = null;
+                        console.log(`No result for student ${student.id} and test ${test.id}`);
+                    }
+                }
+            }
+            
+            // Cập nhật state với dữ liệu đã lấy
+            setMarksData({
+                tests,
+                students,
+                results,
+                loading: false,
+                error: null
+            });
+            
+            // Tải avatar cho sinh viên
+            students.forEach(student => {
+                if (student.avatar) {
+                    fetchAvatar(student.avatar, student.id);
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error fetching marks data:', error);
+            setMarksData(prev => ({
+                ...prev,
+                loading: false,
+                error: 'Không thể tải dữ liệu điểm số. Vui lòng thử lại sau.'
+            }));
+        }
+    };
+    
+    // Load dữ liệu điểm số khi vào tab "marks"
+    useEffect(() => {
+        if (id && isActive === 'marks') {
+            fetchMarksData();
+        }
+    }, [id, isActive]);
+    
+    // Hàm để xem chi tiết kết quả bài kiểm tra của sinh viên
+    const viewStudentTestDetail = (testId, studentId, resultId) => {
+        if (!resultId) return; // Không có kết quả để xem
+        
+        const params = new URLSearchParams();
+        params.append('testId', testId);
+        params.append('studentId', studentId);
+        
+        navigate(`/teacher/test-results/${resultId}?${params.toString()}`);
+    };
+    
+    // Thêm hàm xử lý hiển thị/ẩn menu cho điểm số
+    const toggleMarkMenu = (markId) => {
+        if (activeMarkMenu === markId) {
+            // Thêm animation đóng menu
+            setClosingMarkMenu(markId);
+            setTimeout(() => {
+                setActiveMarkMenu(null);
+                setClosingMarkMenu(null);
+            }, 150);
+        } else {
+            if (closingMarkMenu) {
+                setClosingMarkMenu(null);
+            }
+            setActiveMarkMenu(markId);
+        }
+    };
+
     // Render tab content based on active tab
     const renderTabContent = () => {
         switch(isActive) {
@@ -1171,7 +1362,7 @@ const TeacherGroupDetail = () => {
                                     )}
                                     
                                     <div className="editor-actions">
-                                        <button className="cancel-button" onClick={closeEditor}>Hủy</button>
+                                        <button className="post-cancel-button" onClick={closeEditor}>Hủy</button>
                                         <button className="post-button" onClick={submitAnnouncement}>Đăng</button>
                                     </div>
                                 </div>
@@ -1218,14 +1409,14 @@ const TeacherGroupDetail = () => {
                                             <>
                                                 <div key={post.id} className="announcement_item">
                                                     <div className="announcement-author">
-                                                        <img 
-                                                            src={post.creator?.avatar || logo} 
-                                                            alt="Avatar" 
-                                                            className="group-author-avatar" 
-                                                        />
+                                                        {teacherAvatarUrl ? (
+                                                            <img src={teacherAvatarUrl} alt="Avatar" className='group-author-avatar'/>
+                                                        ) : (
+                                                            <img src='https://randomuser.me/api/portraits/men/1.jpg' className='group-author-avatar'/>
+                                                        )}
                                                         <div className="author-info">
                                                             <div className="author-name">
-                                                                {post.creator?.fullName || 'Giáo viên'}
+                                                                {post.teacher?.fullName || 'Giáo viên'}
                                                             </div>
                                                             <div className="announcement-time">
                                                                 {formatDateTime(post.createdAt)}
@@ -1434,7 +1625,7 @@ const TeacherGroupDetail = () => {
                                         <div className="no-tasks">
                                             <p>Chưa có bài kiểm tra nào trong nhóm này</p>
                                             <p>Nhấn vào nút "Tạo bài kiểm tra" để tạo bài kiểm tra mới</p>
-                                        </div>
+                                </div>
                                     )}
                                 </div>
                                 
@@ -1456,7 +1647,7 @@ const TeacherGroupDetail = () => {
                                         >
                                             Sau
                                         </button>
-                                    </div>
+                                </div>
                                 )}
                             </>
                         )}
@@ -1493,7 +1684,7 @@ const TeacherGroupDetail = () => {
                         <div className="people-section">
                             <div className="group-section-header">
                                 <h3>Sinh Viên</h3>
-                                <button className="add-student-btn" onClick={() => navigate(`/teacher/groups/${id}/add-students`)}>
+                                <button className="add-student-group-btn" onClick={() => navigate(`/teacher/groups/${id}/add-students`)}>
                                     <UserPlus size={20} enableBackground={0}/>
                                 </button>
                             </div>
@@ -1502,14 +1693,14 @@ const TeacherGroupDetail = () => {
                                     <div className="students-loading">
                                         <div className="students-loading-spinner"></div>
                                         <p>Đang tải danh sách sinh viên...</p>
-                                    </div>
+                                        </div>
                                 )}
                                 
                                 {studentsError && (
                                     <div className="students-error">
                                         <p>{studentsError}</p>
                                         <button onClick={fetchStudents}>Thử lại</button>
-                                    </div>
+                                        </div>
                                 )}
                                 
                                 {!studentsLoading && !studentsError && (
@@ -1598,7 +1789,117 @@ const TeacherGroupDetail = () => {
                     </div>
                 );
             case 'marks':
-                return <div className="marks-content">Nội dung Điểm</div>;
+                return (
+                    <div className="marks-content">
+                        {/* Loading state */}
+                        {marksData.loading && (
+                            <div className="marks-loading">
+                                <div className="tests-loading-spinner"></div>
+                                <p>Đang tải dữ liệu điểm số...</p>
+                            </div>
+                        )}
+                        
+                        {/* Error state */}
+                        {marksData.error && (
+                            <div className="marks-error">
+                                <AlertCircle size={24} />
+                                <p>{marksData.error}</p>
+                                <button onClick={fetchMarksData}>Thử lại</button>
+                            </div>
+                        )}
+                        
+                        {/* Content when data is loaded */}
+                        {!marksData.loading && !marksData.error && (
+                            <div className="marks-table-container">
+                                {marksData.tests.length === 0 || marksData.students.length === 0 ? (
+                                    <div className="no-marks-data">
+                                        {marksData.tests.length === 0 ? (
+                                            <p>Chưa có bài kiểm tra nào trong nhóm này.</p>
+                                        ) : (
+                                            <p>Chưa có sinh viên nào trong nhóm này.</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <table className="marks-table">
+                                        <thead>
+                                            <tr>
+                                                <th className="student-column">Sinh viên</th>
+                                                {marksData.tests.map(test => (
+                                                    <th key={test.id} className="test-column">{test.title}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {marksData.students.map(student => (
+                                                <tr key={student.id}>
+                                                    <td className="student-cell">
+                                                        <div className="student-name-cell">
+                                                            {avatarUrl[student.id] ? (
+                                                                <img src={avatarUrl[student.id]} alt="Avatar" className='student-avatar'/>
+                                                            ) : (
+                                                                <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className='student-avatar'>
+                                                                    <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                                                    <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                                                    <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                                                    <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                                                    <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                                                    <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                                                    <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                                                </svg>
+                                                            )}
+                                                            <span>{student.fullName}</span>
+                                                        </div>
+                                                    </td>
+                                                    {marksData.tests.map(test => {
+                                                        const result = marksData.results[student.id]?.[test.id];
+                                                        const markId = `${student.id}-${test.id}`;
+                                                        
+                                                        return (
+                                                            <td key={markId} className="mark-cell">
+                                                                {result ? (
+                                                                    <div className="mark-content">
+                                                                        <div className="mark-score-container">
+                                                                            <span className="mark-score-display">
+                                                                                {result.score}/{result.testStudentAnswer.reduce((sum, item) => sum + item.testQuestion.point, 0)}
+                                                                            </span>
+                                                                            <button 
+                                                                                className="mark-menu-button"
+                                                                                onClick={() => toggleMarkMenu(markId)}
+                                                                            >
+                                                                                <EllipsisVertical size={16} />
+                                                                            </button>
+                                                                            
+                                                                            {/* Menu tùy chọn */}
+                                                                            {(activeMarkMenu === markId || closingMarkMenu === markId) && (
+                                                                                <div className={`mark-options-menu ${closingMarkMenu === markId ? 'mark-options-menu-exit' : ''}`}>
+                                                                                    <button 
+                                                                                        className="mark-option-item mark-detail-button"
+                                                                                        onClick={() => viewStudentTestDetail(test.id, student.id, result.id)}
+                                                                                    >
+                                                                                        <Search size={14} />
+                                                                                        Chi tiết
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="no-attempt">
+                                                                        Thiếu
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
             default:
                 return null;
         }
@@ -1614,7 +1915,7 @@ const TeacherGroupDetail = () => {
                     <div className="tgd-preview-loading">
                         <div className="tgd-preview-loading-spinner"></div>
                         <p>Đang tải nội dung...</p>
-                                        </div>
+                    </div>
                 );
             }
             
@@ -1624,7 +1925,7 @@ const TeacherGroupDetail = () => {
                         <FileText size={48} />
                         <p>Không thể xem trước nội dung file này</p>
                         <p>Vui lòng tải xuống để xem</p>
-                                    </div>
+                    </div>
                 );
             }
             
@@ -1634,7 +1935,7 @@ const TeacherGroupDetail = () => {
                     return (
                         <div className="tgd-text-preview">
                             <pre>{previewContent}</pre>
-                                        </div>
+                        </div>
                     );
                     
                 case 'docx':
@@ -1663,7 +1964,7 @@ const TeacherGroupDetail = () => {
                                 width="100%"
                                 height="100%"
                             />
-                                        </div>
+                        </div>
                     );
                     
                 case 'jpg':
@@ -1675,7 +1976,7 @@ const TeacherGroupDetail = () => {
                     return (
                         <div className="tgd-image-preview">
                             <img src={previewContent} alt="Preview" />
-                                    </div>
+                        </div>
                     );
                     
                 case 'mp4':
@@ -1687,7 +1988,7 @@ const TeacherGroupDetail = () => {
                                 <source src={previewContent} type={getMimeType(previewType)} />
                                 Your browser does not support the video tag.
                             </video>
-                                        </div>
+                        </div>
                     );
                     
                 default:
@@ -1696,7 +1997,7 @@ const TeacherGroupDetail = () => {
                             <FileText size={48} />
                             <p>Định dạng file không được hỗ trợ xem trước</p>
                             <p>Vui lòng tải xuống để xem</p>
-                                        </div>
+                        </div>
                     );
             }
         };
@@ -1745,9 +2046,9 @@ const TeacherGroupDetail = () => {
             <div className='course-detail-section'> 
                 <div className='group-detail-header'> 
                     <div className='back-nav'> 
-                        <button onClick={backToGroupsList} className="back_button">GROUP</button>  
+                        <button onClick={backToGroupsList} className="back_button">Groups</button>  
                         &gt; 
-                        <span style={{ marginLeft: '16px' , color: '#000'}}>{selectedGroup.name}</span>
+                        <span style={{ marginLeft: '16px' , color: '#5f6368'}}>{selectedGroup.name}</span>
                     </div>
                 </div>
                 <div className='course-tabs'> 

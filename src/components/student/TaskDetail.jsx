@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { API_BASE_URL } from '../../services/apiService';
+import { TEST_GROUP_DETAIL, TEST_RESULT_DETAIL, START_TEST_API, SUBMIT_TEST_API } from '../../services/apiService';
 import { ArrowLeft, ClockAlert, FileText, AlertCircle, CheckCircle, Circle, ChevronRight, X, CheckSquare } from 'lucide-react';
 import '../../assets/css/student-task-detail.css';
 import Alert from '../common/Alert';
@@ -47,7 +47,7 @@ const TaskDetail = () => {
                 formData.append('testId', id);
                 
                 // Tạo URL với query parameters từ FormData
-                let url = `${API_BASE_URL}/lms/testingroup/testdetails`;
+                let url = TEST_GROUP_DETAIL;
                 let searchParams = new URLSearchParams();
                 searchParams.append('testId', id);
                 url = `${url}?${searchParams.toString()}`;
@@ -97,13 +97,13 @@ const TaskDetail = () => {
         const fetchTestResult = async (testId, token) => {
             setResultLoading(true);
             try {
-                // Create form data with testId parameter
+                // Create form data with testId and studentId parameters
                 const params = new URLSearchParams();
                 params.append('testId', testId);
                 
                 // Call API to get test result
                 const resultResponse = await axios.get(
-                    `${API_BASE_URL}/lms/teststudentresult/gettestdetail?${params.toString()}`,
+                    `${TEST_RESULT_DETAIL}?${params.toString()}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${token}`
@@ -134,11 +134,11 @@ const TaskDetail = () => {
         
         const date = new Date(dateString);
         
-        const day = date.getUTCDate();
-        const month = date.getUTCMonth() + 1;
-        const year = date.getUTCFullYear();
-        const hours = date.getUTCHours().toString().padStart(2, '0');
-        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
         
         return `${hours}:${minutes} - ${day}/${month}/${year}`;
     };
@@ -178,7 +178,7 @@ const TaskDetail = () => {
             
             // Gọi API để bắt đầu bài kiểm tra
             const response = await axios.post(
-                `${API_BASE_URL}/lms/teststudentresult/starttest`,
+                START_TEST_API,
                 formData,
                 {
                     headers: {
@@ -294,7 +294,7 @@ const TaskDetail = () => {
             
             // Submit the test with the new API endpoint and format
             const response = await axios.post(
-                `${API_BASE_URL}/lms/teststudentresult/submitTest`,
+                SUBMIT_TEST_API,
                 {
                     testId: id,
                     answerRequests: answerRequests
@@ -340,7 +340,7 @@ const TaskDetail = () => {
                             <p><strong>Email:</strong> {testResult.student?.email}</p>
                         </div>
                         <div className="test-result-score">
-                            <div className="score-label">Điểm số</div>
+                            <div className="score-label">Kết quả</div>
                             <div className="score-value">{testResult.score || 0}</div>
                         </div>
                         <div className="test-result-correct">

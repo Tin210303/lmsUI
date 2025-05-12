@@ -161,7 +161,6 @@
 .form-checkbox {
     display: flex;
     align-items: center;
-    margin-bottom: 1.5rem;
 }
 
 .form-checkbox label {
@@ -302,7 +301,7 @@
     padding: 5px 0;
 }
 
-.dropdown-item {
+.header-dropdown-item {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -317,11 +316,11 @@
     cursor: pointer;
 }
 
-.dropdown-item:hover {
+.header-dropdown-item:hover {
     background-color: #f8f9fa;
 }
 
-.dropdown-item svg {
+.header-dropdown-item svg {
     color: #666;
 }
 
@@ -670,10 +669,11 @@
     color: #333;
     text-decoration: none;
     font-weight: 500;
+    transition: color 0.3s ease;
 }
 
 .my-courses:hover {
-    color: #0056b3;
+    color: var(--primary-color);
 }
 
 .bell-icon {
@@ -1204,4 +1204,167 @@ select.form-group-login:focus {
     background-color: #f5f5f5;
     text-align: center;
     border-top: 1px solid #eee;
+}
+
+/* Modal overlay - nền mờ phía sau */
+.password-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Modal container */
+.password-modal {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    padding: 24px;
+    width: 400px;
+    max-width: 90%;
+    transform-origin: center;
+}
+
+/* Modal header */
+.password-modal h2 {
+    margin-top: 0;
+    color: #333;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Input fields */
+.password-modal input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 16px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.password-modal input:focus {
+    border-color: #4b6cb7;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(75, 108, 183, 0.2);
+}
+
+/* Error and success messages */
+.password-error-message, .password-success-message {
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.password-error-message {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border-left: 4px solid #d32f2f;
+}
+
+.password-success-message {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-left: 4px solid #2e7d32;
+}
+
+/* Button container */
+.password-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+/* Buttons */
+.password-modal-actions button {
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+}
+
+.password-modal-actions button:first-child {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.password-modal-actions button:first-child:hover {
+    background-color: #e0e0e0;
+}
+
+.password-modal-actions button:last-child {
+    background-color: #4b6cb7;
+    color: white;
+}
+
+.password-modal-actions button:last-child:hover {
+    background-color: #3a57a5;
+}
+
+.password-modal-actions button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes zoomIn {
+    from { 
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    to { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes zoomOut {
+    from { 
+        transform: scale(1);
+        opacity: 1;
+    }
+    to { 
+        transform: scale(0.5);
+        opacity: 0;
+    }
+}
+
+.modal-enter .modal {
+    animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-exit .modal {
+    animation: zoomOut 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.modal-enter {
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-exit {
+    animation: fadeOut 0.3s ease forwards;
 }

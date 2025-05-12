@@ -204,8 +204,8 @@ const GroupPage = () => {
             
             {/* Loading và Error */}
             {isLoading && (
-              <div className="group-loading">
-                <div className="group-loading-spinner"></div>
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
                 <p>Đang tải dữ liệu...</p>
               </div>
             )}

@@ -17,6 +17,11 @@ a {
   margin-right: 16px;
 }
 
+:root {
+  --primary-color: #0056b3;
+  --primary-hover-color: #004494;
+}
+
 /* App wrapper */
 .app {
   min-height: 100vh;
@@ -30,6 +35,10 @@ a {
 
 .justify-center {
   justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between !important;
 }
 
 .align-center {

@@ -168,21 +168,14 @@ const CreateTask = () => {
             
             // Format startedAt date
             const startDateTime = new Date(`${startDate}T${startTime}`);
-            // Cộng 7 tiếng
-            startDateTime.setHours(startDateTime.getHours() + 7);
-            const startedAt = startDateTime.toISOString().split('.')[0];
-            console.log('aaaaaaaaaa', startDateTime);
-            console.log('aaaaaaaaaa', startedAt);
+            // Format date with timezone offset
+            const startedAt = `${startDate}T${startTime}:00+07:00`;
             
             // Format expiredAt date if provided
             let expiredAt = null;
             if (dueDate) {
-                const dateObj = new Date(`${dueDate}T${dueTime}`);
-                // Cộng 7 tiếng
-                dateObj.setHours(dateObj.getHours() + 7);
-                expiredAt = dateObj.toISOString().split('.')[0];
+                expiredAt = `${dueDate}T${dueTime}:00+07:00`;
             }
-            console.log('bbbbbbbbbb',expiredAt);
             
             
             // Format questions for API
@@ -477,7 +470,6 @@ const CreateTask = () => {
                                                 min={0}
                                                 value={q.points}
                                                 onChange={e => setQuestionPoints(idx, e.target.value)}
-                                                style={{ width: 50, marginLeft: 8 }}
                                             /> điểm
                                         </div>
                                         <div className="question-actions">

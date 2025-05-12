@@ -23,6 +23,7 @@ import TeacherGroupDetail from './components/teacher/TeacherGroupDetail';
 import AddStudentsGroup from './components/teacher/AddStudentsGroup';
 import CreateTask from './components/teacher/CreateTask';
 import TeacherTaskDetail from './components/teacher/TeacherTaskDetail';
+import TestResultDetail from './components/teacher/TestResultDetail';
 
 // Student Routes
 import CoursesPage from './components/student/CoursesPage';
@@ -219,6 +220,13 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <TeacherTaskDetail />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/test-results/:id" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TestResultDetail />
               </TeacherLayout>
             </ProtectedRoute>
           } />

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import '../../assets/css/group-page.css';
-import { API_BASE_URL, GET_TEACHER_GROUPS } from '../../services/apiService';
+import { GET_TEACHER_GROUPS } from '../../services/apiService';
 
 // Add Group Modal Component
 const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
@@ -124,7 +124,7 @@ const GroupCard = ({ data, onClick }) => {
           <div className="teachers-avatars">
             <div className="avatar">
               <img src={data.teacher.avatar || "https://randomuser.me/api/portraits/men/1.jpg"} alt={`${data.teacher.fullName}`} />
-            </div>
+              </div>
             <span>{data.teacher.fullName}</span>
           </div>
         </div>
@@ -257,17 +257,17 @@ const GroupPage = () => {
     }, [pagination.pageNumber, pagination.pageSize]);
     
     const handleGroupClick = (group) => {
-      const key = `group_${group.id}`;
-      console.log("Saving group to localStorage with key:", key);
-      localStorage.setItem(key, JSON.stringify(group));
+        const key = `group_${group.id}`;
+        console.log("Saving group to localStorage with key:", key);
+        localStorage.setItem(key, JSON.stringify(group));
 
-      // Sau đó kiểm tra
-      console.log("Saved value:", localStorage.getItem(key));
-      
-      // Navigate to group detail page
-      setTimeout(() => {
+        // Sau đó kiểm tra
+        console.log("Saved value:", localStorage.getItem(key));
+        
+        // Navigate to group detail page
+        setTimeout(() => {
         navigate(`/teacher/groups/${group.id}`);
-      }, 100)
+        }, 100)
     };
 
     const handleAddGroup = (newGroup) => {
@@ -350,14 +350,14 @@ const GroupPage = () => {
             {/* Danh sách nhóm */}
             {!isLoading && !error && (
               <>
-                <div className="group-grid">
+            <div className="group-grid">
                     {filteredGroups.length > 0 ? (
                       filteredGroups.map((group) => (
-                          <GroupCard 
-                              key={group.id} 
-                              data={group} 
-                              onClick={handleGroupClick}
-                          />
+                    <GroupCard 
+                        key={group.id} 
+                        data={group} 
+                        onClick={handleGroupClick}
+                    />
                       ))
                     ) : (
                       <div className="no-groups">
@@ -384,7 +384,7 @@ const GroupPage = () => {
                     >
                       Sau
                     </button>
-                  </div>
+            </div>
                 )}
               </>
             )}

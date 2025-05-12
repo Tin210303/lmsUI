@@ -6,6 +6,7 @@ import logo from '../assets/imgs/logo.png';
 import axios from 'axios';
 import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../context/AuthContext';
+import { FORGOT_PASSWORD_API, GET_MAJOR_API, SEND_EMAIL_API, VERIFY_EMAIL_API, CREATE_TEACHER_ACCOUNT, CREATE_STUDENT_ACCOUNT } from '../services/apiService';
 
 function Header() {
     const navigate = useNavigate();
@@ -18,6 +19,14 @@ function Header() {
     const [error, setError] = useState('');
     const [isFormValid, setIsFormValid] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // State cho chức năng quên mật khẩu
+    const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+    const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+    const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+    const [forgotPasswordError, setForgotPasswordError] = useState('');
+    const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState('');
+    const [isForgotPasswordFormValid, setIsForgotPasswordFormValid] = useState(false);
 
     // Registration form states
     const [regEmail, setRegEmail] = useState('');
@@ -33,12 +42,18 @@ function Header() {
     const [loadingMajors, setLoadingMajors] = useState(false);
     const [registrationRole, setRegistrationRole] = useState('student'); // 'student' hoặc 'teacher'
 
+    // Validate forgot password form
+    useEffect(() => {
+        setIsForgotPasswordFormValid(forgotPasswordEmail.trim() !== '' && 
+                                     forgotPasswordEmail.includes('@'));
+    }, [forgotPasswordEmail]);
+
     // Lấy danh sách chuyên ngành từ API
     useEffect(() => {
         const fetchMajors = async () => {
             try {
                 setLoadingMajors(true);
-                const response = await axios.get('http://localhost:8080/lms/major');
+                const response = await axios.get(GET_MAJOR_API);
                 
                 if (response.data && response.data.code === 0) {
                     console.log('Danh sách chuyên ngành:', response.data.result);
@@ -101,22 +116,37 @@ function Header() {
         setRegistrationStep(1);
         setVerificationCode(['', '', '', '', '', '']);
         setSelectedMajor('');
+        setForgotPasswordEmail('');
+        setForgotPasswordError('');
+        setForgotPasswordSuccess('');
     }, []);
 
     const closeAllModals = useCallback(() => {
         setShowLoginModal(false);
         setShowRegisterModal(false);
+        setShowForgotPasswordModal(false);
         resetForm();
     }, [resetForm]);
 
     const openLoginModal = useCallback(() => {
         setShowRegisterModal(false);
+        setShowForgotPasswordModal(false);
         setShowLoginModal(true);
         resetForm();
     }, [resetForm]);
 
+    const openForgotPasswordModal = useCallback(() => {
+        setShowLoginModal(false);
+        setShowRegisterModal(false);
+        setShowForgotPasswordModal(true);
+        resetForm();
+        // Pre-fill với email đã nhập trong form đăng nhập nếu có
+        if (email) setForgotPasswordEmail(email);
+    }, [resetForm, email]);
+
     const switchToRegister = useCallback(() => {
         setShowLoginModal(false);
+        setShowForgotPasswordModal(false);
         setShowRegisterModal(true);
         setEmail('');
         setPassword('');
@@ -127,6 +157,7 @@ function Header() {
 
     const switchToLogin = useCallback(() => {
         setShowRegisterModal(false);
+        setShowForgotPasswordModal(false);
         setShowLoginModal(true);
         setRegEmail('');
         setRegPassword('');
@@ -156,6 +187,54 @@ function Header() {
         }
     };
 
+    // Xử lý quên mật khẩu
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        if (!forgotPasswordEmail || !forgotPasswordEmail.includes('@')) {
+            setForgotPasswordError('Vui lòng nhập email hợp lệ');
+            return;
+        }
+
+        setForgotPasswordLoading(true);
+        setForgotPasswordError('');
+        setForgotPasswordSuccess('');
+
+        try {
+            const formData = new FormData();
+            formData.append('email', forgotPasswordEmail);
+
+            const response = await axios.post( FORGOT_PASSWORD_API, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data && response.data.code === 200) {
+                setForgotPasswordSuccess('Mật khẩu mới đã được gửi vào email');
+                
+                // Chuyển về màn hình đăng nhập sau 2 giây
+                setTimeout(() => {
+                    setEmail(forgotPasswordEmail); // Pre-fill email
+                    setShowForgotPasswordModal(false);
+                    setShowLoginModal(true);
+                    setForgotPasswordEmail('');
+                    setForgotPasswordSuccess('');
+                }, 2000);
+            } else {
+                setForgotPasswordError(response.data?.message || 'Không thể gửi yêu cầu. Vui lòng thử lại.');
+            }
+        } catch (err) {
+            console.error('Error requesting password reset:', err);
+            if (err.response && err.response.data) {
+                setForgotPasswordError(err.response.data.message || 'Đã xảy ra lỗi. Vui lòng thử lại sau.');
+            } else {
+                setForgotPasswordError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+            }
+        } finally {
+            setForgotPasswordLoading(false);
+        }
+    };
+
     const handleLoginWithHusc = (e) => {
         e.preventDefault();
         if (!selectedRole) {
@@ -181,7 +260,7 @@ function Header() {
             const formData = new FormData();
             formData.append('email', regEmail);
 
-            const response = await axios.post('http://localhost:8080/lms/email/send', formData, {
+            const response = await axios.post(SEND_EMAIL_API, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -215,7 +294,7 @@ function Header() {
             formData.append('email', regEmail);
             formData.append('code', code);
 
-            const response = await axios.post('http://localhost:8080/lms/email/verifycode', formData, {
+            const response = await axios.post(VERIFY_EMAIL_API, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -250,8 +329,8 @@ function Header() {
             };
 
             const apiUrl = registrationRole === 'student'
-                ? 'http://localhost:8080/lms/student/create'
-                : 'http://localhost:8080/lms/teacher/create';
+                ? CREATE_STUDENT_ACCOUNT
+                : CREATE_TEACHER_ACCOUNT;
 
             const response = await axios.post(apiUrl, registerData);
 
@@ -537,10 +616,16 @@ function Header() {
                                             disabled={loading}
                                         />
                                     </div>
-
-                                    <div className="form-checkbox">
-                                        <input type="checkbox" id="remember" disabled={loading} />
-                                        <label htmlFor="remember">Ghi nhớ đăng nhập</label>
+                                    
+                                    <div className='d-flex justify-between align-center' style={{marginBottom: '1.5rem'}}>
+                                        <div className="form-checkbox">
+                                            <input type="checkbox" id="remember" disabled={loading} />
+                                            <label htmlFor="remember">Ghi nhớ đăng nhập</label>
+                                        </div>
+                                        <a href="#" onClick={(e) => {
+                                            e.preventDefault();
+                                            openForgotPasswordModal();
+                                        }}>Quên mật khẩu?</a>
                                     </div>
 
                                     <button 
@@ -583,6 +668,82 @@ function Header() {
                                 </form>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+            
+            {/* Modal Quên Mật Khẩu */}
+            {showForgotPasswordModal && (
+                <div className="modal-overlay">
+                    <div className="modal-container">
+                        <div className="modal-header">
+                            <button className="back-btn" onClick={openLoginModal}>Quay lại</button>
+                            <button className="close-btn" onClick={closeAllModals}>×</button>
+                        </div>
+                        
+                        <div className="modal-content">
+                            <div className="logo-container">
+                                <img src={logohusc} className="login-logo" alt="Logo HUSC" />
+                            </div>
+                            
+                            <form className="login-form" onSubmit={handleForgotPassword}>
+                                <h2 className="modal-title">Quên Mật Khẩu</h2>
+                                
+                                {forgotPasswordError && (
+                                    <div className="alert alert-danger" role="alert">
+                                        {forgotPasswordError}
+                                    </div>
+                                )}
+                                
+                                {forgotPasswordSuccess && (
+                                    <div className="alert alert-success" role="alert">
+                                        {forgotPasswordSuccess}
+                                    </div>
+                                )}
+                                
+                                <p className="forgot-password-info">
+                                    Vui lòng nhập địa chỉ email đã đăng ký. Chúng tôi sẽ gửi mật khẩu mới vào email của bạn.
+                                </p>
+                                
+                                <div className="form-group">
+                                    <input
+                                        type="email"
+                                        className="form-group-login"
+                                        placeholder="Địa chỉ Email"
+                                        value={forgotPasswordEmail}
+                                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                                        required
+                                        disabled={forgotPasswordLoading || forgotPasswordSuccess !== ''}
+                                    />
+                                </div>
+                                
+                                <button 
+                                    type="submit" 
+                                    className={`login-submit-btn ${isForgotPasswordFormValid ? 'active' : 'disabled'}`}
+                                    disabled={!isForgotPasswordFormValid || forgotPasswordLoading || forgotPasswordSuccess !== ''}
+                                >
+                                    {forgotPasswordLoading ? (
+                                        <>
+                                            <span className="spinner-header-border spinner-header-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            Đang xử lý...
+                                        </>
+                                    ) : (
+                                        'Yêu cầu mật khẩu mới'
+                                    )}
+                                </button>
+                                
+                                <div className="form-footer">
+                                    <p>Đã nhớ mật khẩu? <a href="#" onClick={(e) => { 
+                                        e.preventDefault(); 
+                                        switchToLogin();
+                                    }}>Quay lại đăng nhập</a></p>
+                                </div>
+                            </form>
+                            
+                            <div className="terms">
+                                <p>Việc bạn tiếp tục sử dụng trang web này đồng nghĩa bạn đồng ý với <a href="#terms">điều khoản sử dụng</a> của chúng tôi.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

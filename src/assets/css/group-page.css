@@ -183,7 +183,7 @@
   padding: 0 12px;
   border: none;
   border-radius: 999px;
-  background-color: #066fbf;
+  background-color: var(--primary-color);
   color: #fff;
   font-size: 12px;
   cursor: pointer;
@@ -191,7 +191,7 @@
 }
 
 .group-add-btn:hover {
-  background-color: #065d9e;
+  background-color: var(--primary-hover-color);
 }
 
 /* Responsive adjustments */

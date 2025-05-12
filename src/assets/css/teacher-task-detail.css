@@ -14,25 +14,6 @@
     padding-bottom: 24px;
 }
 
-.back-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: none;
-    border: none;
-    color: #1a73e8;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 8px 0;
-    margin-bottom: 16px;
-    transition: color 0.2s;
-}
-
-.back-button:hover {
-    color: #0d47a1;
-}
-
 .test-title {
     font-size: 28px;
     font-weight: 600;
@@ -42,9 +23,9 @@
 
 .test-meta {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 24px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     color: #5f6368;
 }
 
@@ -143,12 +124,6 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.question-points {
-    margin: 0 16px;
-    color: #5f6368;
-    font-size: 14px;
 }
 
 .toggle-button {
@@ -313,18 +288,18 @@
 }
 
 .view-submissions {
-    background: #1a73e8;
+    background: var(--primary-color);
     color: white;
 }
 
 .view-submissions:hover {
-    background: #0d47a1;
+    background: var(--primary-hover-color);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .edit-test {
     background: #f8f9fa;
-    color: #1a73e8;
+    color: var(--primary-color);
     border: 1px solid #dadce0;
 }
 
@@ -374,4 +349,253 @@
 
 .test-detail-error button:hover {
     background: #0d47a1;
+}
+
+/* Add styles for the submissions modal */
+.submissions-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.submissions-modal {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.3s ease-out;
+}
+
+.submissions-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e1e1e1;
+}
+
+.submissions-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.close-modal-btn:hover {
+    background-color: #f1f1f1;
+    color: #333;
+}
+
+.submissions-modal-content {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: calc(90vh - 70px);
+}
+
+.submissions-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.submissions-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #1a73e8;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+.submissions-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #d32f2f;
+    padding: 24px;
+    text-align: center;
+}
+
+.submissions-error button {
+    margin-top: 16px;
+    padding: 8px 16px;
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submissions-error button:hover {
+    background-color: #1557b0;
+}
+
+.no-submissions {
+    text-align: center;
+    color: #666;
+    padding: 40px 0;
+}
+
+/* Submissions Table Styles */
+.submissions-table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.submissions-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+}
+
+.submissions-table th {
+    background-color: #f5f5f5;
+    padding: 12px 16px;
+    text-align: left;
+    color: #444;
+    font-weight: 500;
+    border-bottom: 1px solid #e1e1e1;
+    white-space: nowrap;
+}
+
+.submissions-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eaeaea;
+    vertical-align: middle;
+    color: #333;
+}
+
+.submissions-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+.student-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.result-student-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.result-student-avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #1a73e8;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.view-detail-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 1px solid #1a73e8;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-detail-btn:hover {
+    background-color: #e8f0fe;
+}
+
+/* Submissions Pagination */
+.submissions-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 24px;
+    gap: 16px;
+}
+
+.pagination-btn {
+    background-color: white;
+    border: 1px solid #dadce0;
+    color: #1a73e8;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f1f3f4;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    color: #5f6368;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 } 

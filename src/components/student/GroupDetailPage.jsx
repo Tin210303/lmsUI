@@ -46,6 +46,8 @@ const TeacherGroupDetail = () => {
     // Thêm state để quản lý modal xem trước file
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [previewFile, setPreviewFile] = useState(null);
+    console.log(previewFile);
+    
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewContent, setPreviewContent] = useState(null);
     const [previewType, setPreviewType] = useState(null);
@@ -82,9 +84,8 @@ const TeacherGroupDetail = () => {
         totalElements: 0
     });
 
-    const [testResult, setTestResult] = useState(null);
-    console.log(testResult);
-    
+    // Replace single testResult with map of test results by ID
+    const [testResults, setTestResults] = useState({});
     
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
@@ -1035,6 +1036,7 @@ const TeacherGroupDetail = () => {
             // Create form data with testId parameter
             const params = new URLSearchParams();
             params.append('testId', testId);
+            params.append('studentId', localStorage.getItem('userId') || ''); // Get studentId from localStorage
             
             // Call API to get test result
             const resultResponse = await axios.get(
@@ -1047,12 +1049,15 @@ const TeacherGroupDetail = () => {
             );
             
             if (resultResponse.data && resultResponse.data.code === 0) {
-                setTestResult(resultResponse.data.result);
+                // Store the result in the map with the test ID as the key
+                setTestResults(prevResults => ({
+                    ...prevResults,
+                    [testId]: resultResponse.data.result
+                }));
             }
         } catch (error) {
-            console.log('No test result found or not yet submitted');
-        } finally {
-            setLoading(false);
+            console.log('No test result found or not yet submitted for test ID:', testId);
+            // Not setting error as this is expected if student hasn't taken the test
         }
     };
 
@@ -1229,8 +1234,8 @@ const TeacherGroupDetail = () => {
                                             </svg>
                                         </div>
                                         <div>
-                                            <h2 className='no-posts-title'>Đây là nơi bạn giao tiếp với group của mình</h2>
-                                            <p className='no-posts-subtitle'>Sử dụng bảng tin để thông báo, đăng bài tập và trả lời câu hỏi của sinh viên</p>
+                                            <h2 className='no-posts-title'>Đây là nơi bạn theo dõi những thông báo từ giảng viên</h2>
+                                            <p className='no-posts-subtitle'>Bạn có thể xem trước và tải những tài liệu đính kèm trong mỗi bài đăng của giảng viên</p>
                                         </div>
                                     </div>
                                 )}
@@ -1281,7 +1286,7 @@ const TeacherGroupDetail = () => {
                                                     </div>
                                                 </div>
                                                 <div className="task-status">
-                                                    {testResult ? 
+                                                    {testResults[test.id] ? 
                                                         <span className="submitted-status">Đã hoàn thành</span> : 
                                                         <span className="not-submitted-status">Chưa hoàn thành</span>
                                                     }

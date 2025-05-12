@@ -18,7 +18,7 @@
     gap: 8px;
     background: none;
     border: none;
-    color: #1a73e8;
+    color: var(--primary-color);
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
@@ -28,7 +28,7 @@
 }
 
 .back-button:hover {
-    color: #0d47a1;
+    color: var(--primary-hover-color);
 }
 
 .student-test-title {
@@ -167,11 +167,6 @@
 .student-question-number {
     font-weight: 500;
     color: #5f6368;
-}
-
-.question-points {
-    font-weight: 500;
-    color: #1a73e8;
 }
 
 .student-question-content {

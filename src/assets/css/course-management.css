@@ -55,6 +55,7 @@
     display: block;
     padding: 8px 0;
     font-size: 16px;
+    transition: color 0.3s ease;
 }
 
 .admin-section a:hover {
@@ -62,7 +63,7 @@
 }
 
 .admin-section a.active {
-    color: #1d4ed8;
+    color: var(--primary-color);
     font-weight: bold;
 }
 
@@ -119,7 +120,7 @@
 .form-group-manage textarea {
     min-height: 100px;
     border-radius: 10px;
-    resize: vertical;
+    resize: none;
 }
 
 .image-upload {
@@ -145,13 +146,13 @@
 }
 
 .btn-confirm {
-    background-color: #0056b3;
+    background-color: var(--primary-color);
     color: white;
     transition: background-color 0.3s ease;
 }
 
 .btn-confirm:hover {
-    background-color: #0067d4;
+    background-color: var(--primary-hover-color);
 }
 
 .btn-cancel {
