@@ -323,7 +323,6 @@
     border-radius: 8px;
     padding: 12px;
     margin: 10px 0;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     width: 100%;
 }
 
@@ -377,18 +376,7 @@
 
 /* CSS cho selected file card */
 .selected-file-card {
-    padding: 10px 15px;
-    margin: 1rem 0;
-    border: 1px solid #e0e0e0;
     border-radius: 8px;
-}
-
-.selected-file-card .file-attachment-preview {
-    margin: 0;
-    box-shadow: none;
-    border: none;
-    background-color: transparent;
-    padding: 0;
 }
 
 .file-remove-button {
@@ -1089,4 +1077,92 @@
 /* Đổi màu nền khi hover */
 .marks-table tr:hover .student-cell {
     background-color: #f1f3f4;
+}
+
+/* CSS cho Modal chỉnh sửa bài đăng */
+.tgd-edit-post-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    overflow-y: auto;
+}
+
+.tgd-edit-post-modal {
+    background-color: white;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 700px;
+    max-height: 90vh;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: tgd-modal-fade-in 0.2s ease-out;
+}
+
+.tgd-edit-post-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.tgd-edit-post-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #202124;
+}
+
+.tgd-edit-post-close-button {
+    background: none;
+    border: none;
+    color: #5f6368;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tgd-edit-post-close-button:hover {
+    background-color: #f1f3f4;
+}
+
+.tgd-edit-post-modal-content {
+    padding: 20px 20px 0;
+    overflow-y: auto;
+    max-height: calc(90vh - 70px);
+    position: relative;
+}
+
+.edit-existing-files,
+.edit-new-files {
+    margin-top: 16px;
+}
+
+.edit-existing-files h4,
+.edit-new-files h4 {
+    font-size: 14px;
+    color: #5f6368;
+    margin-bottom: 8px;
+}
+
+@keyframes tgd-modal-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

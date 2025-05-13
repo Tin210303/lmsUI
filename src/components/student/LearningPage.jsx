@@ -1491,11 +1491,10 @@ const handleBackToCourses = () => {
             {/* Header */}
             <header className="learning-header">
                 <div className="header-left">
-                    <button onClick={handleBackToCourses} className="back-button">
+                    <button onClick={handleBackToCourses} className="learning-back-button">
                         <ChevronLeft size={20} />
                     </button>
                     <div className="course-logo-title">
-                        <img src={logo} alt="Logo" className="header-logo" />
                         <h1 className="learning-course-title">{courseData.name}</h1>
                     </div>
                 </div>
@@ -1890,7 +1889,7 @@ const handleBackToCourses = () => {
                         <div className="comment-modal-close" onClick={handleCloseCommentModal}>
                             <ChevronRight size={24} />
                         </div>
-                        <CommentSection lessonId={1} />
+                        <CommentSection lessonId={currentLessonId} courseId={id} />
                     </div>
                 </div>
             )}

@@ -156,7 +156,7 @@ const TeacherHeader = () => {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
-                responseType: 'blob' // Important: we want the image as a blob
+                responseType: 'blob'
             });
 
             // Create a URL for the blob data

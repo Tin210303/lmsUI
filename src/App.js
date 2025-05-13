@@ -24,6 +24,7 @@ import AddStudentsGroup from './components/teacher/AddStudentsGroup';
 import CreateTask from './components/teacher/CreateTask';
 import TeacherTaskDetail from './components/teacher/TeacherTaskDetail';
 import TestResultDetail from './components/teacher/TestResultDetail';
+import TeacherInfo from './components/teacher/TeacherInfo';
 
 // Student Routes
 import CoursesPage from './components/student/CoursesPage';
@@ -227,6 +228,20 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <TestResultDetail />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/chat" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <ChatboxPage />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/profile" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherInfo />
               </TeacherLayout>
             </ProtectedRoute>
           } />

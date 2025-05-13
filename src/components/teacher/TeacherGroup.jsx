@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import '../../assets/css/group-page.css';
-import { GET_TEACHER_GROUPS } from '../../services/apiService';
+import { API_BASE_URL, GET_TEACHER_GROUPS } from '../../services/apiService';
 
 // Add Group Modal Component
 const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
@@ -108,9 +108,7 @@ const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
 };
 
 // Group Card Component
-const GroupCard = ({ data, onClick }) => {
-  console.log(data);
-  
+const GroupCard = ({ data, onClick, avatar }) => {
   return (
     <div className="group-card" onClick={() => onClick(data)}>
       <div className="group-header">
@@ -123,7 +121,7 @@ const GroupCard = ({ data, onClick }) => {
           <p className="group-section-title">Teachers</p>
           <div className="teachers-avatars">
             <div className="avatar">
-              <img src={data.teacher.avatar || "https://randomuser.me/api/portraits/men/1.jpg"} alt={`${data.teacher.fullName}`} />
+              <img src={avatar || "https://randomuser.me/api/portraits/men/1.jpg"} alt={`${data.teacher.fullName}`} />
               </div>
             <span>{data.teacher.fullName}</span>
           </div>
@@ -195,6 +193,7 @@ const GroupPage = () => {
       totalPages: 0,
       totalElements: 0
     });
+    const [avatarUrl, setAvatarUrl] = useState(null);
     
     const fetchGroups = async () => {
       setIsLoading(true);
@@ -236,6 +235,11 @@ const GroupPage = () => {
               totalPages: responseData.totalPages,
               totalElements: responseData.totalElements
             });
+
+            // Fetch avatar if available
+            responseData.content.forEach(group => {
+              fetchAvatar(group.teacher.avatar)
+            });
           } else {
             // Nếu kết quả trả về là mảng thông thường
             const formattedGroups = formatApiDataToDisplayData(responseData);
@@ -249,6 +253,30 @@ const GroupPage = () => {
         setError('Không thể tải danh sách nhóm. Vui lòng thử lại sau.');
       } finally {
         setIsLoading(false);
+      }
+    };
+
+    // Hàm gọi API để lấy ra ảnh đại diện của sinh viên
+    const fetchAvatar = async (avatarPath) => {
+      if (!avatarPath) return;
+
+      try {
+          const token = localStorage.getItem('authToken');
+          if (!token) return;
+
+          // Fetch avatar with authorization header
+          const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+              headers: {
+                  'Authorization': `Bearer ${token}`
+              },
+              responseType: 'blob'
+          });
+
+          // Create a URL for the blob data
+          const imageUrl = URL.createObjectURL(response.data);
+          setAvatarUrl(imageUrl);
+      } catch (err) {
+          console.error('Error fetching avatar:', err);
       }
     };
     
@@ -307,95 +335,96 @@ const GroupPage = () => {
     };
 
     return (
-        <div className="group-page-container">
-            <div className='group-hearder'>
-                <h2 className='group-header-title'>Groups</h2>
-                <div className='group-content-left'>
-                    <div className='group-search'>
-                        <span className="group-search-icon">
-                            <Search size={18} color='#787878'/>
-                        </span>
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm ..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <button 
-                      className='group-add-btn'
-                      onClick={() => setIsModalOpen(true)}
-                    >
-                        <Plus size={18} style={{marginRight: '4px'}}/>
-                        Add Group
-                    </button>
-                </div>
+      <div className="group-page-container">
+        <div className='group-hearder'>
+          <h2 className='group-header-title'>Groups</h2>
+          <div className='group-content-left'>
+            <div className='group-search'>
+              <span className="group-search-icon">
+                <Search size={18} color='#787878'/>
+              </span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm ..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            
-            {/* Loading và Error */}
-            {isLoading && (
-              <div className="group-loading">
-                <div className="group-loading-spinner"></div>
-                <p>Đang tải dữ liệu...</p>
-              </div>
-            )}
-            
-            {error && (
-              <div className="group-error">
-                <p>{error}</p>
-                <button onClick={fetchGroups}>Thử lại</button>
-              </div>
-            )}
-            
-            {/* Danh sách nhóm */}
-            {!isLoading && !error && (
-              <>
-            <div className="group-grid">
-                    {filteredGroups.length > 0 ? (
-                      filteredGroups.map((group) => (
-                    <GroupCard 
-                        key={group.id} 
-                        data={group} 
-                        onClick={handleGroupClick}
-                    />
-                      ))
-                    ) : (
-                      <div className="no-groups">
-                        <p>Không tìm thấy nhóm nào</p>
-                      </div>
-                    )}
-                </div>
-                
-                {/* Phân trang */}
-                {pagination.totalPages > 1 && (
-                  <div className="group-pagination">
-                    <button 
-                      disabled={pagination.pageNumber === 0}
-                      onClick={() => handlePageChange(pagination.pageNumber - 1)}
-                    >
-                      Trước
-                    </button>
-                    <span>
-                      Trang {pagination.pageNumber + 1} / {pagination.totalPages}
-                    </span>
-                    <button 
-                      disabled={pagination.pageNumber >= pagination.totalPages - 1}
-                      onClick={() => handlePageChange(pagination.pageNumber + 1)}
-                    >
-                      Sau
-                    </button>
-            </div>
-                )}
-              </>
-            )}
-            
-            {/* Add Group Modal */}
-            <AddGroupModal 
-              isOpen={isModalOpen} 
-              onClose={() => setIsModalOpen(false)}
-              onSubmit={handleAddGroup}
-            />
+            <button 
+              className='group-add-btn'
+              onClick={() => setIsModalOpen(true)}
+            >
+              <Plus size={18} style={{marginRight: '4px'}}/>
+              Add Group
+            </button>
+          </div>
         </div>
+        
+        {/* Loading và Error */}
+        {isLoading && (
+          <div className="group-loading">
+            <div className="group-loading-spinner"></div>
+            <p>Đang tải dữ liệu...</p>
+          </div>
+        )}
+        
+        {error && (
+          <div className="group-error">
+            <p>{error}</p>
+            <button onClick={fetchGroups}>Thử lại</button>
+          </div>
+        )}
+        
+        {/* Danh sách nhóm */}
+        {!isLoading && !error && (
+          <>
+            <div className="group-grid">
+              {filteredGroups.length > 0 ? (
+                filteredGroups.map((group) => (
+              <GroupCard 
+                key={group.id} 
+                data={group}
+                avatar={avatarUrl} 
+                onClick={handleGroupClick}
+              />
+                ))
+              ) : (
+                <div className="no-groups">
+                  <p>Không tìm thấy nhóm nào</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Phân trang */}
+            {pagination.totalPages > 1 && (
+              <div className="group-pagination">
+                <button 
+                  disabled={pagination.pageNumber === 0}
+                  onClick={() => handlePageChange(pagination.pageNumber - 1)}
+                >
+                  Trước
+                </button>
+                <span>
+                  Trang {pagination.pageNumber + 1} / {pagination.totalPages}
+                </span>
+                <button 
+                  disabled={pagination.pageNumber >= pagination.totalPages - 1}
+                  onClick={() => handlePageChange(pagination.pageNumber + 1)}
+                >
+                  Sau
+                </button>
+              </div>
+            )}
+          </>
+        )}
+        
+        {/* Add Group Modal */}
+        <AddGroupModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddGroup}
+        />
+      </div>
     );
 };
 

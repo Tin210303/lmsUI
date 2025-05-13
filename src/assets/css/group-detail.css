@@ -207,10 +207,11 @@
 }
 
 .comment-avatar {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   margin-right: 10px;
+  object-fit: cover;
 }
 
 .group-comment-input {
@@ -474,10 +475,13 @@
   padding: 10px 15px;
 }
 
-.editor-actions {
+.group-editor-actions {
   display: flex;
   justify-content: flex-end;
-  padding: 10px 15px;
+  padding: 20px 15px;
+  position: sticky;
+  bottom: 0;
+  background-color: #fff;
 }
 
 .post-cancel-button {
