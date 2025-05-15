@@ -53,6 +53,7 @@ export const UPDATE_COURSE_API = `${API_BASE_URL}/lms/course/update`;
 export const SEARCH_STUDENT_NOT_IN_COURSE = `${API_BASE_URL}/lms/studentcourse/searchstudentnotin`;
 export const GET_MY_COURSE = `${API_BASE_URL}/lms/studentcourse/mycourse`; // Danh sách khóa học của sv
 export const GET_PROGRESS_PERCENT = `${API_BASE_URL}/lms/lessonchapterprogress/getpercent`; // Lấy % hoàn thành khóa học
+export const DELETE_MULTIPLE_STUDENTS_COURSE = `${API_BASE_URL}/lms/studentcourse/deleteall`; // Xoá nhiều sinh viên khỏi khóa học
 
 // WebSocket URLs
 export const WS_BASE_URL = `${API_BASE_URL}/lms/ws`;
@@ -64,3 +65,13 @@ export const WS_REPLIES_TOPIC = '/topic/comment-replies';
 // Comment endpoints
 export const GET_COMMENTS_BY_CHAPTER = `${API_BASE_URL}/lms/comments/unreadCommentsOfChapter/details`;
 export const GET_COMMENT_REPLIES = `${API_BASE_URL}/lms/comments/unreadCommentsOfChapter/details/reply`;
+
+// Group Student Management
+export const DELETE_MULTIPLE_STUDENTS_GROUP = `${API_BASE_URL}/lms/studentgroup/deleteall`;
+
+// Document Management API
+export const GET_MAJOR_DOCUMENTS = `${API_BASE_URL}/lms/document/getbymajor`; // Lấy danh sách tài liệu theo chuyên ngành
+export const GET_MY_DOCUMENTS = `${API_BASE_URL}/lms/document/mydocument`; // Lấy danh sách tài liệu của giảng viên đang đăng nhập
+export const UPLOAD_DOCUMENT = `${API_BASE_URL}/lms/document/create`; // Upload tài liệu mới
+export const DELETE_DOCUMENT = `${API_BASE_URL}/lms/document/delete`; // Xoá tài liệu
+export const UPDATE_DOCUMENT_STATUS = `${API_BASE_URL}/lms/document/updatestatus`; // Cập nhật trạng thái hiển thị của tài liệu

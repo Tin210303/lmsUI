@@ -280,82 +280,6 @@ const TeacherGroupDetail = () => {
         setSelectedFiles([]);
     };
 
-    // Function to handle text changes in the contenteditable div
-    const handleEditorChange = () => {
-        if (editorRef.current) {
-        setAnnouncementText(editorRef.current.innerHTML);
-        }
-    };
-
-    // Function for handling formatting with toggle functionality
-    const toggleFormatting = (command, format) => {
-        document.execCommand(command, false, null);
-        
-        // Toggle the active state
-        setActiveFormats({
-        ...activeFormats,
-        [format]: document.queryCommandState(command)
-        });
-        
-        // Focus back on the editor
-        if (editorRef.current) {
-        editorRef.current.focus();
-        }
-    };
-
-    // Function to check the current formatting state
-    const checkFormatting = () => {
-        setActiveFormats({
-        bold: document.queryCommandState('bold'),
-        italic: document.queryCommandState('italic'),
-        underline: document.queryCommandState('underline'),
-        list: document.queryCommandState('insertUnorderedList')
-        });
-    };
-
-    // Function to handle announcement submission
-    const submitAnnouncement = async () => {
-        if (announcementText.trim() || selectedFiles.length > 0) {
-            try {
-                const token = localStorage.getItem('authToken');
-                const formData = new FormData();
-                formData.append('groupId', id);
-                formData.append('title', '');
-                formData.append('text', announcementText);
-                // Gửi từng file theo dạng fileUploadRequests[i].file và fileUploadRequests[i].type
-                selectedFiles.forEach((file, idx) => {
-                    formData.append(`fileUploadRequests[${idx}].file`, file);
-                    // Xác định type
-                    const mimeType = file.type;
-                    let type = 'file';
-                    if (mimeType.startsWith('image/')) type = 'image';
-                    else if (mimeType.startsWith('video/')) type = 'video';
-                    formData.append(`fileUploadRequests[${idx}].type`, type);
-                });
-                const response = await axios.post(
-                    `${ADD_POST_GROUP}`,
-                    formData,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }
-                );
-                if (response.data && response.data.code === 0) {
-                    fetchPosts();
-                    closeEditor();
-                    setAnnouncementText('');
-                    setSelectedFiles([]);
-                } else {
-                    console.error('Error creating post:', response.data?.message);
-                }
-            } catch (error) {
-                console.error('Error creating post:', error);
-            }
-        }
-    };
-
     // Hàm để tạo đường dẫn đầy đủ cho file
     const getFullFilePath = (path) => {
         if (!path) return '';
@@ -601,19 +525,6 @@ const TeacherGroupDetail = () => {
         }
     };
 
-    // Xử lý khi chọn file
-    const handleFileChange = (event) => {
-        const files = Array.from(event.target.files);
-        if (files.length > 0) {
-            setSelectedFiles((prev) => [...prev, ...files]);
-        }
-    };
-    
-    // Xóa file đã chọn theo index
-    const removeSelectedFile = (index) => {
-        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    };
-
     // Hàm để lấy URL icon tương ứng với loại file
     const getFileIconUrl = (mimeType, extension) => {
         // Url cơ bản cho icon Google Drive
@@ -686,69 +597,6 @@ const TeacherGroupDetail = () => {
             ...pagination,
             pageNumber: newPage
         });
-    };
-
-    // Hàm xử lý hiển thị/ẩn menu cho từng bài viết
-    const togglePostMenu = (postId) => {
-        if (activeMenu === postId) {
-            // Xử lý animation đóng menu
-            setClosingMenu(postId);
-            // Đợi animation hoàn thành rồi mới đóng menu
-            setTimeout(() => {
-                setActiveMenu(null);
-                setClosingMenu(null);
-            }, 150); // 150ms - thời gian của animation đóng
-        } else {
-            if (closingMenu) {
-                // Nếu đang có menu đang đóng, hủy animation
-                setClosingMenu(null);
-            }
-            setActiveMenu(postId); // Hiển thị menu của bài viết được chọn
-        }
-    };
-    
-    // Hàm xử lý xóa bài viết
-    const handleDeletePost = async (postId) => {
-        if (deleteLoading) return; // Tránh gọi lại khi đang xử lý
-        
-        try {
-            setDeleteLoading(true);
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-            
-            // Tạo FormData để gửi postId
-            const formData = new FormData();
-            formData.append('postId', postId);
-            
-            // Gọi API xóa bài viết với phương thức DELETE
-            const response = await axios.delete(
-                `${DELETE_POST_GROUP}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
-                    },
-                    data: formData
-                }
-            );
-            
-            // Kiểm tra kết quả trả về
-            if (response.data && response.data.code === 0) {
-                // Xóa thành công, cập nhật lại danh sách bài viết
-                fetchPosts();
-                // Đóng menu
-                setActiveMenu(null);
-            } else {
-                throw new Error(response.data?.message || 'Failed to delete post');
-            }
-        } catch (error) {
-            console.error('Error deleting post:', error);
-            // Có thể hiển thị thông báo lỗi ở đây
-        } finally {
-            setDeleteLoading(false);
-        }
     };
 
     // Khi component mount, thêm hàm download global để có thể gọi từ HTML
@@ -896,68 +744,6 @@ const TeacherGroupDetail = () => {
             ...studentsPagination,
             pageNumber: newPage
         });
-    };
-
-    // Hàm xử lý hiển thị/ẩn menu xóa sinh viên
-    const toggleStudentMenu = (studentId) => {
-        if (activeStudentMenu === studentId) {
-            // Thêm animation đóng menu
-            setClosingStudentMenu(studentId);
-            setTimeout(() => {
-                setActiveStudentMenu(null);
-                setClosingStudentMenu(null);
-            }, 150);
-        } else {
-            if (closingStudentMenu) {
-                setClosingStudentMenu(null);
-            }
-            setActiveStudentMenu(studentId);
-        }
-    };
-    
-    // Hàm xử lý xóa sinh viên
-    const handleDeleteStudent = async (studentId) => {
-        if (studentDeleteLoading) return; // Tránh gọi lại khi đang xử lý
-        
-        try {
-            setStudentDeleteLoading(true);
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-            
-            // Tạo FormData để gửi dữ liệu
-            const formData = new FormData();
-            formData.append('groupId', id);
-            formData.append('studentId', studentId);
-            
-            // Gọi API xóa sinh viên với phương thức DELETE
-            const response = await axios.delete(
-                DELETE_STUDENT_GROUP,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
-                    },
-                    data: formData
-                }
-            );
-            
-            // Kiểm tra kết quả trả về
-            if (response.data && response.data.code === 0) {
-                // Xóa thành công, cập nhật lại danh sách sinh viên
-                fetchStudents();
-                // Đóng menu
-                setActiveStudentMenu(null);
-            } else {
-                throw new Error(response.data?.message || 'Failed to delete student');
-            }
-        } catch (error) {
-            console.error('Error deleting student:', error);
-            // Có thể hiển thị thông báo lỗi ở đây
-        } finally {
-            setStudentDeleteLoading(false);
-        }
     };
 
     // Sửa lại hàm fetchTests để gửi tham số qua form-data
@@ -1436,8 +1222,6 @@ const TeacherGroupDetail = () => {
                         </div>
                     </div>
                 );
-            case 'marks':
-                return <div className="marks-content">Nội dung Điểm</div>;
             default:
                 return null;
         }
@@ -1597,12 +1381,6 @@ const TeacherGroupDetail = () => {
                         onClick={() => handleTabChange('people')}
                         >
                         Mọi Người
-                    </button>
-                    <button
-                        className={isActive === 'marks' ? 'tab-active' : ''}
-                        onClick={() => handleTabChange('marks')}
-                        >
-                        Điểm
                     </button>
                 </div>
                 

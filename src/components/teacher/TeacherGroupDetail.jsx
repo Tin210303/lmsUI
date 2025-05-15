@@ -3,14 +3,15 @@ import '../../assets/css/teacher-group-detail.css';
 import logo from '../../logo.svg';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { X, Download, FileText, Video, Image, Upload, EllipsisVertical, UserPlus, NotepadText, Plus, Search, AlertCircle, HelpCircle } from 'lucide-react';
+import { X, Download, FileText, Video, Image, Upload, EllipsisVertical, UserPlus, NotepadText, Plus, Search, AlertCircle, HelpCircle, Trash2 } from 'lucide-react';
 import { 
     API_BASE_URL, 
     GET_POST_GROUP, 
     ADD_POST_GROUP, 
     DELETE_POST_GROUP, 
     GET_STUDENTS_GROUP, 
-    DELETE_STUDENT_GROUP, 
+    DELETE_STUDENT_GROUP,
+    DELETE_MULTIPLE_STUDENTS_GROUP,
     GET_TESTS_IN_GROUP, 
     GET_STUDENT_TEST_RESULT, 
     UPDATE_POST_API 
@@ -112,6 +113,13 @@ const TeacherGroupDetail = () => {
     const [activeMarkMenu, setActiveMarkMenu] = useState(null);
     const [closingMarkMenu, setClosingMarkMenu] = useState(null);
     
+    // Thêm state để quản lý việc chọn sinh viên
+    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [actionMenuOpen, setActionMenuOpen] = useState(false);
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+    const [selectAll, setSelectAll] = useState(false);
+    
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -176,6 +184,21 @@ const TeacherGroupDetail = () => {
                     }, 150);
                 }
             }
+
+            // Xử lý menu thao tác hàng loạt
+            if (actionMenuOpen) {
+                // Kiểm tra xem click có phải là nút thao tác không
+                const isActionButton = event.target.closest('.action-menu-button');
+                if (isActionButton) {
+                    return;
+                }
+                
+                // Kiểm tra xem click có trong menu không
+                const isInsideMenu = event.target.closest('.action-menu');
+                if (!isInsideMenu) {
+                    setActionMenuOpen(false);
+                }
+            }
         };
         
         // Thêm event listener khi component mount
@@ -185,7 +208,7 @@ const TeacherGroupDetail = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [activeMenu, closingMenu, activeStudentMenu, closingStudentMenu, activeMarkMenu, closingMarkMenu]);
+    }, [activeMenu, closingMenu, activeStudentMenu, closingStudentMenu, activeMarkMenu, closingMarkMenu, actionMenuOpen]);
     
     // Fetch group data
     useEffect(() => {
@@ -1259,6 +1282,97 @@ const TeacherGroupDetail = () => {
         }
     };
 
+    // Thêm hàm xử lý chọn/bỏ chọn tất cả sinh viên
+    const handleSelectAllStudents = (e) => {
+        const isChecked = e.target.checked;
+        setSelectAll(isChecked);
+        
+        if (isChecked) {
+            // Chọn tất cả sinh viên hiển thị trên trang hiện tại
+            const allStudentIds = students.map(student => student.id);
+            setSelectedStudents(allStudentIds);
+        } else {
+            // Bỏ chọn tất cả
+            setSelectedStudents([]);
+        }
+    };
+
+    // Thêm hàm xử lý chọn/bỏ chọn một sinh viên
+    const handleSelectStudent = (studentId, isChecked) => {
+        if (isChecked) {
+            // Thêm sinh viên vào danh sách đã chọn
+            setSelectedStudents(prev => [...prev, studentId]);
+        } else {
+            // Xóa sinh viên khỏi danh sách đã chọn
+            setSelectedStudents(prev => prev.filter(id => id !== studentId));
+            // Đảm bảo trạng thái "Chọn tất cả" được cập nhật chính xác
+            setSelectAll(false);
+        }
+    };
+
+    // Thêm hàm xử lý khi nhấn vào nút "Thao tác"
+    const toggleActionMenu = () => {
+        setActionMenuOpen(prev => !prev);
+    };
+
+    // Thêm hàm xử lý khi nhấn vào nút "Xóa" trong menu thao tác
+    const openDeleteConfirmation = () => {
+        setConfirmDialogOpen(true);
+        setActionMenuOpen(false); // Đóng menu thao tác
+    };
+
+    // Thêm hàm xử lý khi xác nhận xóa nhiều sinh viên
+    const handleDeleteMultipleStudents = async () => {
+        if (bulkDeleteLoading || selectedStudents.length === 0) return;
+        
+        try {
+            setBulkDeleteLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Gọi API xóa nhiều sinh viên
+            const response = await axios.delete(
+                DELETE_MULTIPLE_STUDENTS_GROUP,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    data: {
+                        baseId: id,
+                        studentIds: selectedStudents
+                    }
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', `Đã xóa ${selectedStudents.length} sinh viên khỏi nhóm`);
+                // Cập nhật lại danh sách sinh viên
+                fetchStudents();
+                // Reset các state liên quan
+                setSelectedStudents([]);
+                setSelectAll(false);
+            } else {
+                showAlert('error', 'Lỗi', response.data?.message || 'Không thể xóa sinh viên');
+            }
+        } catch (error) {
+            console.error('Error deleting multiple students:', error);
+            showAlert('error', 'Lỗi', 'Không thể xóa sinh viên. Vui lòng thử lại sau.');
+        } finally {
+            setBulkDeleteLoading(false);
+            setConfirmDialogOpen(false);
+        }
+    };
+
+    // Reset selected students when changing page
+    useEffect(() => {
+        setSelectedStudents([]);
+        setSelectAll(false);
+    }, [studentsPagination.pageNumber]);
+
     // Render tab content based on active tab
     const renderTabContent = () => {
         switch(isActive) {
@@ -1701,9 +1815,11 @@ const TeacherGroupDetail = () => {
                         <div className="people-section">
                             <div className="group-section-header">
                                 <h3>Sinh Viên</h3>
-                                <button className="add-student-group-btn" onClick={() => navigate(`/teacher/groups/${id}/add-students`)}>
-                                    <UserPlus size={20} enableBackground={0}/>
-                                </button>
+                                <div className="student-actions-container">
+                                    <button className="add-student-group-btn" onClick={() => navigate(`/teacher/groups/${id}/add-students`)}>
+                                        <UserPlus size={20} enableBackground={0}/>
+                                    </button>
+                                </div>
                             </div>
                             <div className="people-list-container">
                                 {studentsLoading && (
@@ -1722,56 +1838,101 @@ const TeacherGroupDetail = () => {
                                 
                                 {!studentsLoading && !studentsError && (
                                     <>
+                                        <div className="select-all-container">
+                                            <label className="select-all-checkbox">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectAll}
+                                                    onChange={handleSelectAllStudents}
+                                                />
+                                                {selectedStudents.length > 0 && (
+                                                    <div className="action-menu-container">
+                                                        <button 
+                                                            className="action-menu-button" 
+                                                            onClick={toggleActionMenu}
+                                                            disabled={selectedStudents.length === 0}
+                                                        >
+                                                            Thao tác
+                                                        </button>
+                                                        {actionMenuOpen && (
+                                                            <div className="action-menu">
+                                                                <button 
+                                                                    className="action-menu-item delete-action"
+                                                                    onClick={openDeleteConfirmation}
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                    <span>Xóa</span>
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </label>
+                                        </div>
+
                                         <div className="people-list student-list">
                                             {students.length > 0 ? (
-                                                students.map((student, index) => (
-                                                    <div className="person-item" key={student.id || index}>
-                                                        <div className="person-avatar">
-                                                            {avatarUrl[student.id] ? (
-                                                                <img src={avatarUrl[student.id]} alt="Avatar"/>
-                                                            ) : (
-                                                                <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                                                                    <circle cx="100" cy="100" r="100" fill="#ff4757" />
-                                                                    <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
-                                                                    <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
-                                                                    <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
-                                                                    <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
-                                                                    <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
-                                                                    <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
-                                                                </svg>
-                                                            )}
-                                                        </div>
-                                                        <div className="person-info">
-                                                            <div className="person-name">
-                                                                {student.fullName || `Học sinh ${index + 1}`}
+                                                students.map((student, index) => {
+                                                    const isSelected = selectedStudents.includes(student.id);
+                                                    return (
+                                                        <div 
+                                                            className={`person-item ${isSelected ? 'selected' : ''}`} 
+                                                            key={student.id || index}
+                                                        >
+                                                            <div className="person-checkbox">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={isSelected}
+                                                                    onChange={(e) => handleSelectStudent(student.id, e.target.checked)}
+                                                                />
                                                             </div>
-                                                            <div className="person-email">
-                                                                {student.email || ''}
+                                                            <div className="person-avatar">
+                                                                {avatarUrl[student.id] ? (
+                                                                    <img src={avatarUrl[student.id]} alt="Avatar"/>
+                                                                ) : (
+                                                                    <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                                                        <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                                                        <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                                                        <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                                                        <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                                                        <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                                                        <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                                                        <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                                                    </svg>
+                                                                )}
                                                             </div>
-                                                        </div>
-                                                        
-                                                        {/* Thêm nút 3 chấm và menu xóa sinh viên */}
-                                                        <div className="student-options-container">
-                                                            <button 
-                                                                className="student-menu-button" 
-                                                                onClick={() => toggleStudentMenu(student.id)}
-                                                            >
-                                                                <EllipsisVertical size={20}/>
-                                                            </button>
-                                                            {(activeStudentMenu === student.id || closingStudentMenu === student.id) && (
-                                                                <div className={`student-options-menu ${closingStudentMenu === student.id ? 'student-options-menu-exit' : ''}`}>
-                                                                    <button 
-                                                                        className="student-option-item student-delete-button"
-                                                                        onClick={() => handleDeleteStudent(student.id)}
-                                                                        disabled={studentDeleteLoading}
-                                                                    >
-                                                                        {studentDeleteLoading && activeStudentMenu === student.id ? 'Đang xóa...' : 'Xóa khỏi nhóm'}
-                                                                    </button>
+                                                            <div className="person-info">
+                                                                <div className="person-name">
+                                                                    {student.fullName || `Học sinh ${index + 1}`}
                                                                 </div>
-                                                            )}
+                                                                <div className="person-email">
+                                                                    {student.email || ''}
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {/* Thêm nút 3 chấm và menu xóa sinh viên */}
+                                                            <div className="student-options-container">
+                                                                <button 
+                                                                    className="student-menu-button" 
+                                                                    onClick={() => toggleStudentMenu(student.id)}
+                                                                >
+                                                                    <EllipsisVertical size={20}/>
+                                                                </button>
+                                                                {(activeStudentMenu === student.id || closingStudentMenu === student.id) && (
+                                                                    <div className={`student-options-menu ${closingStudentMenu === student.id ? 'student-options-menu-exit' : ''}`}>
+                                                                        <button 
+                                                                            className="student-option-item student-delete-button"
+                                                                            onClick={() => handleDeleteStudent(student.id)}
+                                                                            disabled={studentDeleteLoading}
+                                                                        >
+                                                                            {studentDeleteLoading && activeStudentMenu === student.id ? 'Đang xóa...' : 'Xóa'}
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))
+                                                    );
+                                                })
                                             ) : (
                                                 <div className="no-students">
                                                     <p>Chưa có sinh viên nào trong nhóm này</p>
@@ -2558,6 +2719,41 @@ const TeacherGroupDetail = () => {
         );
     });
 
+    // Thêm UI cho hộp thoại xác nhận xóa
+    const ConfirmationDialog = () => {
+        if (!confirmDialogOpen) return null;
+        
+        return (
+            <div className="confirmation-dialog-overlay">
+                <div className="confirmation-dialog">
+                    <div className="confirmation-dialog-header">
+                        <h3>Xác nhận xóa</h3>
+                    </div>
+                    <div className="confirmation-dialog-content">
+                        <p>Bạn có chắc chắn muốn xóa {selectedStudents.length} sinh viên đã chọn khỏi nhóm?</p>
+                        <p className="warning-text">Lưu ý: Hành động này không thể hoàn tác.</p>
+                    </div>
+                    <div className="confirmation-dialog-footer">
+                        <button 
+                            className="cancel-button" 
+                            onClick={() => setConfirmDialogOpen(false)}
+                            disabled={bulkDeleteLoading}
+                        >
+                            Hủy
+                        </button>
+                        <button 
+                            className="confirm-button" 
+                            onClick={handleDeleteMultipleStudents}
+                            disabled={bulkDeleteLoading}
+                        >
+                            {bulkDeleteLoading ? 'Đang xóa...' : 'Xóa'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className='content-container'>
             {alert && (
@@ -2613,7 +2809,7 @@ const TeacherGroupDetail = () => {
             {/* Modal Xem trước file */}
             <FilePreviewModal />
             
-            {/* Thêm Modal chỉnh sửa bài đăng */}
+            {/* Modal chỉnh sửa bài đăng */}
             <EditPostModal 
                 isOpen={editModalOpen} 
                 onClose={closeEditModal}
@@ -2622,6 +2818,9 @@ const TeacherGroupDetail = () => {
                 onSave={handleUpdatePost}
                 isLoading={editLoading}
             />
+
+            {/* Thêm hộp thoại xác nhận xóa */}
+            <ConfirmationDialog />
         </div>
     );
 }

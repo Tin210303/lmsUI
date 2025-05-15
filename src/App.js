@@ -25,6 +25,8 @@ import CreateTask from './components/teacher/CreateTask';
 import TeacherTaskDetail from './components/teacher/TeacherTaskDetail';
 import TestResultDetail from './components/teacher/TestResultDetail';
 import TeacherInfo from './components/teacher/TeacherInfo';
+import TeacherDocuments from './components/teacher/TeacherDocuments';
+import ManageDocument from './components/teacher/ManageDocument';
 
 // Student Routes
 import CoursesPage from './components/student/CoursesPage';
@@ -242,6 +244,20 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>
                 <TeacherInfo />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/documents" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <TeacherDocuments />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/documents/manage/:majorId" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <ManageDocument />
               </TeacherLayout>
             </ProtectedRoute>
           } />

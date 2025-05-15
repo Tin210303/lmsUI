@@ -5,7 +5,7 @@ import '../../assets/css/course-management.css';
 import { Trash2, UserPlus } from 'lucide-react';
 import logo from '../../logo.svg';
 import Alert from '../common/Alert';
-import { API_BASE_URL, GET_PROGRESS_PERCENT, GET_JOINCLASS_REQUEST, GET_STUDENT_COURSE, JOINCLASS_APPROVED_API, JOINCLASS_REJECTED_API, DELETE_STUDENT_COURSE, UPDATE_COURSE_API, GET_MAJOR_API } from '../../services/apiService';
+import { API_BASE_URL, GET_PROGRESS_PERCENT, GET_JOINCLASS_REQUEST, GET_STUDENT_COURSE, JOINCLASS_APPROVED_API, JOINCLASS_REJECTED_API, DELETE_STUDENT_COURSE, UPDATE_COURSE_API, GET_MAJOR_API, DELETE_MULTIPLE_STUDENTS_COURSE } from '../../services/apiService';
 
 const CourseManagementPage = () => {
     const { courseId } = useParams();
@@ -24,6 +24,13 @@ const CourseManagementPage = () => {
     const [completionPercentages, setCompletionPercentages] = useState({});
     const [majors, setMajors] = useState([]);
 
+    // Thêm state để quản lý việc chọn sinh viên
+    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [actionMenuOpen, setActionMenuOpen] = useState(false);
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+    const [selectAll, setSelectAll] = useState(false);
+
     // Form states
     const [formData, setFormData] = useState({
         name: '',
@@ -36,6 +43,42 @@ const CourseManagementPage = () => {
     });
 
     const [alert, setAlert] = useState(null);
+
+    // Xử lý đóng menu khi click ra ngoài
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            // Xử lý menu thao tác hàng loạt
+            if (actionMenuOpen) {
+                // Kiểm tra xem click có phải là nút thao tác không
+                const isActionButton = event.target.closest('.action-menu-button');
+                if (isActionButton) {
+                    return;
+                }
+                
+                // Kiểm tra xem click có trong menu không
+                const isInsideMenu = event.target.closest('.action-menu');
+                if (!isInsideMenu) {
+                    setActionMenuOpen(false);
+                }
+            }
+        };
+        
+        // Thêm event listener khi component mount
+        document.addEventListener('mousedown', handleClickOutside);
+        
+        // Cleanup khi component unmount
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [actionMenuOpen]);
+
+    // Reset selected students when component mounts or when tab changes
+    useEffect(() => {
+        if (activeTab === 'members') {
+            setSelectedStudents([]);
+            setSelectAll(false);
+        }
+    }, [activeTab]);
 
     useEffect(() => {
         fetchData();
@@ -91,7 +134,7 @@ const CourseManagementPage = () => {
 
             setFormData({
                 name: courseResponse.data.result.name,
-                type: courseResponse.data.result.status === 'PUBLIC' ? 'Khóa học chung' : 'Khóa học riêng',
+                type: courseResponse.data.result.status,
                 major: courseResponse.data.result.majorId || '',
                 endDate: courseResponse.data.result.endDate,
                 description: courseResponse.data.result.description,
@@ -300,6 +343,91 @@ const CourseManagementPage = () => {
         }
     };
 
+    // Thêm hàm xử lý chọn/bỏ chọn tất cả sinh viên
+    const handleSelectAllStudents = (e) => {
+        const isChecked = e.target.checked;
+        setSelectAll(isChecked);
+        
+        if (isChecked) {
+            // Chọn tất cả sinh viên hiển thị trên trang hiện tại
+            const allStudentIds = students.map(student => student.id);
+            setSelectedStudents(allStudentIds);
+        } else {
+            // Bỏ chọn tất cả
+            setSelectedStudents([]);
+        }
+    };
+
+    // Thêm hàm xử lý chọn/bỏ chọn một sinh viên
+    const handleSelectStudent = (studentId, isChecked) => {
+        if (isChecked) {
+            // Thêm sinh viên vào danh sách đã chọn
+            setSelectedStudents(prev => [...prev, studentId]);
+        } else {
+            // Xóa sinh viên khỏi danh sách đã chọn
+            setSelectedStudents(prev => prev.filter(id => id !== studentId));
+            // Đảm bảo trạng thái "Chọn tất cả" được cập nhật chính xác
+            setSelectAll(false);
+        }
+    };
+
+    // Thêm hàm xử lý khi nhấn vào nút "Thao tác"
+    const toggleActionMenu = () => {
+        setActionMenuOpen(prev => !prev);
+    };
+
+    // Thêm hàm xử lý khi nhấn vào nút "Xóa" trong menu thao tác
+    const openDeleteConfirmation = () => {
+        setConfirmDialogOpen(true);
+        setActionMenuOpen(false); // Đóng menu thao tác
+    };
+
+    // Thêm hàm xử lý khi xác nhận xóa nhiều sinh viên
+    const handleDeleteMultipleStudents = async () => {
+        if (bulkDeleteLoading || selectedStudents.length === 0) return;
+        
+        try {
+            setBulkDeleteLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Gọi API xóa nhiều sinh viên
+            const response = await axios.delete(
+                DELETE_MULTIPLE_STUDENTS_COURSE,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    data: {
+                        baseId: courseId,
+                        studentIds: selectedStudents
+                    }
+                }
+            );
+            
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', `Đã xóa ${selectedStudents.length} sinh viên khỏi khóa học`);
+                // Cập nhật lại danh sách sinh viên
+                fetchData();
+                // Reset các state liên quan
+                setSelectedStudents([]);
+                setSelectAll(false);
+            } else {
+                showAlert('error', 'Lỗi', response.data?.message || 'Không thể xóa sinh viên');
+            }
+        } catch (error) {
+            console.error('Error deleting multiple students:', error);
+            showAlert('error', 'Lỗi', 'Không thể xóa sinh viên. Vui lòng thử lại sau.');
+        } finally {
+            setBulkDeleteLoading(false);
+            setConfirmDialogOpen(false);
+        }
+    };
+
     const renderCourseInfo = () => (
         <div className="course-info-form">
             <h2>Thông tin khóa học</h2>
@@ -413,44 +541,90 @@ const CourseManagementPage = () => {
                             <UserPlus size={20} enableBackground={0}/>
                         </button>
                     </h3>
-                    {students.map(student => (
-                        <div key={student.id} className="member-item">
-                            <div className='d-flex' style={{width: '40%'}}>
-                                {avatarUrl[student.id] ? (
-                                    <img src={avatarUrl[student.id]} alt="Avatar"/>
-                                ) : (
-                                    <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className='course-management-student-avatar'>
-                                        <circle cx="100" cy="100" r="100" fill="#ff4757" />
-                                        <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
-                                        <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
-                                        <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
-                                        <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
-                                        <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
-                                        <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
-                                    </svg>
-                                )}
-                                <div>
-                                    <div>{student.fullName}</div>
-                                    <div className="course-student-email">{student.email}</div>
+                    
+                    {/* Thêm select-all container và action menu */}
+                    <div className="select-all-container">
+                        <label className="select-all-checkbox">
+                            <input 
+                                type="checkbox" 
+                                checked={selectAll}
+                                onChange={handleSelectAllStudents}
+                            />
+                            {selectedStudents.length > 0 && (
+                                <div className="action-menu-container">
+                                    <button 
+                                        className="action-menu-button" 
+                                        onClick={toggleActionMenu}
+                                        disabled={selectedStudents.length === 0}
+                                    >
+                                        Thao tác
+                                    </button>
+                                    {actionMenuOpen && (
+                                        <div className="action-menu">
+                                            <button 
+                                                className="action-menu-item delete-action"
+                                                onClick={openDeleteConfirmation}
+                                            >
+                                                <Trash2 size={16} />
+                                                <span>Xóa</span>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                            <div className="student-progress">
-                                <div className="progress-bar-container">
-                                    <div 
-                                        className="progress-bar" 
-                                        style={{ 
-                                            width: `${completionPercentages[student.id] || 0}%`,
-                                            backgroundColor: getProgressColor(completionPercentages[student.id] || 0)
-                                        }}
-                                    ></div>
+                            )}
+                        </label>
+                    </div>
+                    
+                    {students.map(student => {
+                        const isSelected = selectedStudents.includes(student.id);
+                        return (
+                            <div key={student.id} className={`member-item ${isSelected ? 'selected-member' : ''}`}>
+                                <div className='d-flex align-center' style={{width: '44%'}}>
+                                    <div className="member-checkbox">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={isSelected}
+                                            onChange={(e) => handleSelectStudent(student.id, e.target.checked)}
+                                        />
+                                    </div>
+                                    <div className='d-flex'>
+                                        {avatarUrl[student.id] ? (
+                                            <img src={avatarUrl[student.id]} alt="Avatar" className='course-management-student-avatar'/>
+                                        ) : (
+                                            <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className='course-management-student-avatar'>
+                                                <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                                <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                                <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                                <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                                <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                                <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                                <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                            </svg>
+                                        )}
+                                        <div>
+                                            <div>{student.fullName}</div>
+                                            <div className="course-student-email">{student.email}</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <span className="progress-text">{completionPercentages[student.id] || 0}%</span>
+                                <div className="student-progress">
+                                    <div className="progress-bar-container">
+                                        <div 
+                                            className="progress-bar" 
+                                            style={{ 
+                                                width: `${completionPercentages[student.id] || 0}%`,
+                                                backgroundColor: getProgressColor(completionPercentages[student.id] || 0)
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <span className="progress-text">{completionPercentages[student.id] || 0}%</span>
+                                </div>
+                                <button className="remove-member-btn" onClick={() => handleRemoveStudent(student.id, courseId)}>
+                                    <Trash2 size={16}/>
+                                </button>
                             </div>
-                            <button className="remove-member-btn" onClick={() => handleRemoveStudent(student.id, courseId)}>
-                                <Trash2 size={16}/>
-                            </button>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>
@@ -605,6 +779,12 @@ const CourseManagementPage = () => {
                         <p>Bạn có chắc chắn muốn xóa khóa học này không? Hành động này không thể hoàn tác.</p>
                         <div className="delete-modal-actions">
                             <button 
+                                className="btn-cancel-delete"
+                                onClick={() => setShowDeleteConfirm(false)}
+                            >
+                                Hủy
+                            </button>
+                            <button 
                                 className="btn-confirm-delete"
                                 onClick={() => {
                                     handleDeleteCourse();
@@ -613,11 +793,32 @@ const CourseManagementPage = () => {
                             >
                                 <Trash2 size={16} /> Xác nhận xóa
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Thêm hộp thoại xác nhận xóa nhiều sinh viên */}
+            {confirmDialogOpen && (
+                <div className="delete-modal-overlay">
+                    <div className="delete-modal-container">
+                        <h2>Xác nhận xóa</h2>
+                        <p>Bạn có chắc chắn muốn xóa {selectedStudents.length} sinh viên đã chọn khỏi khóa học?</p>
+                        <p>Hành động này không thể hoàn tác.</p>
+                        <div className="delete-modal-actions">
                             <button 
                                 className="btn-cancel-delete"
-                                onClick={() => setShowDeleteConfirm(false)}
+                                onClick={() => setConfirmDialogOpen(false)}
+                                disabled={bulkDeleteLoading}
                             >
                                 Hủy
+                            </button>
+                            <button 
+                                className="btn-confirm-delete"
+                                onClick={handleDeleteMultipleStudents}
+                                disabled={bulkDeleteLoading}
+                            >
+                                {bulkDeleteLoading ? 'Đang xóa...' : 'Xóa'}
                             </button>
                         </div>
                     </div>
