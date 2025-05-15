@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiMoreHorizontal } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, X } from 'lucide-react';
+import { Search, Plus, X, Edit, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import '../../assets/css/group-page.css';
-import { API_BASE_URL, GET_TEACHER_GROUPS } from '../../services/apiService';
+import { API_BASE_URL, GET_TEACHER_GROUPS, UPDATE_GROUP_API, ADD_GROUP_API } from '../../services/apiService';
 
 // Add Group Modal Component
 const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
@@ -12,6 +12,16 @@ const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
   const [groupDescription, setGroupDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    // Đợi animation hoàn thành trước khi đóng modal
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 300); // Thời gian phải khớp với thời gian animation trong CSS
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +36,7 @@ const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
     
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.post('http://localhost:8080/lms/group/create', 
+      const response = await axios.post( ADD_GROUP_API, 
         { 
           name: groupName, 
           description: groupDescription 
@@ -43,7 +53,7 @@ const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
         onSubmit(response.data.result);
         setGroupName('');
         setGroupDescription('');
-        onClose();
+        handleClose();
       } else {
         setError(response.data.message || 'Failed to create group');
       }
@@ -55,14 +65,14 @@ const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !isClosing) return null;
 
   return (
-    <div className="teacher-group-modal-overlay">
+    <div className={`teacher-group-modal-overlay ${isClosing ? 'modal-closing' : ''}`}>
       <div className="teacher-group-modal-container">
         <div className="teacher-group-modal-header">
           <h3>Tạo nhóm mới</h3>
-          <button onClick={onClose} className="teacher-group-close-button">
+          <button onClick={handleClose} className="teacher-group-close-button">
             <X size={20} />
           </button>
         </div>
@@ -94,7 +104,7 @@ const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
           
           <div className="teacher-group-modal-footer">
-            <button type="button" onClick={onClose} className="teacher-group-cancel-button">
+            <button type="button" onClick={handleClose} className="teacher-group-cancel-button">
               Hủy
             </button>
             <button type="submit" className="teacher-group-submit-button" disabled={isSubmitting}>
@@ -107,8 +117,263 @@ const AddGroupModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
+// Edit Group Modal Component
+const EditGroupModal = ({ isOpen, onClose, onSubmit, group }) => {
+  const [groupName, setGroupName] = useState('');
+  const [groupDescription, setGroupDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+
+  // Cập nhật state khi group thay đổi
+  useEffect(() => {
+    if (group) {
+      setGroupName(group.name || '');
+      setGroupDescription(group.description || '');
+    }
+  }, [group]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    // Đợi animation hoàn thành trước khi đóng modal
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 300); // Thời gian phải khớp với thời gian animation trong CSS
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!groupName.trim()) {
+      setError('Group name is required');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      // Truyền dữ liệu qua body thay vì FormData
+      const requestData = {
+        groupId: group.id,
+        name: groupName,
+        description: groupDescription
+      };
+      
+      // Gọi API cập nhật nhóm với Content-Type là application/json
+      const response = await axios.put( 
+        UPDATE_GROUP_API, 
+        requestData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (response.data && response.data.code === 0) {
+        // Cập nhật thành công
+        onSubmit({
+          ...group,
+          name: groupName,
+          description: groupDescription
+        });
+        handleClose();
+      } else {
+        setError(response.data.message || 'Failed to update group');
+      }
+    } catch (error) {
+      console.error('Error updating group:', error);
+      setError(error.response?.data?.message || 'An error occurred while updating the group');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen && !isClosing) return null;
+
+  return (
+    <div className={`teacher-group-modal-overlay ${isClosing ? 'modal-closing' : ''}`}>
+      <div className="teacher-group-modal-container">
+        <div className="teacher-group-modal-header">
+          <h3>Chỉnh sửa nhóm</h3>
+          <button onClick={handleClose} className="teacher-group-close-button">
+            <X size={20} />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="teacher-group-modal-form">
+          {error && <div className="teacher-group-error-message">{error}</div>}
+          
+          <div className="teacher-group-form-group">
+            <label htmlFor="editGroupName">Tên nhóm <span className="teacher-group-required">*</span></label>
+            <input
+              type="text"
+              id="editGroupName"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              placeholder="Nhập tên nhóm"
+              required
+            />
+          </div>
+          
+          <div className="teacher-group-form-group">
+            <label htmlFor="editGroupDescription">Mô tả</label>
+            <input
+              type="text"
+              id="editGroupDescription"
+              value={groupDescription}
+              onChange={(e) => setGroupDescription(e.target.value)}
+              placeholder="Nhập mô tả nhóm"
+            />
+          </div>
+          
+          <div className="teacher-group-modal-footer">
+            <button type="button" onClick={handleClose} className="teacher-group-cancel-button">
+              Hủy
+            </button>
+            <button type="submit" className="teacher-group-submit-button" disabled={isSubmitting}>
+              {isSubmitting ? 'Đang cập nhật...' : 'Xác nhận'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Delete Group Modal Component
+const DeleteGroupModal = ({ isOpen, onClose, onConfirm, group, isDeleting }) => {
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    // Đợi animation hoàn thành trước khi đóng modal
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 300);
+  };
+
+  if (!isOpen && !isClosing) return null;
+
+  return (
+    <div className={`teacher-group-modal-overlay ${isClosing ? 'modal-closing' : ''}`}>
+      <div className="teacher-group-modal-container delete-modal">
+        <div className="teacher-group-modal-header">
+          <h3>Xác nhận xóa nhóm</h3>
+          <button onClick={handleClose} className="teacher-group-close-button">
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="teacher-group-modal-content">
+          <p className="delete-warning">Bạn có chắc chắn muốn xóa nhóm này?</p>
+          <p className="delete-group-name">{group?.name}</p>
+          <p className="delete-note">Hành động này không thể hoàn tác và sẽ xóa tất cả dữ liệu liên quan đến nhóm.</p>
+        </div>
+        
+        <div className="teacher-group-modal-footer">
+          <button 
+            type="button" 
+            onClick={handleClose} 
+            className="teacher-group-cancel-button"
+            disabled={isDeleting}
+          >
+            Hủy
+          </button>
+          <button 
+            type="button" 
+            onClick={() => onConfirm(group)}
+            className="teacher-group-delete-button"
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Group Card Component
-const GroupCard = ({ data, onClick, avatar }) => {
+const GroupCard = ({ data, onClick, avatar, onEdit, onDelete }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
+  const menuIconRef = useRef(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 'calc(100% + 5px)', right: 0 });
+
+  // Tính toán vị trí menu để đảm bảo không bị cắt khi ở cuối trang
+  const updateMenuPosition = () => {
+    if (menuIconRef.current) {
+      const rect = menuIconRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      
+      // Kiểm tra xem menu có bị cắt ở dưới màn hình không
+      const menuHeight = 80; // Ước tính chiều cao của menu (2 mục x ~40px)
+      const spaceBelow = viewportHeight - rect.bottom;
+      
+      if (spaceBelow < menuHeight) {
+        // Nếu không đủ không gian bên dưới, hiển thị menu phía trên nút
+        setMenuPosition({ bottom: 'calc(100% + 5px)', right: 0, top: 'auto' });
+      } else {
+        // Mặc định hiển thị menu bên dưới nút
+        setMenuPosition({ top: 'calc(100% + 5px)', right: 0 });
+      }
+    }
+  };
+
+  const handleMenuClick = (e) => {
+    e.stopPropagation(); // Ngăn không cho sự kiện lan ra ngoài (không mở trang chi tiết)
+    updateMenuPosition(); // Cập nhật vị trí menu trước khi hiển thị
+    setShowMenu(!showMenu);
+  };
+
+  // Đóng menu khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target) && 
+          menuIconRef.current && !menuIconRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Đóng menu khi cuộn trang
+  useEffect(() => {
+    const handleScroll = () => {
+      if (showMenu) {
+        setShowMenu(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [showMenu]);
+
+  const handleEditClick = (e) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onEdit(data);
+  };
+
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onDelete(data);
+  };
+
   return (
     <div className="group-card" onClick={() => onClick(data)}>
       <div className="group-header">
@@ -144,8 +409,20 @@ const GroupCard = ({ data, onClick, avatar }) => {
           </div>
         </div>
 
-        <div className="menu-icon">
+        <div className="menu-icon" onClick={handleMenuClick} ref={menuIconRef}>
           <FiMoreHorizontal />
+          {showMenu && (
+            <div className="group-action-menu" ref={menuRef} style={menuPosition}>
+              <button className="group-action-item" onClick={handleEditClick}>
+                <Edit size={16} />
+                <span>Chỉnh sửa</span>
+              </button>
+              <button className="group-action-item" onClick={handleDeleteClick}>
+                <Trash2 size={16} />
+                <span>Xóa</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -183,6 +460,10 @@ const formatApiDataToDisplayData = (apiGroups) => {
 const GroupPage = () => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [selectedGroup, setSelectedGroup] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [groups, setGroups] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -194,6 +475,23 @@ const GroupPage = () => {
       totalElements: 0
     });
     const [avatarUrl, setAvatarUrl] = useState(null);
+    
+    // Hàm đóng modal với hiệu ứng
+    const closeModal = () => {
+      setIsModalOpen(false);
+    };
+    
+    // Hàm đóng modal chỉnh sửa
+    const closeEditModal = () => {
+      setIsEditModalOpen(false);
+      setSelectedGroup(null);
+    };
+    
+    // Hàm đóng modal xóa
+    const closeDeleteModal = () => {
+      setIsDeleteModalOpen(false);
+      setSelectedGroup(null);
+    };
     
     const fetchGroups = async () => {
       setIsLoading(true);
@@ -319,10 +617,79 @@ const GroupPage = () => {
       fetchGroups();
     };
 
+    // Xử lý chỉnh sửa nhóm
+    const handleEditGroup = (group) => {
+      setSelectedGroup(group);
+      setIsEditModalOpen(true);
+    };
+
+    // Xử lý cập nhật nhóm sau khi chỉnh sửa
+    const handleUpdateGroup = (updatedGroup) => {
+      console.log('Group updated:', updatedGroup);
+      
+      // Cập nhật nhóm trong state
+      setGroups(prevGroups => 
+        prevGroups.map(group => 
+          group.id === updatedGroup.id ? updatedGroup : group
+        )
+      );
+      
+      // Reload danh sách nhóm từ server
+      fetchGroups();
+    };
+
+    // Mở modal xác nhận xóa nhóm
+    const handleDeleteGroup = (group) => {
+      setSelectedGroup(group);
+      setIsDeleteModalOpen(true);
+    };
+
+    // Xử lý xóa nhóm sau khi xác nhận
+    const confirmDeleteGroup = async (group) => {
+      if (!group || !group.id) return;
+      
+      setIsDeleting(true);
+      
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+        
+        // Tạo FormData để gửi dữ liệu
+        const formData = new FormData();
+        formData.append('groupId', group.id);
+        
+        // Gọi API xóa nhóm
+        const response = await axios.delete('http://localhost:8080/lms/group/delete', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          data: formData // Truyền formData trong data khi sử dụng method DELETE
+        });
+        
+        if (response.data && response.data.code === 0) {
+          // Xóa nhóm khỏi state
+          setGroups(prevGroups => prevGroups.filter(g => g.id !== group.id));
+          closeDeleteModal();
+          
+          // Hiển thị thông báo thành công (nếu có)
+          console.log('Group deleted successfully');
+        } else {
+          throw new Error(response.data?.message || 'Failed to delete group');
+        }
+      } catch (error) {
+        console.error('Error deleting group:', error);
+        // Hiển thị thông báo lỗi (nếu có)
+      } finally {
+        setIsDeleting(false);
+      }
+    };
+
     const filteredGroups = searchTerm 
       ? groups.filter(group => 
           group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          group.description.toLowerCase().includes(searchTerm.toLowerCase())
+          group.description?.toLowerCase().includes(searchTerm.toLowerCase())
         )
       : groups;
 
@@ -386,6 +753,8 @@ const GroupPage = () => {
                 data={group}
                 avatar={avatarUrl} 
                 onClick={handleGroupClick}
+                onEdit={handleEditGroup}
+                onDelete={handleDeleteGroup}
               />
                 ))
               ) : (
@@ -421,8 +790,25 @@ const GroupPage = () => {
         {/* Add Group Modal */}
         <AddGroupModal 
           isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)}
+          onClose={closeModal}
           onSubmit={handleAddGroup}
+        />
+
+        {/* Edit Group Modal */}
+        <EditGroupModal 
+          isOpen={isEditModalOpen} 
+          onClose={closeEditModal}
+          onSubmit={handleUpdateGroup}
+          group={selectedGroup}
+        />
+
+        {/* Delete Group Modal */}
+        <DeleteGroupModal
+          isOpen={isDeleteModalOpen}
+          onClose={closeDeleteModal}
+          onConfirm={confirmDeleteGroup}
+          group={selectedGroup}
+          isDeleting={isDeleting}
         />
       </div>
     );

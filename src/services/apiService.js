@@ -25,6 +25,7 @@ export const GET_TESTS_IN_GROUP = `${API_BASE_URL}/lms/testingroup/getalltest`;
 export const GET_GROUPS_OF_STUDENT = `${API_BASE_URL}/lms/studentgroup/getgroup`;
 export const GET_ALL_RESULTS = `${API_BASE_URL}/lms/teststudentresult/getallresult`;
 export const GET_STUDENT_TEST_RESULT = `${API_BASE_URL}/lms/teststudentresult/gettestresult`;
+export const ADD_GROUP_API = `${API_BASE_URL}/lms/group/create`;
 export const ADD_POST_GROUP = `${API_BASE_URL}/lms/post/create`;
 export const ADD_STUDENT_GROUP = `${API_BASE_URL}/lms/studentgroup/addstudent`;
 export const CREATE_TEST_API = `${API_BASE_URL}/lms/testingroup/create`;
@@ -37,6 +38,7 @@ export const TEST_RESULT_DETAIL = `${API_BASE_URL}/lms/teststudentresult/gettest
 export const START_TEST_API = `${API_BASE_URL}/lms/teststudentresult/starttest`;
 export const SUBMIT_TEST_API = `${API_BASE_URL}/lms/teststudentresult/submitTest`;
 export const UPDATE_POST_API = `${API_BASE_URL}/lms/post/update`;
+export const UPDATE_GROUP_API = `${API_BASE_URL}/lms/group/update`;
 
 // COURSE API
 export const SEARCH_STUDENT = `${API_BASE_URL}/lms/student/search`;
@@ -75,3 +77,4 @@ export const GET_MY_DOCUMENTS = `${API_BASE_URL}/lms/document/mydocument`; // L�
 export const UPLOAD_DOCUMENT = `${API_BASE_URL}/lms/document/create`; // Upload tài liệu mới
 export const DELETE_DOCUMENT = `${API_BASE_URL}/lms/document/delete`; // Xoá tài liệu
 export const UPDATE_DOCUMENT_STATUS = `${API_BASE_URL}/lms/document/updatestatus`; // Cập nhật trạng thái hiển thị của tài liệu
+export const SEARCH_DOCUMENTS_API = `${API_BASE_URL}/lms/document/search`; // Tìm kiếm tài liệu theo từ khóa

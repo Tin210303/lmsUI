@@ -298,16 +298,27 @@ const CourseManagementPage = () => {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
 
-            await axios.delete(`${API_BASE_URL}/lms/course/${courseId}`, {
+            // Tạo FormData và thêm courseId
+            const formData = new FormData();
+            formData.append('courseId', courseId);
+
+            // Gọi API xóa khóa học với endpoint mới
+            const response = await axios.delete(`${API_BASE_URL}/lms/course/delete`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
-                }
+                },
+                data: formData // Truyền formData trong data khi sử dụng method DELETE
             });
             
-            showAlert('success', 'Thành công', 'Đã xóa khóa học thành công!');
-            setTimeout(() => {
-                navigate('/teacher/dashboard');
-            }, 2000);
+            // Kiểm tra kết quả trả về
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã xóa khóa học thành công!');
+                setTimeout(() => {
+                    navigate('/teacher/dashboard');
+                }, 2000);
+            } else {
+                throw new Error(response.data?.message || 'Không thể xóa khóa học');
+            }
         } catch (err) {
             showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi xóa khóa học. Vui lòng thử lại sau.');
             console.error('Error deleting course:', err);

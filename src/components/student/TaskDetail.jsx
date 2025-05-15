@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { TEST_GROUP_DETAIL, TEST_RESULT_DETAIL, START_TEST_API, SUBMIT_TEST_API } from '../../services/apiService';
@@ -23,6 +23,12 @@ const TaskDetail = () => {
     const [showQuestions, setShowQuestions] = useState(false);
     const [selectedAnswers, setSelectedAnswers] = useState({});
     const [textAnswers, setTextAnswers] = useState({});
+
+    // State để theo dõi thời gian và hiển thị thông báo
+    const [remainingTime, setRemainingTime] = useState(null);
+    const [showTimeWarning, setShowTimeWarning] = useState(false);
+    const [isTimeUp, setIsTimeUp] = useState(false);
+    const timerRef = useRef(null);
 
     // Alert state
     const [alert, setAlert] = useState(null);
@@ -126,7 +132,83 @@ const TaskDetail = () => {
         if (id) {
             fetchTestDetails();
         }
+
+        // Cleanup
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+        };
     }, [id]);
+
+    // Thêm useEffect để theo dõi thời gian khi showQuestions = true
+    useEffect(() => {
+        if (showQuestions && test && test.expiredAt) {
+            // Tính toán thời gian còn lại khi bắt đầu làm bài
+            updateRemainingTime();
+
+            // Thiết lập interval để cập nhật thời gian còn lại mỗi giây
+            timerRef.current = setInterval(() => {
+                updateRemainingTime();
+            }, 1000);
+        }
+
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+        };
+    }, [showQuestions, test]);
+
+    // Hàm tính toán thời gian còn lại
+    const updateRemainingTime = () => {
+        if (!test || !test.expiredAt) return;
+
+        const expiredDate = new Date(test.expiredAt);
+        const currentDate = new Date();
+        
+        // Tính thời gian còn lại tính bằng mili giây
+        const timeLeft = expiredDate - currentDate;
+        
+        // Cập nhật state thời gian còn lại
+        setRemainingTime(timeLeft);
+        
+        // Hiển thị thông báo khi còn 5 phút
+        if (timeLeft <= 5 * 60 * 1000 && timeLeft > 0 && !showTimeWarning) {
+            setShowTimeWarning(true);
+            showAlert('warning', 'Cảnh báo', 'Còn 5 phút nữa là hết thời gian làm bài!');
+        }
+        
+        // Xử lý khi hết thời gian
+        if (timeLeft <= 0 && !isTimeUp) {
+            setIsTimeUp(true);
+            clearInterval(timerRef.current);
+            
+            showAlert('error', 'Hết thời gian', 'Thời gian làm bài đã hết. Kết quả của bạn sẽ không được lưu lại.');
+            
+            // Thêm timeout để hiển thị thông báo trước khi chuyển trang
+            setTimeout(() => {
+                // Xóa trạng thái làm bài và chuyển về trang nhóm
+                setShowQuestions(false);
+                navigate('/groups'); 
+            }, 3000);
+        }
+    };
+
+    // Hàm định dạng thời gian còn lại
+    const formatRemainingTime = () => {
+        if (remainingTime === null || remainingTime <= 0) return '00:00';
+        
+        // Chuyển đổi thời gian từ mili giây sang phút và giây
+        const minutes = Math.floor(remainingTime / (60 * 1000));
+        const seconds = Math.floor((remainingTime % (60 * 1000)) / 1000);
+        
+        // Định dạng số: thêm 0 ở đầu nếu cần
+        const formattedMinutes = String(minutes).padStart(2, '0');
+        const formattedSeconds = String(seconds).padStart(2, '0');
+        
+        return `${formattedMinutes}:${formattedSeconds}`;
+    };
     
     // Format date
     const formatDate = (dateString) => {
@@ -141,6 +223,16 @@ const TaskDetail = () => {
         const minutes = date.getMinutes().toString().padStart(2, '0');
         
         return `${hours}:${minutes} - ${day}/${month}/${year}`;
+    };
+
+    // Kiểm tra xem bài kiểm tra đã hết hạn chưa
+    const isTestExpired = () => {
+        if (!test || !test.expiredAt) return false;
+        
+        const expiredDate = new Date(test.expiredAt);
+        const currentDate = new Date();
+        
+        return currentDate > expiredDate;
     };
 
     const formatDateSubmit = (dateString) => {
@@ -172,6 +264,11 @@ const TaskDetail = () => {
                 throw new Error('No authentication token found');
             }
             
+            // Kiểm tra xem bài kiểm tra đã hết hạn chưa
+            if (isTestExpired()) {
+                throw new Error('Bài kiểm tra đã hết hạn');
+            }
+            
             // Tạo FormData để gửi testId
             const formData = new FormData();
             formData.append('testId', id);
@@ -190,6 +287,12 @@ const TaskDetail = () => {
             // Kiểm tra kết quả trả về
             if (response.data && response.data.code === 0) {
                 console.log('Test started successfully:', response.data);
+                
+                // Reset các trạng thái thời gian
+                setRemainingTime(null);
+                setShowTimeWarning(false);
+                setIsTimeUp(false);
+                
                 // Hiển thị câu hỏi sau khi API trả về thành công
                 setShowQuestions(true);
             } else {
@@ -264,6 +367,12 @@ const TaskDetail = () => {
     // Submit test
     const submitTest = async () => {
         try {
+            // Kiểm tra xem thời gian đã hết chưa
+            if (isTimeUp) {
+                showAlert('error', 'Lỗi', 'Thời gian làm bài đã hết. Không thể nộp bài.');
+                return;
+            }
+            
             setSubmitLoading(true);
             const token = localStorage.getItem('authToken');
             if (!token) {
@@ -308,6 +417,11 @@ const TaskDetail = () => {
             );
             
             if (response.data && response.data.code === 0) {
+                // Dừng bộ đếm thời gian nếu đang chạy
+                if (timerRef.current) {
+                    clearInterval(timerRef.current);
+                }
+                
                 showAlert('success', 'Thành công', `Nộp bài kiểm tra thành công`);
                 setTimeout(() => {
                     // Reload the page to get the results
@@ -330,6 +444,12 @@ const TaskDetail = () => {
     const renderTestResult = () => {
         if (!testResult) return null;
         
+        // Tính tổng điểm của bài kiểm tra
+        const totalPoints = test.questions?.reduce((sum, q) => sum + (q.point || 0), 0) || 0;
+        
+        // Tính phần trăm điểm đạt được
+        const scorePercentage = totalPoints > 0 ? Math.round((testResult.score / totalPoints) * 100) : 0;
+        
         return (
             <div className="test-result-container">
                 <div className="test-result-header">
@@ -341,7 +461,7 @@ const TaskDetail = () => {
                         </div>
                         <div className="test-result-score">
                             <div className="score-label">Kết quả</div>
-                            <div className="score-value">{testResult.score || 0}</div>
+                            <div className="score-value">{testResult.score || 0}/{totalPoints}</div>
                         </div>
                         <div className="test-result-correct">
                             <div className="correct-label">Đúng</div>
@@ -363,9 +483,9 @@ const TaskDetail = () => {
                                     <div className="student-question-number">Câu {index + 1}: {question.content}</div>
                                     <div className={`question-result ${answer.correct ? 'correct' : 'incorrect'}`}>
                                         {answer.correct ? (
-                                            <span className="correct-text"><CheckCircle size={16} /> Đúng</span>
+                                            <span className="correct-text"><CheckCircle size={16} /> Đúng ({question.point} điểm)</span>
                                         ) : (
-                                            <span className="incorrect-text"><X size={16} /> Sai</span>
+                                            <span className="incorrect-text"><X size={16} /> Sai (0 điểm)</span>
                                         )}
                                     </div>
                                 </div>
@@ -462,6 +582,40 @@ const TaskDetail = () => {
                             </div>
                         );
                     })}
+                </div>
+                
+                {/* Thêm phần tổng kết ở cuối bài kiểm tra */}
+                <div className="test-result-footer">
+                    <div className="test-result-summary-final">
+                        <h3>Tổng kết kết quả</h3>
+                        <div className="final-result-details">
+                            <div className="final-score-percentage">
+                                <div className="percentage-label">Phần trăm đạt được</div>
+                                <div className="percentage-value">{scorePercentage}%</div>
+                            </div>
+                            <div className="final-score-detail">
+                                <div className="detail-item">
+                                    <span className="detail-label">Tổng số câu đúng:</span>
+                                    <span className="detail-value">{testResult.totalCorrect || 0}/{test.questions?.length || 0} câu</span>
+                                </div>
+                                <div className="detail-item">
+                                    <span className="detail-label">Điểm đạt được:</span>
+                                    <span className="detail-value">{testResult.score || 0}/{totalPoints} điểm</span>
+                                </div>
+                                <div className="detail-item">
+                                    <span className="detail-label">Thời gian làm bài:</span>
+                                    <span className="detail-value">
+                                        {testResult.startedAt && testResult.submittedAt ? 
+                                            `${Math.round((new Date(testResult.submittedAt) - new Date(testResult.startedAt)) / 60000)} phút` 
+                                            : 'Không xác định'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="test-info">
+                        <p><strong>Lưu ý:</strong> Kết quả đã được lưu lại và gửi cho giáo viên.</p>
+                    </div>
                 </div>
             </div>
         );
@@ -568,14 +722,18 @@ const TaskDetail = () => {
                             
                             <div className="test-start-actions">
                                 <button 
-                                    className="start-test-button" 
+                                    className={`start-test-button ${isTestExpired() ? 'expired-test-button' : ''}`}
                                     onClick={startTestAttempt}
-                                    disabled={startLoading}
+                                    disabled={startLoading || isTestExpired()}
                                 >
                                     {startLoading ? (
                                         <>
                                             <div className="button-spinner"></div>
                                             Đang bắt đầu...
+                                        </>
+                                    ) : isTestExpired() ? (
+                                        <>
+                                            Bài kiểm tra đã hết hạn <ClockAlert size={20} />
                                         </>
                                     ) : (
                                         <>
@@ -588,74 +746,84 @@ const TaskDetail = () => {
                     ) : (
                         <div className="test-questions-container">
                             {test.questions && test.questions.length > 0 ? (
-                                <div className="questions-list">
-                                    {test.questions.map((question, index) => (
-                                        <div className="question-card" key={question.id || index}>
-                                            <div className="student-question-header">
-                                                <div className="student-question-number">Câu {index + 1}: {question.content}</div>
-                                                <div className="question-points">{question.point || 0} điểm</div>
-                                            </div>
-                                            
-                                            <div className="student-question-content">
-                                                {question.type === 'SINGLE_CHOICE' && (
-                                                    <div className="question-options-list">
-                                                        {parseOptions(question.options).map((option, idx) => (
-                                                            <div 
-                                                                key={idx} 
-                                                                className={`question-option ${selectedAnswers[question.id] === option.label ? 'selected-option' : ''}`}
-                                                                onClick={() => handleSingleChoiceSelect(question.id, option.label)}
-                                                            >
-                                                                <div className="option-marker">
-                                                                    {selectedAnswers[question.id] === option.label ? (
-                                                                        <CheckCircle size={20} className="selected-icon" />
-                                                                    ) : (
-                                                                        <Circle size={20} />
-                                                                    )}
-                                                                </div>
-                                                                <div className="option-label">{option.label}</div>
-                                                                <div className="option-text">{option.text}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                
-                                                {question.type === 'MULTIPLE_CHOICE' && (
-                                                    <div className="question-options-list">
-                                                        {parseOptions(question.options).map((option, idx) => (
-                                                            <div 
-                                                                key={idx} 
-                                                                className={`question-option ${selectedAnswers[question.id]?.includes(option.label) ? 'selected-option' : ''}`}
-                                                                onClick={() => handleMultipleChoiceSelect(question.id, option.label)}
-                                                            >
-                                                                <div className="option-marker checkbox">
-                                                                    {selectedAnswers[question.id]?.includes(option.label) ? (
-                                                                        <CheckCircle size={20} className="selected-icon" />
-                                                                    ) : (
-                                                                        <div className="empty-checkbox"></div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="option-label">{option.label}</div>
-                                                                <div className="option-text">{option.text}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                
-                                                {question.type === 'text' && (
-                                                    <div className="student-text-answer-field">
-                                                        <textarea 
-                                                            id={`textarea-${question.id}`}
-                                                            value={textAnswers[question.id] || ''}
-                                                            onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
-                                                            placeholder="Nhập câu trả lời của bạn tại đây..."
-                                                            rows={1}
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
+                                <>
+                                    <div className="countdown-timer">
+                                        <div className="time-remaining">
+                                            <ClockAlert size={18} />
+                                            <span className={remainingTime <= 5 * 60 * 1000 ? 'time-warning' : ''}>
+                                                Thời gian còn lại: {formatRemainingTime()}
+                                            </span>
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                    <div className="questions-list">
+                                        {test.questions.map((question, index) => (
+                                            <div className="question-card" key={question.id || index}>
+                                                <div className="student-question-header">
+                                                    <div className="student-question-number">Câu {index + 1}: {question.content}</div>
+                                                    <div className="question-points">{question.point || 0} điểm</div>
+                                                </div>
+                                                
+                                                <div className="student-question-content">
+                                                    {question.type === 'SINGLE_CHOICE' && (
+                                                        <div className="question-options-list">
+                                                            {parseOptions(question.options).map((option, idx) => (
+                                                                <div 
+                                                                    key={idx} 
+                                                                    className={`question-option ${selectedAnswers[question.id] === option.label ? 'selected-option' : ''}`}
+                                                                    onClick={() => handleSingleChoiceSelect(question.id, option.label)}
+                                                                >
+                                                                    <div className="option-marker">
+                                                                        {selectedAnswers[question.id] === option.label ? (
+                                                                            <CheckCircle size={20} className="selected-icon" />
+                                                                        ) : (
+                                                                            <Circle size={20} />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="option-label">{option.label}</div>
+                                                                    <div className="option-text">{option.text}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {question.type === 'MULTIPLE_CHOICE' && (
+                                                        <div className="question-options-list">
+                                                            {parseOptions(question.options).map((option, idx) => (
+                                                                <div 
+                                                                    key={idx} 
+                                                                    className={`question-option ${selectedAnswers[question.id]?.includes(option.label) ? 'selected-option' : ''}`}
+                                                                    onClick={() => handleMultipleChoiceSelect(question.id, option.label)}
+                                                                >
+                                                                    <div className="option-marker checkbox">
+                                                                        {selectedAnswers[question.id]?.includes(option.label) ? (
+                                                                            <CheckCircle size={20} className="selected-icon" />
+                                                                        ) : (
+                                                                            <div className="empty-checkbox"></div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="option-label">{option.label}</div>
+                                                                    <div className="option-text">{option.text}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {question.type === 'text' && (
+                                                        <div className="student-text-answer-field">
+                                                            <textarea 
+                                                                id={`textarea-${question.id}`}
+                                                                value={textAnswers[question.id] || ''}
+                                                                onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
+                                                                placeholder="Nhập câu trả lời của bạn tại đây..."
+                                                                rows={1}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
                             ) : (
                                 <div className="no-questions">
                                     <FileText size={32} />

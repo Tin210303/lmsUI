@@ -17,8 +17,10 @@
 .documents-header h1 {
     font-size: 24px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #333;
     margin: 0;
+    border-left: 4px solid #066fbf;
+    padding-left: 10px;
 }
 
 .search-container {

@@ -7,9 +7,7 @@ import '../../assets/css/group-page.css';
 import { API_BASE_URL, GET_GROUPS_OF_STUDENT } from '../../services/apiService';
 
 // Group Card Component
-const GroupCard = ({ data, onClick }) => {
-  console.log(data);
-  
+const GroupCard = ({ data, avatar, onClick }) => {
   return (
     <div className="group-card" onClick={() => onClick(data)}>
       <div className="group-header">
@@ -22,7 +20,7 @@ const GroupCard = ({ data, onClick }) => {
           <p className="group-section-title">Giảng viên</p>
           <div className="teachers-avatars">
             <div className="avatar">
-              <img src={data.teacher.avatar || "https://randomuser.me/api/portraits/men/1.jpg"} alt={`${data.teacher.fullName}`} />
+              <img src={avatar || "https://randomuser.me/api/portraits/men/1.jpg"} alt={`${data.teacher.fullName}`} />
             </div>
             <span>{data.teacher.fullName}</span>
           </div>
@@ -93,6 +91,7 @@ const GroupPage = () => {
       totalPages: 0,
       totalElements: 0
     });
+    const [teacherAvatarUrl, setTeacherAvatarUrl] = useState(null);
     
     const fetchGroups = async () => {
       setIsLoading(true);
@@ -134,6 +133,11 @@ const GroupPage = () => {
               totalPages: responseData.totalPages,
               totalElements: responseData.totalElements
             });
+
+            // Fetch avatar if available
+            responseData.content.forEach(group => {
+              fetchTeacherAvatar(group.teacher.avatar)
+            });
           } else {
             // Nếu kết quả trả về là mảng thông thường
             const formattedGroups = formatApiDataToDisplayData(responseData);
@@ -147,6 +151,30 @@ const GroupPage = () => {
         setError('Không thể tải danh sách nhóm. Vui lòng thử lại sau.');
       } finally {
         setIsLoading(false);
+      }
+    };
+
+    // Hàm gọi API để lấy ra ảnh đại diện của sinh viên
+    const fetchTeacherAvatar = async (avatarPath) => {
+      if (!avatarPath) return;
+
+      try {
+          const token = localStorage.getItem('authToken');
+          if (!token) return;
+
+          // Fetch avatar with authorization header
+          const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+              headers: {
+                  'Authorization': `Bearer ${token}`
+              },
+              responseType: 'blob'
+          });
+
+          // Create a URL for the blob data
+          const imageUrl = URL.createObjectURL(response.data);
+          setTeacherAvatarUrl(imageUrl);
+      } catch (err) {
+          console.error('Error fetching avatar:', err);
       }
     };
     
@@ -226,6 +254,7 @@ const GroupPage = () => {
                           <GroupCard 
                               key={group.id} 
                               data={group} 
+                              avatar={teacherAvatarUrl}
                               onClick={handleGroupClick}
                           />
                       ))

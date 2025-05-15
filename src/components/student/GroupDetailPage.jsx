@@ -4,7 +4,7 @@ import logo from '../../logo.svg';
 import axios from 'axios';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { X, Download, FileText, Video, Image, NotepadText } from 'lucide-react';
-import { API_BASE_URL, GET_POST_GROUP, ADD_POST_GROUP, DELETE_POST_GROUP, GET_STUDENTS_GROUP, DELETE_STUDENT_GROUP, GET_TESTS_IN_GROUP } from '../../services/apiService';
+import { API_BASE_URL, GET_POST_GROUP, GET_STUDENTS_GROUP, GET_TESTS_IN_GROUP, GET_STUDENT_INFO } from '../../services/apiService';
 // Thêm thư viện cần thiết để xử lý các loại file đặc biệt
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
@@ -46,8 +46,6 @@ const TeacherGroupDetail = () => {
     // Thêm state để quản lý modal xem trước file
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [previewFile, setPreviewFile] = useState(null);
-    console.log(previewFile);
-    
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewContent, setPreviewContent] = useState(null);
     const [previewType, setPreviewType] = useState(null);
@@ -71,7 +69,6 @@ const TeacherGroupDetail = () => {
     // Thêm state để quản lý menu xóa sinh viên
     const [activeStudentMenu, setActiveStudentMenu] = useState(null);
     const [closingStudentMenu, setClosingStudentMenu] = useState(null);
-    const [studentDeleteLoading, setStudentDeleteLoading] = useState(false);
     
     // Thêm state để quản lý danh sách bài kiểm tra và phân trang
     const [tests, setTests] = useState([]);
@@ -87,6 +84,20 @@ const TeacherGroupDetail = () => {
     // Replace single testResult with map of test results by ID
     const [testResults, setTestResults] = useState({});
     
+    // Pagination states
+    const [pageSize, setPageSize] = useState(10);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    
+    // Preview document modal states
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [previewDocument, setPreviewDocument] = useState(null);
+    const [previewError, setPreviewError] = useState('');
+    
+    // Thêm state để lưu avatar của người dùng hiện tại
+    const [currentUserAvatar, setCurrentUserAvatar] = useState(null);
+
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -158,6 +169,7 @@ const TeacherGroupDetail = () => {
         };
 
         fetchGroup();
+        fetchCurrentUserAvatar();
     }, [id]);
 
     // Fetch posts for this group
@@ -206,6 +218,10 @@ const TeacherGroupDetail = () => {
                         totalPages: responseData.totalPages,
                         totalElements: responseData.totalElements
                     });
+
+                    responseData.content.forEach(group => {
+                        fetchTeacherAvatar(group.teacher.avatar)
+                    });
                 } else {
                     // Nếu kết quả trả về là mảng thông thường, cũng sắp xếp
                     const sortedPosts = [...responseData].sort((a, b) => {
@@ -228,12 +244,13 @@ const TeacherGroupDetail = () => {
     useEffect(() => {
         if (id && isActive === 'wall') {
             fetchPosts();
+            fetchCurrentUserAvatar();
         }
     }, [id, pagination.pageNumber, pagination.pageSize, isActive]);
 
     // Back to groups list
     const backToGroupsList = () => {
-        navigate('/teacher/groups');
+        navigate('/groups');
     }
 
     // Handle change tabs
@@ -906,14 +923,14 @@ const TeacherGroupDetail = () => {
                                             <>
                                                 <div key={post.id} className="announcement_item">
                                                     <div className="announcement-author">
-                                                        <img 
-                                                            src={post.creator?.avatar || logo} 
-                                                            alt="Avatar" 
-                                                            className="group-author-avatar" 
-                                                        />
+                                                        {teacherAvatarUrl ? (
+                                                            <img src={teacherAvatarUrl} alt="Avatar" className="group-author-avatar"/>
+                                                        ) : (
+                                                            <img src='https://randomuser.me/api/portraits/men/1.jpg' className="group-author-avatar"/>
+                                                        )}
                                                         <div className="author-info">
                                                             <div className="author-name">
-                                                                {post.creator?.fullName || 'Giáo viên'}
+                                                                {post.teacher?.fullName || 'Giáo viên'}
                                                             </div>
                                                             <div className="announcement-time">
                                                                 {formatDateTime(post.createdAt)}
@@ -947,19 +964,7 @@ const TeacherGroupDetail = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className='group-comment-divided'>
-                                                    <div className="group-comment-section">
-                                                        <img src={logo} alt="Avatar" className="comment-avatar" />
-                                                        <input
-                                                            type="text"
-                                                            className="group-comment-input"
-                                                            placeholder="Thêm nhận xét trong lớp học..."
-                                                            value={comments}
-                                                            onChange={handleCommentChange}
-                                                            onKeyPress={handleCommentSubmit}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                {renderCommentSection(post)}
                                             </>
                                         ))}
                                         
@@ -1353,12 +1358,100 @@ const TeacherGroupDetail = () => {
         );
     };
 
+    // Thêm hàm để lấy avatar của người dùng hiện tại
+    const fetchCurrentUserAvatar = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            // Lấy thông tin người dùng từ API
+            const response = await axios.get(GET_STUDENT_INFO, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data && response.data.code === 0 && response.data.result) {
+                const userData = response.data.result;
+                
+                // Nếu có avatar path, lấy hình ảnh
+                if (userData.avatar) {
+                    fetchUserAvatarImage(userData.avatar);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching current user data:', error);
+        }
+    };
+
+    // Hàm lấy hình ảnh avatar từ path
+    const fetchUserAvatarImage = async (avatarPath) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token || !avatarPath) return;
+
+            // Fetch avatar with authorization header
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob' 
+            });
+
+            // Create a URL for the blob data
+            const imageUrl = URL.createObjectURL(response.data);
+            setCurrentUserAvatar(imageUrl);
+        } catch (err) {
+            console.error('Error fetching user avatar:', err);
+        }
+    };
+
+    // Cleanup avatar URL khi component unmount
+    useEffect(() => {
+        return () => {
+            if (currentUserAvatar) {
+                URL.revokeObjectURL(currentUserAvatar);
+            }
+        };
+    }, [currentUserAvatar]);
+
+    // Chỉnh sửa phần hiển thị avatar trong nhận xét
+    const renderCommentSection = (post) => {
+        return (
+            <div className='group-comment-divided'>
+                <div className="group-comment-section">
+                    {currentUserAvatar ? (
+                        <img src={currentUserAvatar} alt="Avatar" className="comment-avatar"/>
+                    ) : (
+                        <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="comment-avatar">
+                            <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                            <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                            <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                            <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                            <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                            <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                            <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                        </svg>
+                    )}
+                    <input
+                        type="text"
+                        className="group-comment-input"
+                        placeholder="Thêm nhận xét trong lớp học..."
+                        value={comments}
+                        onChange={handleCommentChange}
+                        onKeyPress={handleCommentSubmit}
+                    />
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className='content-container'>
             <div className='course-detail-section'> 
                 <div className='group-detail-header'> 
                     <div className='back-nav'> 
-                        <button onClick={backToGroupsList} className="back_button">GROUP</button>  
+                        <button onClick={backToGroupsList} className="back_button">Groups</button>  
                         &gt; 
                         <span style={{ marginLeft: '16px' , color: '#000'}}>{selectedGroup.name}</span>
                     </div>

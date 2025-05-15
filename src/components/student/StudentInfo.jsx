@@ -26,7 +26,6 @@ const StudentInfo = () => {
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState(null);
     const { authToken } = useAuth();
-console.log(courses.length);
 
     const [loadingCourse, setLoadingCourse] = useState({
         myCourses: true,
@@ -275,7 +274,6 @@ console.log(courses.length);
                     <h2 className="my-info-student-name">{studentData.name}</h2>
                     <p className="my-info-student-email">{studentData.email}</p>
                     <p className="my-info-student-major">{studentData.major}</p>
-                    <p className="my-info-student-joined">Tham gia <strong>LMS</strong> từ {studentData.joinedDays} ngày trước</p>
                 </div>
             </div>
 

@@ -391,14 +391,14 @@ function Header() {
                         <div className="role-selection-buttons mb-16">
                             <button
                                 type="button"
-                                className={`role-btn ${registrationRole === 'student' ? 'active' : ''}`}
+                                className={`role-btn ${registrationRole === 'student' ? 'student active' : ''}`}
                                 onClick={() => setRegistrationRole('student')}
                             >
                                 Sinh viên
                             </button>
                             <button
                                 type="button"
-                                className={`role-btn ${registrationRole === 'teacher' ? 'active' : ''}`}
+                                className={`role-btn ${registrationRole === 'teacher' ? 'teacher active' : ''}`}
                                 onClick={() => setRegistrationRole('teacher')}
                             >
                                 Giảng viên

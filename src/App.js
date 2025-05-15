@@ -37,6 +37,8 @@ import StudentInfo from './components/student/StudentInfo';
 import GroupPage from './components/student/GroupPage';
 import GroupDetailPage from './components/student/GroupDetailPage';
 import TaskDetail from './components/student/TaskDetail';
+import DocumentsPage from './components/student/DocumentsPage';
+import MajorDocuments from './components/student/MajorDocuments';
 
 // Common Routes
 import Header from './components/Header';
@@ -129,7 +131,14 @@ function App() {
           <Route path="/documents" element={
             <ProtectedRoute allowedRoles={['student']}>
               <StudentLayout>
-                <CoursesPage />
+                <DocumentsPage />
+              </StudentLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/documents/:majorId" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentLayout>
+                <MajorDocuments />
               </StudentLayout>
             </ProtectedRoute>
           } />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../assets/css/teacher-add-course.css';
 import Alert from '../common/Alert';
@@ -16,9 +16,14 @@ const TeacherAddCourse = () => {
         status: '',
         startDate: today,
         endDate: '',
-        learningDurationType: 'Không thời hạn',
+        learningDurationType: 'UNLIMITED',
         majorId: '',
     });
+
+    // Thêm state cho ảnh đại diện
+    const [courseImage, setCourseImage] = useState(null);
+    const [previewImage, setPreviewImage] = useState(null);
+    const fileInputRef = useRef(null);
 
     const [alert, setAlert] = useState(null);
     const showAlert = (type, title, message) => {
@@ -28,6 +33,7 @@ const TeacherAddCourse = () => {
     const [error, setError] = useState('');
     const [majors, setMajors] = useState([]);
     const [loadingMajors, setLoadingMajors] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Lấy danh sách chuyên ngành từ API
     useEffect(() => {
@@ -62,29 +68,64 @@ const TeacherAddCourse = () => {
             [name]: value
         }));
         console.log(formData);
+    };
+
+    // Xử lý khi thay đổi checkbox ngày kết thúc
+    const handleEndDateToggle = () => {
+        const newIsEnabled = !isEndDateEnabled;
+        setIsEndDateEnabled(newIsEnabled);
         
+        // Cập nhật learningDurationType dựa trên trạng thái checkbox
+        setFormData(prev => ({
+            ...prev,
+            learningDurationType: newIsEnabled ? 'LIMITED' : 'UNLIMITED',
+            // Nếu bỏ chọn, reset giá trị endDate
+            endDate: newIsEnabled ? prev.endDate : ''
+        }));
+    };
+
+    // Xử lý khi chọn ảnh
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setCourseImage(file);
+            
+            // Tạo URL preview cho ảnh
+            const imageUrl = URL.createObjectURL(file);
+            setPreviewImage(imageUrl);
+        }
+    };
+
+    // Xử lý click vào nút chọn ảnh
+    const handleImageClick = () => {
+        fileInputRef.current.click();
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         
         try {
             // Prepare the request data
-            const requestData = {
-                ...formData,
-                // If end date is not enabled, set learningDurationType to "Không thời hạn"
-                // and remove the endDate from the request
-                ...(isEndDateEnabled 
-                    ? { 
-                        learningDurationType: 'Có thời hạn',
-                        endDate: formData.endDate 
-                    } 
-                    : { 
-                        learningDurationType: 'Không thời hạn',
-                        endDate: null 
-                    }
-                )
-            };
+            const requestData = new FormData();
+            
+            // Thêm các trường dữ liệu cơ bản
+            requestData.append('name', formData.name);
+            requestData.append('description', formData.description);
+            requestData.append('status', formData.status);
+            requestData.append('startDate', formData.startDate);
+            requestData.append('majorId', formData.majorId);
+            requestData.append('learningDurationType', formData.learningDurationType);
+            
+            // Chỉ gửi endDate nếu đã bật tùy chọn có thời hạn
+            if (isEndDateEnabled && formData.endDate) {
+                requestData.append('endDate', formData.endDate);
+            }
+            
+            // Thêm ảnh nếu có
+            if (courseImage) {
+                requestData.append('image', courseImage);
+            }
 
             // Make the API call
             const token = localStorage.getItem('authToken');
@@ -95,10 +136,9 @@ const TeacherAddCourse = () => {
             const response = await fetch(`${ADD_COURSE_API}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(requestData)
+                body: requestData
             });
 
             if (!response.ok) {
@@ -109,12 +149,25 @@ const TeacherAddCourse = () => {
             console.log('Course created successfully:', result);
             showAlert('success', 'Thành công', 'Thêm khóa học thành công!');
             // Navigate back to dashboard after successful creation
-            navigate('/teacher/dashboard');
+            setTimeout(() => {
+                navigate('/teacher/dashboard');
+            }, 1500);
         } catch (error) {
             console.error('Error creating course:', error);
             showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi tạo khóa học. Vui lòng thử lại!');
+        } finally {
+            setIsSubmitting(false);
         }
     };
+
+    // Dọn dẹp URL khi component unmount
+    useEffect(() => {
+        return () => {
+            if (previewImage) {
+                URL.revokeObjectURL(previewImage);
+            }
+        };
+    }, [previewImage]);
 
     return (
         <div className="teacher-add-course-container">
@@ -187,7 +240,7 @@ const TeacherAddCourse = () => {
                             className='teacher-form-group-checkbox' 
                             type="checkbox" 
                             checked={isEndDateEnabled}
-                            onChange={() => setIsEndDateEnabled(!isEndDateEnabled)} 
+                            onChange={handleEndDateToggle}
                         />
                     </label>
                     <input 
@@ -200,11 +253,42 @@ const TeacherAddCourse = () => {
                     />
                 </div>
                 <div className="teacher-form-group">
-                    <label>Ảnh đại diện cho khóa học<span style={{color: '#f00', marginLeft: '26px'}}></span></label>
-                    <input type="file" />
+                    <label>Ảnh đại diện cho khóa học</label>
+                    <div className="course-image-container">
+                        <input 
+                            type="file" 
+                            ref={fileInputRef}
+                            onChange={handleImageChange}
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                        />
+                        <div className="course-image-upload" onClick={handleImageClick}>
+                            {previewImage ? (
+                                <div className="image-preview">
+                                    <img src={previewImage} alt="Course preview" />
+                                </div>
+                            ) : (
+                                <div className="image-placeholder">
+                                    <span>Click để chọn ảnh</span>
+                                </div>
+                            )}
+                            <button 
+                                type="button" 
+                                className="choose-image-button"
+                                onClick={handleImageClick}
+                            >
+                                {previewImage ? 'Thay đổi ảnh' : 'Chọn ảnh'}
+                            </button>
+                            {courseImage && (
+                                <div className="file-name">
+                                    {courseImage.name} ({Math.round(courseImage.size / 1024)} KB)
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
                 <div className="teacher-form-group">
-                    <label>Mô tả về khóa học<span style={{color: '#f00', marginLeft: '26px'}}></span></label>
+                    <label>Mô tả về khóa học</label>
                     <textarea 
                         rows="4"
                         name="description"
@@ -213,8 +297,21 @@ const TeacherAddCourse = () => {
                     ></textarea>
                 </div>
                 <div className="teacher-form-actions">
-                    <button type="submit" className="teacher-confirm-button">Xác nhận</button>
-                    <button type="button" className="teacher-cancel-button" onClick={() => navigate('/teacher/dashboard')}>Hủy</button>
+                    <button 
+                        type="submit" 
+                        className="teacher-confirm-button" 
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
+                    </button>
+                    <button 
+                        type="button" 
+                        className="teacher-cancel-button" 
+                        onClick={() => navigate('/teacher/dashboard')}
+                        disabled={isSubmitting}
+                    >
+                        Hủy
+                    </button>
                 </div>
             </form>
         </div>

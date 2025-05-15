@@ -34,14 +34,15 @@
 .login-btn {
     padding: 8px 16px;
     background-color: transparent;
-    border: 1px solid #2b6cb0;
-    border-radius: 4px;
-    color: #2b6cb0;
+    border: 1px solid var(--primary-color);
+    border-radius: 999px;
+    color: var(--primary-color);
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 .login-btn:hover {
-    background-color: #2b6cb0;
+    background-color: var(--primary-color);
     color: #fff;
 }
 
@@ -231,7 +232,7 @@
 .role-selection-buttons {
     display: flex;
     gap: 10px;
-    margin-top: 20px;
+    margin: auto;
     align-items: center;
     width: 50%;
 }
@@ -248,7 +249,7 @@
 }
 
 .role-btn.student {
-    background-color: #007bff;
+    background-color: var(--primary-color);
 }
 
 .role-btn.teacher {
@@ -256,7 +257,6 @@
 }
 
 .role-btn.active {
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
     transform: scale(1.05);
 }
 
