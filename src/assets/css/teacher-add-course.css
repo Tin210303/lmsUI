@@ -109,15 +109,14 @@
     gap: 12px;
     padding: 15px;
     border: 2px dashed #d9d9d9;
-    border-radius: 8px;
+    border-radius: 20px;
     background-color: #fafafa;
     transition: all 0.3s ease;
     cursor: pointer;
 }
 
 .course-image-upload:hover {
-    border-color: #1890ff;
-    background-color: #f0f8ff;
+    border-color: var(--primary-color);
 }
 
 .image-placeholder {

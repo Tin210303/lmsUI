@@ -27,6 +27,8 @@ const TeacherCourseDetail = () => {
         setAlert({ type, title, message });
     };
 
+    const [courseImage, setCourseImage] = useState(null);
+
     useEffect(() => {
         const fetchCourseDetail = async () => {
             try {
@@ -63,6 +65,55 @@ const TeacherCourseDetail = () => {
 
         fetchCourseDetail();
     }, [courseId]);
+
+    // Thêm useEffect để lấy ảnh đại diện khóa học nếu có
+    useEffect(() => {
+        let imageObjectUrl = null;
+        
+        const fetchCourseImage = async () => {
+            // Kiểm tra nếu course và course.image không null
+            if (course && course.image) {
+                try {
+                    // Lấy token xác thực
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                        console.error('No authentication token found');
+                        return;
+                    }
+                    
+                    // Tạo URL đầy đủ cho ảnh
+                    const imageUrl = `${API_BASE_URL}${course.image}`;
+                    console.log(`Đang tải ảnh khóa học từ: ${imageUrl}`);
+                    
+                    // Gọi API để lấy ảnh với Bearer token sử dụng axios
+                    const response = await axios({
+                        method: 'GET',
+                        url: imageUrl,
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        responseType: 'blob' // Quan trọng: yêu cầu response dạng blob
+                    });
+                    
+                    // Tạo URL object từ blob
+                    imageObjectUrl = URL.createObjectURL(response.data);
+                    // Cập nhật state với URL ảnh
+                    setCourseImage(imageObjectUrl);
+                } catch (error) {
+                    console.error('Lỗi khi tải ảnh khóa học:', error);
+                }
+            }
+        };
+        
+        fetchCourseImage();
+        
+        // Cleanup function để giải phóng URL object khi component unmount
+        return () => {
+            if (imageObjectUrl) {
+                URL.revokeObjectURL(imageObjectUrl);
+            }
+        };
+    }, [course]);
 
     // Tạo màu nền dựa trên ID khóa học (để luôn cố định cho mỗi khóa học)
     const getConsistentColor = (id) => {
@@ -319,8 +370,8 @@ const TeacherCourseDetail = () => {
                 
                 <div className="teacher-course-sidebar">
                     <div className="teacher-course-sidebar-image">
-                        {course.image ? (
-                            <img src={course.image} alt={course.name} className="teacher-course-sidebar-img" />
+                        {courseImage ? (
+                            <img src={courseImage} alt={course.name} className="teacher-course-sidebar-img" />
                         ) : (
                             <div className="course-placeholder" style={{ background: getConsistentColor(courseId) }}>
                                 <div className="image-text">

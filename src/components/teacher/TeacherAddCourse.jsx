@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../assets/css/teacher-add-course.css';
 import Alert from '../common/Alert';
 import axios from 'axios';
-import { GET_MAJOR_API, ADD_COURSE_API } from '../../services/apiService';
+import { GET_MAJOR_API, ADD_COURSE_API, UPLOAD_COURSE_PHOTO_API } from '../../services/apiService';
 
 const TeacherAddCourse = () => {
     const navigate = useNavigate();
@@ -106,57 +106,98 @@ const TeacherAddCourse = () => {
         setIsSubmitting(true);
         
         try {
-            // Prepare the request data
-            const requestData = new FormData();
-            
-            // Thêm các trường dữ liệu cơ bản
-            requestData.append('name', formData.name);
-            requestData.append('description', formData.description);
-            requestData.append('status', formData.status);
-            requestData.append('startDate', formData.startDate);
-            requestData.append('majorId', formData.majorId);
-            requestData.append('learningDurationType', formData.learningDurationType);
+            // Chuẩn bị dữ liệu gửi đi
+            const courseData = {
+                name: formData.name,
+                description: formData.description,
+                status: formData.status,
+                startDate: formData.startDate,
+                majorId: formData.majorId,
+                learningDurationType: formData.learningDurationType
+            };
             
             // Chỉ gửi endDate nếu đã bật tùy chọn có thời hạn
             if (isEndDateEnabled && formData.endDate) {
-                requestData.append('endDate', formData.endDate);
+                courseData.endDate = formData.endDate;
             }
             
-            // Thêm ảnh nếu có
-            if (courseImage) {
-                requestData.append('image', courseImage);
-            }
-
-            // Make the API call
+            // Lấy token xác thực
             const token = localStorage.getItem('authToken');
             if (!token) {
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch(`${ADD_COURSE_API}`, {
-                method: 'POST',
+            // Gọi API tạo khóa học sử dụng axios
+            console.log('Đang tạo khóa học mới...', courseData);
+            const response = await axios.post(ADD_COURSE_API, courseData, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: requestData
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            console.log('Course created successfully:', response.data);
+            
+            // Kiểm tra nếu tạo khóa học thành công và có ảnh đại diện
+            if (response.data && response.data.code === 0 && courseImage) {
+                const courseId = response.data.result.id;
+                console.log(`Khóa học đã được tạo thành công, ID: ${courseId}`);
+                
+                try {
+                    // Gọi API upload ảnh đại diện
+                    await uploadCoursePhoto(courseId, courseImage, token);
+                    console.log('Đã upload ảnh đại diện cho khóa học thành công');
+                    showAlert('success', 'Thành công', 'Thêm khóa học và ảnh đại diện thành công!');
+                } catch (photoError) {
+                    console.error('Error uploading course photo:', photoError);
+                    // Hiển thị thông báo thành công nhưng có lỗi khi upload ảnh
+                    showAlert('success', 'Thành công', 'Thêm khóa học thành công! Tuy nhiên, có lỗi khi tải lên ảnh đại diện.');
+                }
+            } else {
+                showAlert('success', 'Thành công', 'Thêm khóa học thành công!');
             }
-
-            const result = await response.json();
-            console.log('Course created successfully:', result);
-            showAlert('success', 'Thành công', 'Thêm khóa học thành công!');
+            
             // Navigate back to dashboard after successful creation
             setTimeout(() => {
                 navigate('/teacher/dashboard');
             }, 1500);
         } catch (error) {
             console.error('Error creating course:', error);
-            showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi tạo khóa học. Vui lòng thử lại!');
+            const errorMessage = error.response?.data?.message || error.message;
+            showAlert('error', 'Lỗi', `Có lỗi xảy ra khi tạo khóa học: ${errorMessage}`);
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    // Hàm upload ảnh đại diện cho khóa học sử dụng axios
+    const uploadCoursePhoto = async (courseId, photo, token) => {
+        console.log(`Bắt đầu upload ảnh cho khóa học ID: ${courseId}`);
+        console.log(`File ảnh: ${photo.name}, Kích thước: ${Math.round(photo.size / 1024)} KB`);
+        
+        // Tạo FormData mới cho việc upload ảnh
+        const photoFormData = new FormData();
+        photoFormData.append('file', photo);
+        
+        try {
+            // Log URL API
+            const apiUrl = `${UPLOAD_COURSE_PHOTO_API}/${courseId}/upload-photo`;
+            console.log(`Gọi API: ${apiUrl}`);
+            
+            // Gọi API upload ảnh sử dụng axios
+            const response = await axios.post(apiUrl, photoFormData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            console.log('Upload ảnh thành công:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Lỗi khi upload ảnh:', error);
+            const errorMessage = error.response?.data?.message || error.message;
+            throw new Error(`Error uploading photo: ${errorMessage}`);
         }
     };
 

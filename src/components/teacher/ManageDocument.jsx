@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
+import Alert from '../common/Alert';
 import { 
     Upload, 
     Search, 
@@ -18,7 +19,8 @@ import {
     Filter,
     FileText,
     File,
-    AlertTriangle
+    AlertTriangle,
+    Settings
 } from 'lucide-react';
 import { 
     GET_MAJOR_API, 
@@ -27,7 +29,8 @@ import {
     UPLOAD_DOCUMENT, 
     DELETE_DOCUMENT, 
     UPDATE_DOCUMENT_STATUS, 
-    API_BASE_URL
+    API_BASE_URL,
+    SEARCH_DOCUMENTS_API
 } from '../../services/apiService';
 import '../../assets/css/manage-document.css';
 
@@ -69,7 +72,7 @@ const ManageDocument = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortOption, setSortOption] = useState('newest');
-    const [documentFilter, setDocumentFilter] = useState('all');
+    const [documentFilter, setDocumentFilter] = useState('mine');
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
     const fileInputRef = useRef(null);
@@ -92,6 +95,9 @@ const ManageDocument = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
+    
+    // Timer for search debounce
+    const searchTimerRef = useRef(null);
     
     // Upload modal states
     const [showUploadModal, setShowUploadModal] = useState(false);
@@ -120,13 +126,42 @@ const ManageDocument = () => {
     const [previewError, setPreviewError] = useState('');
     const [previewContent, setPreviewContent] = useState(null); // Nội dung đã được xử lý
     const [previewType, setPreviewType] = useState(null); // Loại file đang xem
+    
+    // State for bulk actions dropdown
+    const [showBulkActions, setShowBulkActions] = useState(false);
+    const bulkActionsRef = useRef(null);
+    
+    // State for bulk delete modal
+    const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+    const [bulkDeleteError, setBulkDeleteError] = useState('');
+    const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+    
+    // State for bulk visibility modal
+    const [showBulkVisibilityModal, setShowBulkVisibilityModal] = useState(false);
+    const [bulkVisibilityAction, setBulkVisibilityAction] = useState('');
+    const [bulkVisibilityError, setBulkVisibilityError] = useState('');
+    const [bulkVisibilityLoading, setBulkVisibilityLoading] = useState(false);
 
+    const [alert, setAlert] = useState(null);
+
+    const showAlert = (type, title, message) => {
+        setAlert({ type, title, message });
+    };
+    
     useEffect(() => {
         fetchMajorData();
         if (documentFilter === 'all') {
-            fetchDocuments();
+            if (searchTerm.trim() !== '') {
+                searchAllDocumentsWithTerm(searchTerm.trim());
+            } else {
+                fetchDocuments();
+            }
         } else {
-            fetchMyDocuments();
+            if (searchTerm.trim() !== '') {
+                searchMyDocumentsWithTerm(searchTerm.trim());
+            } else {
+                fetchMyDocuments();
+            }
         }
         
         // Store the majorId for filtering
@@ -142,6 +177,9 @@ const ManageDocument = () => {
             if (docFilterDropdownRef.current && !docFilterDropdownRef.current.contains(event.target)) {
                 setShowDocumentFilterOptions(false);
             }
+            if (bulkActionsRef.current && !bulkActionsRef.current.contains(event.target)) {
+                setShowBulkActions(false);
+            }
         };
         
         document.addEventListener('mousedown', handleClickOutside);
@@ -153,10 +191,18 @@ const ManageDocument = () => {
     const toggleSortOptions = () => {
         setShowSortOptions(!showSortOptions);
         setShowDocumentFilterOptions(false);
+        setShowBulkActions(false);
     };
     
     const toggleDocumentFilterOptions = () => {
         setShowDocumentFilterOptions(!showDocumentFilterOptions);
+        setShowSortOptions(false);
+        setShowBulkActions(false);
+    };
+    
+    const toggleBulkActions = () => {
+        setShowBulkActions(!showBulkActions);
+        setShowDocumentFilterOptions(false);
         setShowSortOptions(false);
     };
     
@@ -168,6 +214,8 @@ const ManageDocument = () => {
     const handleDocumentFilterSelect = (filter) => {
         setDocumentFilter(filter);
         setShowDocumentFilterOptions(false);
+        // Reset search term when switching document filter
+        setSearchTerm('');
         // Reset to first page when switching document filter
         setCurrentPage(0);
     };
@@ -587,6 +635,26 @@ const ManageDocument = () => {
     const handlePageChange = (newPage) => {
         if (newPage >= 0 && newPage < totalPages) {
             setCurrentPage(newPage);
+            
+            // Nếu đang tìm kiếm, gọi lại API tìm kiếm với trang mới
+            if (searchTerm.trim() !== '') {
+                if (documentFilter === 'all') {
+                    setTimeout(() => {
+                        searchAllDocumentsWithTerm(searchTerm.trim());
+                    }, 100);
+                } else {
+                    setTimeout(() => {
+                        searchMyDocumentsWithTerm(searchTerm.trim());
+                    }, 100);
+                }
+            } else {
+                // Nếu không có từ khóa tìm kiếm, hiển thị tất cả tài liệu
+                if (documentFilter === 'all') {
+                    fetchDocuments();
+                } else {
+                    fetchMyDocuments();
+                }
+            }
         }
     };
     
@@ -617,9 +685,7 @@ const ManageDocument = () => {
         return docs;
     };
     
-    const filteredDocuments = getSortedDocuments().filter(doc => 
-        doc.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredDocuments = getSortedDocuments();
     
     // Format date function
     const formatDate = (dateString) => {
@@ -1279,6 +1345,450 @@ const ManageDocument = () => {
         };
     }, [showPreviewModal, previewLoading]);
     
+    // Tạo hàm mới để tìm kiếm với từ khóa cụ thể thay vì sử dụng state
+    const searchAllDocumentsWithTerm = async (term) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            console.log(`Tìm kiếm tài liệu với title="${term}", majorId=${majorId}, pageSize=${pageSize}, pageNumber=${currentPage}`);
+            
+            // Gọi API tìm kiếm tất cả tài liệu
+            const response = await axios.get(SEARCH_DOCUMENTS_API, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`
+                },
+                params: {
+                    title: term,
+                    majorId: majorId,
+                    pageSize: pageSize,
+                    pageNumber: currentPage
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                const documentData = response.data.result;
+                setDocuments(documentData.content || []);
+                
+                // Cập nhật thông tin phân trang
+                const pageInfo = documentData.page || {};
+                setTotalPages(pageInfo.totalPages || 0);
+                setTotalElements(pageInfo.totalElements || 0);
+                
+                // Reset selection when changing page
+                setSelectedDocuments([]);
+                setSelectAll(false);
+                
+                console.log('Kết quả tìm kiếm:', {
+                    từKhóa: term,
+                    tổngKếtQuả: pageInfo.totalElements,
+                    tổngTrang: pageInfo.totalPages,
+                    trangHiệnTại: currentPage + 1,
+                    kếtQuảTrênTrang: (documentData.content || []).length
+                });
+            } else {
+                throw new Error(response.data?.message || 'Failed to search documents');
+            }
+        } catch (err) {
+            console.error('Error searching documents:', err);
+            setError('Không thể tìm kiếm tài liệu. Vui lòng thử lại sau.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    // Tạo hàm mới để tìm kiếm tài liệu của tôi với từ khóa cụ thể
+    const searchMyDocumentsWithTerm = async (term) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            console.log(`Tìm kiếm tài liệu của tôi với keyword="${term}", pageSize=${pageSize}, pageNumber=${currentPage}`);
+            
+            // Gọi API tìm kiếm tài liệu của tôi
+            const response = await axios.get(GET_MY_DOCUMENTS, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`
+                },
+                params: {
+                    keyword: term,
+                    pageSize: pageSize,
+                    pageNumber: currentPage
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                const documentData = response.data.result;
+                const allDocuments = documentData.content || [];
+                
+                // Lọc theo chuyên ngành hiện tại (majorId)
+                const filteredByMajor = allDocuments.filter(doc => 
+                    doc.major && doc.major.id.toString() === majorId.toString()
+                );
+                
+                setDocuments(filteredByMajor);
+                // Cập nhật cache của tài liệu của tôi
+                setMyDocumentsCache(filteredByMajor);
+                setTotalElements(filteredByMajor.length);
+                setTotalPages(Math.ceil(filteredByMajor.length / pageSize));
+                
+                // Reset selection when changing page
+                setSelectedDocuments([]);
+                setSelectAll(false);
+                
+                console.log('Kết quả tìm kiếm tài liệu của tôi:', {
+                    từKhóa: term,
+                    tổngKếtQuả: filteredByMajor.length,
+                    tổngTrang: Math.ceil(filteredByMajor.length / pageSize),
+                    trangHiệnTại: currentPage + 1,
+                    kếtQuảTrênTrang: filteredByMajor.length
+                });
+            } else {
+                throw new Error(response.data?.message || 'Failed to search documents');
+            }
+        } catch (err) {
+            console.error('Error searching my documents:', err);
+            setError('Không thể tìm kiếm tài liệu. Vui lòng thử lại sau.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    // Cập nhật hàm xử lý khi nhập vào ô tìm kiếm
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        
+        // Xóa timer search trước đó nếu có
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+        }
+        
+        // Thiết lập timer mới để debounce việc tìm kiếm
+        searchTimerRef.current = setTimeout(() => {
+            // Lưu giá trị tìm kiếm hiện tại vào biến local để đảm bảo sử dụng giá trị mới nhất
+            const currentSearchTerm = value.trim();
+            
+            // Reset về trang đầu tiên khi thực hiện tìm kiếm mới
+            setCurrentPage(0);
+            
+            console.log(`Thực hiện tìm kiếm với từ khóa: "${currentSearchTerm}"`);
+            
+            if (currentSearchTerm === '') {
+                // Nếu ô tìm kiếm trống, quay lại hiển thị tất cả tài liệu
+                if (documentFilter === 'all') {
+                    fetchDocuments();
+                } else {
+                    fetchMyDocuments();
+                }
+            } else {
+                // Gọi API tìm kiếm tương ứng với chế độ hiện tại
+                if (documentFilter === 'all') {
+                    // Gọi hàm tìm kiếm với giá trị hiện tại, không sử dụng searchTerm từ state
+                    searchAllDocumentsWithTerm(currentSearchTerm);
+                } else {
+                    // Gọi hàm tìm kiếm với giá trị hiện tại, không sử dụng searchTerm từ state
+                    searchMyDocumentsWithTerm(currentSearchTerm);
+                }
+            }
+        }, 500); // Đợi 500ms sau khi ngừng gõ mới thực hiện tìm kiếm
+    };
+    
+    // Xóa timer khi component unmount
+    useEffect(() => {
+        return () => {
+            if (searchTimerRef.current) {
+                clearTimeout(searchTimerRef.current);
+            }
+        };
+    }, []);
+    
+    // Handle bulk action selection
+    const handleBulkActionSelect = (action) => {
+        setShowBulkActions(false);
+        
+        switch (action) {
+            case 'delete':
+                setShowBulkDeleteModal(true);
+                setBulkDeleteError('');
+                break;
+            case 'hide':
+                setBulkVisibilityAction('PRIVATE');
+                setShowBulkVisibilityModal(true);
+                setBulkVisibilityError('');
+                break;
+            case 'show':
+                setBulkVisibilityAction('PUBLIC');
+                setShowBulkVisibilityModal(true);
+                setBulkVisibilityError('');
+                break;
+            default:
+                break;
+        }
+    };
+    
+    // Close bulk delete modal
+    const closeBulkDeleteModal = () => {
+        setShowBulkDeleteModal(false);
+        setBulkDeleteError('');
+        setBulkDeleteLoading(false);
+    };
+    
+    // Handle bulk delete documents
+    const handleBulkDeleteDocuments = async () => {
+        if (selectedDocuments.length === 0) {
+            return;
+        }
+        
+        try {
+            setBulkDeleteLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Create FormData object to send documentIds
+            const formData = new FormData();
+            selectedDocuments.forEach(documentId => {
+                formData.append('documentId', documentId);
+            });
+            
+            const response = await axios.delete('http://localhost:8080/lms/document/deleteall', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                data: formData
+            });
+            
+            if (response.data && response.data.code === 0) {
+                // Close the modal
+                closeBulkDeleteModal();
+                
+                // Update UI after deletion
+                setDocuments(prev => prev.filter(doc => !selectedDocuments.includes(doc.id)));
+                
+                if (documentFilter === 'mine') {
+                    // Update the cache for "My Documents" pagination
+                    setMyDocumentsCache(prev => prev.filter(doc => !selectedDocuments.includes(doc.id)));
+                    
+                    // Recalculate total elements and pages
+                    const updatedTotal = myDocumentsCache.length - selectedDocuments.length;
+                    setMyDocsTotal(updatedTotal);
+                    setTotalElements(updatedTotal);
+                    setTotalPages(Math.ceil(updatedTotal / pageSize));
+                    
+                    // If we deleted all items on the current page and we're not on the first page, go back one page
+                    const remainingOnCurrentPage = documents.filter(doc => !selectedDocuments.includes(doc.id)).length;
+                    if (remainingOnCurrentPage === 0 && currentPage > 0) {
+                        setCurrentPage(currentPage - 1);
+                    }
+                    
+                } else {
+                    // Refresh if we deleted all items on the page
+                    const remainingOnCurrentPage = documents.filter(doc => !selectedDocuments.includes(doc.id)).length;
+                    if (remainingOnCurrentPage === 0 && currentPage > 0) {
+                        setCurrentPage(currentPage - 1);
+                    } else {
+                        fetchDocuments();
+                    }
+                }
+                showAlert('success', 'Thành công', 'Xóa tài liệu thành công!');
+                // Reset selection
+                setSelectedDocuments([]);
+                setSelectAll(false);
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete documents');
+            }
+        } catch (err) {
+            console.error('Error deleting documents:', err);
+            showAlert('error', 'Lỗi', 'Không thể xóa tài liệu. Vui lòng thử lại sau.');
+        } finally {
+            setBulkDeleteLoading(false);
+        }
+    };
+    
+    // Close bulk visibility modal
+    const closeBulkVisibilityModal = () => {
+        setShowBulkVisibilityModal(false);
+        setBulkVisibilityAction('');
+        setBulkVisibilityError('');
+        setBulkVisibilityLoading(false);
+    };
+    
+    // Handle bulk update visibility
+    const handleBulkUpdateVisibility = async () => {
+        if (selectedDocuments.length === 0 || !bulkVisibilityAction) {
+            return;
+        }
+        
+        try {
+            setBulkVisibilityLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Create FormData object to send documentIds and status
+            const formData = new FormData();
+            selectedDocuments.forEach(documentId => {
+                formData.append('documentIds', documentId);
+            });
+            formData.append('status', bulkVisibilityAction);
+            
+            // Use the same endpoint as single document update but with multiple IDs
+            const response = await axios.put(UPDATE_DOCUMENT_STATUS, formData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                // Close modal
+                closeBulkVisibilityModal();
+                
+                // Update documents in UI with new status
+                setDocuments(prev => prev.map(doc => {
+                    if (selectedDocuments.includes(doc.id)) {
+                        return {
+                            ...doc,
+                            status: bulkVisibilityAction
+                        };
+                    }
+                    return doc;
+                }));
+                
+                if (documentFilter === 'mine') {
+                    // Update the cache for "My Documents"
+                    setMyDocumentsCache(prev => prev.map(doc => {
+                        if (selectedDocuments.includes(doc.id)) {
+                            return {
+                                ...doc,
+                                status: bulkVisibilityAction
+                            };
+                        }
+                        return doc;
+                    }));
+                }
+                
+                // Reset selection
+                setSelectedDocuments([]);
+                setSelectAll(false);
+            } else {
+                throw new Error(response.data?.message || 'Failed to update document status');
+            }
+        } catch (err) {
+            console.error('Error updating document status:', err);
+            setBulkVisibilityError('Không thể cập nhật trạng thái tài liệu. Vui lòng thử lại sau.');
+        } finally {
+            setBulkVisibilityLoading(false);
+        }
+    };
+    
+    // Render bulk delete confirmation modal
+    const renderBulkDeleteModal = () => {
+        if (!showBulkDeleteModal || selectedDocuments.length === 0) return null;
+        
+        return (
+            <div className="modal-overlay">
+                <div className="delete-modal">
+                    <div className="document-modal-header">
+                        <h3>Xác nhận xóa tài liệu</h3>
+                        <button className="close-button" onClick={closeBulkDeleteModal}>
+                            <X size={20} />
+                        </button>
+                    </div>
+                    
+                    <div className="delete-modal-content">
+                        <p>Bạn có chắc chắn muốn xóa {selectedDocuments.length} tài liệu đã chọn?</p>
+                        <p className="delete-warning">Hành động này không thể hoàn tác.</p>
+                        
+                        {bulkDeleteError && (
+                            <div className="error-message">
+                                {bulkDeleteError}
+                            </div>
+                        )}
+                        
+                        <div className="document-form-actions">
+                            <button 
+                                type="button" 
+                                onClick={closeBulkDeleteModal} 
+                                className="document-cancel-button"
+                                disabled={bulkDeleteLoading}
+                            >
+                                Hủy
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleBulkDeleteDocuments} 
+                                className="delete-confirm-button"
+                                disabled={bulkDeleteLoading}
+                            >
+                                {bulkDeleteLoading ? 'Đang xóa...' : 'Xác nhận xóa'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+    
+    // Render bulk visibility confirmation modal
+    const renderBulkVisibilityModal = () => {
+        if (!showBulkVisibilityModal || selectedDocuments.length === 0 || !bulkVisibilityAction) return null;
+        
+        const isPublic = bulkVisibilityAction === 'PUBLIC';
+        const actionText = isPublic ? 'hiển thị' : 'ẩn';
+        
+        return (
+            <div className="modal-overlay">
+                <div className="visibility-modal">
+                    <div className="document-modal-header">
+                        <h3>Xác nhận {actionText} tài liệu</h3>
+                        <button className="close-button" onClick={closeBulkVisibilityModal}>
+                            <X size={20} />
+                        </button>
+                    </div>
+                    
+                    <div className="visibility-modal-content">
+                        <p>Bạn có chắc chắn muốn {actionText} {selectedDocuments.length} tài liệu đã chọn?</p>
+                        
+                        {bulkVisibilityError && (
+                            <div className="error-message">
+                                {bulkVisibilityError}
+                            </div>
+                        )}
+                        
+                        <div className="document-form-actions">
+                            <button 
+                                type="button" 
+                                onClick={closeBulkVisibilityModal} 
+                                className="document-cancel-button"
+                                disabled={bulkVisibilityLoading}
+                            >
+                                Hủy
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleBulkUpdateVisibility} 
+                                className={`visibility-confirm-button ${isPublic ? 'show-button' : 'hide-button'}`}
+                                disabled={bulkVisibilityLoading}
+                            >
+                                {bulkVisibilityLoading ? 'Đang xử lý...' : `Xác nhận ${actionText}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+    
     if (loading && documents.length === 0) {
         return (
             <div className="loading-container">
@@ -1313,13 +1823,25 @@ const ManageDocument = () => {
             {renderDeleteModal()}
             {renderVisibilityModal()}
             {renderPreviewModal()}
-            
+            {renderBulkDeleteModal()}
+            {renderBulkVisibilityModal()}
+            {alert && (
+                <div className="alert-container">
+                    <Alert
+                        type={alert.type}
+                        title={alert.title}
+                        message={alert.message}
+                        onClose={() => setAlert(null)}
+                    />
+                </div>
+            )}
             <div className="document-header">
                 <div className="header-title">
                     <button onClick={handleBackClick} className="document-back-button">
-                        <ArrowLeft size={20} />
+                        Quản lý tài liệu
                     </button>
-                    <h1>Quản lý tài liệu: {major.name}</h1>
+                    &gt;
+                    <span>{major.name}</span>
                 </div>
                 <div className="header-actions">
                     <div className="search-container">
@@ -1328,7 +1850,7 @@ const ManageDocument = () => {
                             type="text"
                             placeholder="Tìm kiếm tài liệu..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={handleSearchChange}
                             className="search-input"
                         />
                     </div>
@@ -1388,20 +1910,66 @@ const ManageDocument = () => {
                         </button>
                         <div className={`filter-options ${showDocumentFilterOptions ? 'show' : ''}`}>
                             <div 
-                                className={`filter-option ${documentFilter === 'all' ? 'active' : ''}`}
-                                onClick={() => handleDocumentFilterSelect('all')}
-                            >
-                                Tất cả tài liệu
-                            </div>
-                            <div 
                                 className={`filter-option ${documentFilter === 'mine' ? 'active' : ''}`}
                                 onClick={() => handleDocumentFilterSelect('mine')}
                             >
                                 Tài liệu của tôi
                             </div>
+                            <div 
+                                className={`filter-option ${documentFilter === 'all' ? 'active' : ''}`}
+                                onClick={() => handleDocumentFilterSelect('all')}
+                            >
+                                Tất cả tài liệu
+                            </div>
                         </div>
                     </div>
                 </div>
+                
+                {/* Add bulk actions dropdown */}
+                {selectedDocuments.length > 0 && (
+                    <div className="filter-item">
+                        <span className="filter-label">Thao tác:</span>
+                        <div className="filter-dropdown bulk-actions" ref={bulkActionsRef}>
+                            <button 
+                                className="filter-button" 
+                                onClick={toggleBulkActions}
+                                style={{ 
+                                    color: '#0056b3', 
+                                    border: '1px solid #0056b3' 
+                                }}
+                            >
+                                Đã chọn {selectedDocuments.length} file
+                                <ChevronDown size={16} />
+                            </button>
+                            <div 
+                                className={`filter-options ${showBulkActions ? 'show' : ''}`}
+                                style={{ minWidth: '180px' }}
+                            >
+                                <div 
+                                    className="filter-option"
+                                    onClick={() => handleBulkActionSelect('delete')}
+                                >
+                                    <Trash2 size={16} style={{ marginRight: '8px' }} />
+                                    Xóa file đã chọn
+                                </div>
+                                <div 
+                                    className="filter-option"
+                                    onClick={() => handleBulkActionSelect('hide')}
+                                >
+                                    <EyeOff size={16} style={{ marginRight: '8px' }} />
+                                    Ẩn file đã chọn
+                                </div>
+                                <div 
+                                    className="filter-option"
+                                    onClick={() => handleBulkActionSelect('show')}
+                                >
+                                    <Eye size={16} style={{ marginRight: '8px' }} />
+                                    Hiển thị file đã chọn
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
             
             <div className="document-list">
@@ -1414,7 +1982,9 @@ const ManageDocument = () => {
                         />
                     </div>
                     <div className="document-name-column">Tên tài liệu</div>
-                    <div className="status-column">Trạng thái</div>
+                    <div className="status-column">
+                        {documentFilter === 'all' ? 'Người đăng' : 'Trạng thái'}
+                    </div>
                     <div className="date-column">Ngày đăng</div>
                     <div className="document-actions-column">Thao tác</div>
                 </div>
@@ -1445,45 +2015,53 @@ const ManageDocument = () => {
                                     <div className="document-filename">{document.fileName}</div>
                                 </div>
                                 <div className="status-column">
-                                    <div className={`status-badge ${document.status === 'PUBLIC' ? 'show' : 'hide'}`}>
-                                        {document.status === 'PUBLIC' ? (
-                                            <>
-                                                <Check size={14} />
-                                                <span>Hiển thị</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="x-icon"></div>
-                                                <span>Ẩn</span>
-                                            </>
-                                        )}
-                                    </div>
+                                    {documentFilter === 'all' ? (
+                                        <div className="document-uploader">
+                                            {document.object?.fullName || 'Unknown'}
+                                        </div>
+                                    ) : (
+                                        <div className={`document-status-badge ${document.status === 'PUBLIC' ? 'show' : 'hide'}`}>
+                                            {document.status === 'PUBLIC' ? (
+                                                <>
+                                                    <Check size={14} />
+                                                    <span>Hiển thị</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="x-icon"></div>
+                                                    <span>Ẩn</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="date-column">{formatDate(document.createdAt)}</div>
                                 <div className="document-actions-column">
                                     {documentFilter === 'mine' && (
-                                        <button 
-                                            className="document-action-button visibility-button"
-                                            onClick={() => handleVisibilityButtonClick(document)}
-                                        >
-                                            {document.status === 'PUBLIC' ? (
-                                                <Eye size={18} />
-                                            ) : (
-                                                <EyeOff size={18} />
-                                            )}
-                                        </button>
+                                        <>
+                                            <button 
+                                                className="document-action-button visibility-button"
+                                                onClick={() => handleVisibilityButtonClick(document)}
+                                            >
+                                                {document.status === 'PUBLIC' ? (
+                                                    <Eye size={18} />
+                                                ) : (
+                                                    <EyeOff size={18} />
+                                                )}
+                                            </button>
+                                            <button 
+                                                className="document-action-button document-delete-button"
+                                                onClick={() => handleDeleteButtonClick(document)}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </>
                                     )}
                                     <button 
                                         className="document-action-button document-download-button"
                                         onClick={() => handleDownloadDocument(document)}
                                     >
                                         <Download size={18} />
-                                    </button>
-                                    <button 
-                                        className="document-action-button document-delete-button"
-                                        onClick={() => handleDeleteButtonClick(document)}
-                                    >
-                                        <Trash2 size={18} />
                                     </button>
                                 </div>
                             </div>
@@ -1530,4 +2108,4 @@ const ManageDocument = () => {
     );
 };
 
-export default ManageDocument; 
+export default ManageDocument;

@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import '../../assets/css/coursespage.css';
 import { useNavigate } from 'react-router-dom';
 import { Book, Users, User } from 'lucide-react';
+import { API_BASE_URL } from '../../services/apiService';
+import axios from 'axios';
 
 const CourseCard = ({ course, isEnrolled = false }) => {
     const navigate = useNavigate();
@@ -14,6 +16,55 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     const [teacherName, setTeacherName] = useState(course.teacher?.fullName || 'N/A');
     const [studentCount, setStudentCount] = useState(course?.studentCount || '0');
     const [courseImage, setCourseImage] = useState(null);
+
+    // Thêm useEffect để lấy ảnh đại diện khóa học nếu có
+    useEffect(() => {
+        let imageObjectUrl = null;
+        
+        const fetchCourseImage = async () => {
+            // Kiểm tra nếu course.image không null
+            if (course.image) {
+                try {
+                    // Lấy token xác thực
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                        console.error('No authentication token found');
+                        return;
+                    }
+                    
+                    // Tạo URL đầy đủ cho ảnh
+                    const imageUrl = `${API_BASE_URL}${course.image}`;
+                    console.log(`Đang tải ảnh khóa học từ: ${imageUrl}`);
+                    
+                    // Gọi API để lấy ảnh với Bearer token sử dụng axios
+                    const response = await axios({
+                        method: 'GET',
+                        url: imageUrl,
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        responseType: 'blob' // Quan trọng: yêu cầu response dạng blob
+                    });
+                    
+                    // Tạo URL object từ blob
+                    imageObjectUrl = URL.createObjectURL(response.data);
+                    // Cập nhật state với URL ảnh
+                    setCourseImage(imageObjectUrl);
+                } catch (error) {
+                    console.error('Lỗi khi tải ảnh khóa học:', error);
+                }
+            }
+        };
+        
+        fetchCourseImage();
+        
+        // Cleanup function để giải phóng URL object khi component unmount
+        return () => {
+            if (imageObjectUrl) {
+                URL.revokeObjectURL(imageObjectUrl);
+            }
+        };
+    }, [course.image]);
 
     const handleClick = () => {
         navigate('/teacher/course', {

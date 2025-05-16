@@ -1,4 +1,4 @@
-import React, { useState, useRef, useContext } from 'react';
+import React, { useState, useRef, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../assets/css/header.css';
@@ -53,6 +53,9 @@ const TeacherHeader = () => {
     const [changePasswordError, setChangePasswordError] = useState('');
     const [changePasswordSuccess, setChangePasswordSuccess] = useState('');
     const [modalClosing, setModalClosing] = useState(false);
+
+    // Thêm state để lưu trữ URL ảnh đại diện cho các khóa học
+    const [courseImages, setCourseImages] = useState({});
 
     const handleLogout = () => {
         logout();
@@ -351,6 +354,66 @@ const TeacherHeader = () => {
         });
     };
 
+    // Hàm lấy ảnh đại diện của khóa học
+    const fetchCourseImage = async (course) => {
+        // Nếu đã tải ảnh này rồi, không tải lại
+        if (courseImages[course.id]) return;
+
+        // Kiểm tra nếu course.image không null
+        if (course.image) {
+            try {
+                // Lấy token xác thực
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error('No authentication token found');
+                    return;
+                }
+                
+                // Tạo URL đầy đủ cho ảnh
+                const imageUrl = `${API_BASE_URL}${course.image}`;
+                console.log(`Đang tải ảnh khóa học từ: ${imageUrl}`);
+                
+                // Gọi API để lấy ảnh với Bearer token sử dụng axios
+                const response = await axios({
+                    method: 'GET',
+                    url: imageUrl,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    responseType: 'blob' // Quan trọng: yêu cầu response dạng blob
+                });
+                
+                // Tạo URL object từ blob
+                const imageObjectUrl = URL.createObjectURL(response.data);
+                
+                // Cập nhật state với URL ảnh
+                setCourseImages(prev => ({
+                    ...prev,
+                    [course.id]: imageObjectUrl
+                }));
+            } catch (error) {
+                console.error(`Lỗi khi tải ảnh khóa học ID ${course.id}:`, error);
+            }
+        }
+    };
+
+    // Thêm useEffect để tải ảnh cho các khóa học trong kết quả tìm kiếm
+    useEffect(() => {
+        // Tải ảnh cho mỗi khóa học trong kết quả tìm kiếm
+        searchResults.forEach(course => {
+            if (course.image) {
+                fetchCourseImage(course);
+            }
+        });
+
+        // Cleanup function để giải phóng URL objects khi component unmount
+        return () => {
+            Object.values(courseImages).forEach(url => {
+                URL.revokeObjectURL(url);
+            });
+        };
+    }, [searchResults]);
+
     // Render kết quả tìm kiếm
     const renderSearchResults = () => {
         if (isSearching && searchResults.length === 0) {
@@ -380,9 +443,9 @@ const TeacherHeader = () => {
                             onClick={() => handleSearchResultClick(course)}
                         >
                             <div className="search-result-image">
-                                {course.image ? (
+                                {courseImages[course.id] ? (
                                     <img 
-                                        src={`${API_BASE_URL}/lms/course/image/${course.image}`} 
+                                        src={courseImages[course.id]} 
                                         alt={course.name} 
                                         className="search-result-img" 
                                     />

@@ -50,6 +50,7 @@ export const ADD_LESSON_API = `${API_BASE_URL}/lms/lesson/create`;
 export const ADD_MATERIAL_API = `${API_BASE_URL}/lms/lessonmaterial/create`;
 export const ADD_CHAPTER_API = `${API_BASE_URL}/lms/chapter/create`;
 export const ADD_COURSE_API = `${API_BASE_URL}/lms/course/create`;
+export const UPLOAD_COURSE_PHOTO_API = `${API_BASE_URL}/lms/course`; // Endpoint cơ sở cho upload ảnh khóa học
 export const ADD_STUDENT_COURSE = `${API_BASE_URL}/lms/studentcourse/addstudents`;
 export const UPDATE_COURSE_API = `${API_BASE_URL}/lms/course/update`;
 export const SEARCH_STUDENT_NOT_IN_COURSE = `${API_BASE_URL}/lms/studentcourse/searchstudentnotin`;

@@ -755,74 +755,74 @@ const TaskDetail = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="questions-list">
-                                        {test.questions.map((question, index) => (
-                                            <div className="question-card" key={question.id || index}>
-                                                <div className="student-question-header">
-                                                    <div className="student-question-number">Câu {index + 1}: {question.content}</div>
-                                                    <div className="question-points">{question.point || 0} điểm</div>
-                                                </div>
-                                                
-                                                <div className="student-question-content">
-                                                    {question.type === 'SINGLE_CHOICE' && (
-                                                        <div className="question-options-list">
-                                                            {parseOptions(question.options).map((option, idx) => (
-                                                                <div 
-                                                                    key={idx} 
-                                                                    className={`question-option ${selectedAnswers[question.id] === option.label ? 'selected-option' : ''}`}
-                                                                    onClick={() => handleSingleChoiceSelect(question.id, option.label)}
-                                                                >
-                                                                    <div className="option-marker">
-                                                                        {selectedAnswers[question.id] === option.label ? (
-                                                                            <CheckCircle size={20} className="selected-icon" />
-                                                                        ) : (
-                                                                            <Circle size={20} />
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="option-label">{option.label}</div>
-                                                                    <div className="option-text">{option.text}</div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    
-                                                    {question.type === 'MULTIPLE_CHOICE' && (
-                                                        <div className="question-options-list">
-                                                            {parseOptions(question.options).map((option, idx) => (
-                                                                <div 
-                                                                    key={idx} 
-                                                                    className={`question-option ${selectedAnswers[question.id]?.includes(option.label) ? 'selected-option' : ''}`}
-                                                                    onClick={() => handleMultipleChoiceSelect(question.id, option.label)}
-                                                                >
-                                                                    <div className="option-marker checkbox">
-                                                                        {selectedAnswers[question.id]?.includes(option.label) ? (
-                                                                            <CheckCircle size={20} className="selected-icon" />
-                                                                        ) : (
-                                                                            <div className="empty-checkbox"></div>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="option-label">{option.label}</div>
-                                                                    <div className="option-text">{option.text}</div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    
-                                                    {question.type === 'text' && (
-                                                        <div className="student-text-answer-field">
-                                                            <textarea 
-                                                                id={`textarea-${question.id}`}
-                                                                value={textAnswers[question.id] || ''}
-                                                                onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
-                                                                placeholder="Nhập câu trả lời của bạn tại đây..."
-                                                                rows={1}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
+                                <div className="questions-list">
+                                    {test.questions.map((question, index) => (
+                                        <div className="question-card" key={question.id || index}>
+                                            <div className="student-question-header">
+                                                <div className="student-question-number">Câu {index + 1}: {question.content}</div>
+                                                <div className="question-points">{question.point || 0} điểm</div>
                                             </div>
-                                        ))}
-                                    </div>
+                                            
+                                            <div className="student-question-content">
+                                                {question.type === 'SINGLE_CHOICE' && (
+                                                    <div className="question-options-list">
+                                                        {parseOptions(question.options).map((option, idx) => (
+                                                            <div 
+                                                                key={idx} 
+                                                                className={`question-option ${selectedAnswers[question.id] === option.label ? 'selected-option' : ''}`}
+                                                                onClick={() => handleSingleChoiceSelect(question.id, option.label)}
+                                                            >
+                                                                <div className="option-marker">
+                                                                    {selectedAnswers[question.id] === option.label ? (
+                                                                        <CheckCircle size={20} className="selected-icon" />
+                                                                    ) : (
+                                                                        <Circle size={20} />
+                                                                    )}
+                                                                </div>
+                                                                <div className="option-label">{option.label}</div>
+                                                                <div className="option-text">{option.text}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                {question.type === 'MULTIPLE_CHOICE' && (
+                                                    <div className="question-options-list">
+                                                        {parseOptions(question.options).map((option, idx) => (
+                                                            <div 
+                                                                key={idx} 
+                                                                className={`question-option ${selectedAnswers[question.id]?.includes(option.label) ? 'selected-option' : ''}`}
+                                                                onClick={() => handleMultipleChoiceSelect(question.id, option.label)}
+                                                            >
+                                                                <div className="option-marker checkbox">
+                                                                    {selectedAnswers[question.id]?.includes(option.label) ? (
+                                                                        <CheckCircle size={20} className="selected-icon" />
+                                                                    ) : (
+                                                                        <div className="empty-checkbox"></div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="option-label">{option.label}</div>
+                                                                <div className="option-text">{option.text}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                {question.type === 'text' && (
+                                                    <div className="student-text-answer-field">
+                                                        <textarea 
+                                                            id={`textarea-${question.id}`}
+                                                            value={textAnswers[question.id] || ''}
+                                                            onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
+                                                            placeholder="Nhập câu trả lời của bạn tại đây..."
+                                                            rows={1}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                                 </>
                             ) : (
                                 <div className="no-questions">

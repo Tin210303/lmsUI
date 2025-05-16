@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCourseById, URL } from '../../services/courseService';
-import { GET_STATUS_API } from '../../services/apiService';
+import { getCourseById } from '../../services/courseService';
+import { GET_STATUS_API, API_BASE_URL, GET_STUDENT_INFO } from '../../services/apiService';
 import axios from 'axios';
 import '../../assets/css/course-detail.css';
 import { Check, CirclePlay, Film, Clock, AlarmClock, Plus, Minus, SquareUser, GraduationCap } from 'lucide-react';
@@ -19,6 +19,7 @@ const CourseDetailPage = () => {
     const [isRejected, setIsRejected] = useState(false);
     const [studentId, setStudentId] = useState(null);
     const [alert, setAlert] = useState(null);
+    const [courseImage, setCourseImage] = useState(null);
 
     const showAlert = (type, title, message) => {
         setAlert({ type, title, message });
@@ -30,7 +31,7 @@ const CourseDetailPage = () => {
             const token = localStorage.getItem('authToken');
             if (!token) return;
 
-            const response = await axios.get('http://localhost:8080/lms/student/myinfo', {
+            const response = await axios.get(GET_STUDENT_INFO, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -128,6 +129,47 @@ const CourseDetailPage = () => {
         
         fetchCourse();
     }, [params]);
+
+    useEffect(() => {
+        let imageObjectUrl = null;
+        
+        const fetchCourseImage = async () => {
+            if (course && course.image) {
+                try {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                        console.error('No authentication token found');
+                        return;
+                    }
+                    
+                    const imageUrl = `${API_BASE_URL}${course.image}`;
+                    console.log(`u0110ang tu1ea3i u1ea3nh khu00f3a hu1ecdc tu1eeb: ${imageUrl}`);
+                    
+                    const response = await axios({
+                        method: 'GET',
+                        url: imageUrl,
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        responseType: 'blob'
+                    });
+                    
+                    imageObjectUrl = URL.createObjectURL(response.data);
+                    setCourseImage(imageObjectUrl);
+                } catch (error) {
+                    console.error('Lu1ed7i khi tu1ea3i u1ea3nh khu00f3a hu1ecdc:', error);
+                }
+            }
+        };
+        
+        fetchCourseImage();
+        
+        return () => {
+            if (imageObjectUrl) {
+                URL.revokeObjectURL(imageObjectUrl);
+            }
+        };
+    }, [course]);
 
     if (loading) {
         return <div style={{ padding: 32 }}>Đang tải...</div>;
@@ -321,8 +363,8 @@ const CourseDetailPage = () => {
 
             <div className="right-column">
                 <div className="course-thumbnail">
-                    {course.image ? (
-                        <img src={course.image} alt={course.name} className="course-thumbnail-img" />
+                    {courseImage ? (
+                        <img src={courseImage} alt={course.name} className="course-thumbnail-img" />
                     ) : (
                         <div className="course-placeholder" style={{ background: getConsistentColor(course.id) }}>
                             <div className="image-text">

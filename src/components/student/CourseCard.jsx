@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Book, Users, User } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../services/apiService';
 
 const CourseCard = ({ course, isEnrolled = false }) => {
     const navigate = useNavigate();
@@ -21,36 +22,54 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     const [studentCount, setStudentCount] = useState(course?.studentCount?.toString() || '0');
     const [courseImage, setCourseImage] = useState(null);
 
-    // useEffect(() => {
-    //     const fetchData = async () => {
-    //         try {
-    //             const token = localStorage.getItem('authToken');
-    //             if (!token) {
-    //                 throw new Error('No authentication token found');
-    //             }
-
-    //             // Fetch students
-    //             const studentsResponse = await axios.get(`http://localhost:8080/lms/studentcourse/studentofcourse/${course.id}`, {
-    //                 headers: {
-    //                     'Authorization': `Bearer ${token}`
-    //                 }
-    //             });
-    //             setStudents(studentsResponse.data.result || []);
-
-    //             if (course.image) {
-    //                 // Tạo URL đầy đủ từ tên file ảnh
-    //                 const imageUrl = `http://localhost:8080/lms/course/image/${course.image}`;
-    //                 setCourseImage(imageUrl);
-    //             }
-    //         } catch (err) {
-    //             console.error('Error fetching data:', err);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-
-    //     fetchData();
-    // }, [course.id]);
+    // Thuậm useEffect để tải ảnh khóa học nếu có
+    useEffect(() => {
+        let imageObjectUrl = null;
+        
+        const fetchCourseImage = async () => {
+            // Kiểm tra nếu có course và course.image không null
+            if (course && course.image) {
+                try {
+                    // Lấy token xác thực
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                        console.error('No authentication token found');
+                        return;
+                    }
+                    
+                    // Tạo URL đầy đủ từ tên file ảnh
+                    const imageUrl = `${API_BASE_URL}${course.image}`;
+                    console.log(`Đang tải ảnh khóa học từ: ${imageUrl}`);
+                    
+                    // Gửi API để lấy ảnh với Bearer token sử dụng axios
+                    const response = await axios({
+                        method: 'GET',
+                        url: imageUrl,
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        responseType: 'blob' // Quan trọng: yêu cầu response dạng blob
+                    });
+                    
+                    // Tạo URL object từ blob
+                    imageObjectUrl = URL.createObjectURL(response.data);
+                    // Cập nhật state với URL ảnh
+                    setCourseImage(imageObjectUrl);
+                } catch (error) {
+                    console.error('Lỗi khi tải ảnh khóa học:', error);
+                }
+            }
+        };
+        
+        fetchCourseImage();
+        
+        // Cleanup function để giải phóng URL object khi component unmount
+        return () => {
+            if (imageObjectUrl) {
+                URL.revokeObjectURL(imageObjectUrl);
+            }
+        };
+    }, [course]);
 
     // Hàm tạo slug từ tên khóa học
     const createSlug = (name) => {
