@@ -27,6 +27,7 @@ import TestResultDetail from './components/teacher/TestResultDetail';
 import TeacherInfo from './components/teacher/TeacherInfo';
 import TeacherDocuments from './components/teacher/TeacherDocuments';
 import ManageDocument from './components/teacher/ManageDocument';
+import TeacherCourseContent from './components/teacher/TeacherCourseContent';
 
 // Student Routes
 import CoursesPage from './components/student/CoursesPage';
@@ -191,6 +192,11 @@ function App() {
               <TeacherLayout>
                 <CourseManagementPage />
               </TeacherLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/teacher/course-content/:courseId" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherCourseContent />
             </ProtectedRoute>
           } />
           <Route path="/teacher/course/:courseId/add-students" element={

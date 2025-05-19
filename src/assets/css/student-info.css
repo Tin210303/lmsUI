@@ -236,7 +236,7 @@
 }
 
 .browse-courses-btn {
-    background-color: #066fbf;
+    background-color: var(--primary-color);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -247,7 +247,7 @@
 }
 
 .browse-courses-btn:hover {
-    background-color: #0559a2;
+    background-color: var(--primary-hover-color);
 }
 
 /* Styling for loading courses */

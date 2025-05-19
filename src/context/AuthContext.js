@@ -211,6 +211,50 @@ export const AuthProvider = ({ children }) => {
                 switch (response.data.code) {
                     case 0: // Success
                         const { token } = response.data.result;
+                        
+                        // Kiểm tra role từ token trước khi hoàn tất đăng nhập
+                        try {
+                            // Kiểm tra token tồn tại
+                            if (!token) {
+                                throw new Error('Token không tồn tại');
+                            }
+                            
+                            // Giải mã phần payload của JWT token
+                            const tokenParts = token.split('.');
+                            if (tokenParts.length !== 3) {
+                                throw new Error('Token không hợp lệ');
+                            }
+                            
+                            // Giải mã Base64 của phần payload
+                            const payload = JSON.parse(atob(tokenParts[1]));
+                            
+                            // Kiểm tra role trong payload
+                            if (!payload || !payload.scope) {
+                                throw new Error('Token không chứa thông tin quyền truy cập');
+                            }
+
+                            const userRole = payload.scope;
+                            
+                            // Kiểm tra xem role có khớp với role đã chọn không
+                            const isTeacherWithStudentRole = role === 'teacher' && userRole !== 'ROLE_TEACHER';
+                            const isStudentWithTeacherRole = role === 'student' && userRole !== 'ROLE_STUDENT';
+                            
+                            if (isTeacherWithStudentRole || isStudentWithTeacherRole) {
+                                // Role không khớp, trả về lỗi mà không thực hiện đăng nhập
+                                return { 
+                                    success: false, 
+                                    error: `Tài khoản này không tồn tại hoặc không có quyền đăng nhập với vai trò ${role === 'teacher' ? 'giảng viên' : 'sinh viên'}`
+                                };
+                            }
+                        } catch (error) {
+                            console.error('Lỗi khi kiểm tra token:', error);
+                            return { 
+                                success: false, 
+                                error: `Có lỗi xảy ra khi xác thực tài khoản: ${error.message}`
+                            };
+                        }
+                        
+                        // Nếu kiểm tra role thành công, tiếp tục quá trình đăng nhập
                         const userData = { ...response.data.result, role };
                         const expiryTime = Date.now() + TOKEN_VALID_DURATION;
                         
@@ -237,24 +281,24 @@ export const AuthProvider = ({ children }) => {
                         return { success: true };
 
                     case 1: // Account not found
-                        return { success: false, error: 'Account not found' };
+                        return { success: false, error: 'Tài khoản không tồn tại' };
                     
                     case 2: // Wrong password
-                        return { success: false, error: 'Incorrect password' };
+                        return { success: false, error: 'Mật khẩu không chính xác' };
                     
                     case 3: // Account locked
-                        return { success: false, error: 'Account is locked' };
+                        return { success: false, error: 'Tài khoản đã bị khóa' };
                     
                     default:
-                        return { success: false, error: 'Unknown error occurred' };
+                        return { success: false, error: 'Đã xảy ra lỗi không xác định' };
                 }
             }
-            return { success: false, error: 'Invalid response from server' };
+            return { success: false, error: 'Phản hồi không hợp lệ từ máy chủ' };
         } catch (error) {
             console.error('Login error:', error);
             return { 
                 success: false, 
-                error: error.response?.data?.message || 'Network error occurred'
+                error: error.response?.data?.message || 'Đã xảy ra lỗi kết nối'
             };
         }
     }, [navigate]);

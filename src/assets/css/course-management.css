@@ -621,4 +621,606 @@
 
 .alert-exit {
     animation: slideOutRight 0.3s ease-in forwards;
+}
+
+/* Teacher Course Content Management Styles */
+
+.teacher-add-chapter-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.teacher-add-chapter-button:hover {
+    background-color: var(--primary-hover-color);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.teacher-chapter-actions {
+    display: flex;
+    align-items: center;
+}
+
+.no-content-message {
+    padding: 30px;
+    text-align: center;
+    color: #666;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.no-lessons-message {
+    padding: 15px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+/* Menu Styles */
+.menu-trigger-button {
+    background: none;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.menu-trigger-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.item-menu {
+    position: absolute;
+    right: 10px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    min-width: 150px;
+    padding: 5px 0;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.menu-item:hover {
+    background-color: #f0f0f0;
+}
+
+.edit-item {
+    color: #0056b3;
+}
+
+.delete-item {
+    color: #dc3545;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Modal Container */
+.modal-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 500px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Modal Header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e1e1e1;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-button:hover {
+    color: #333;
+}
+
+/* Form Group */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #4a90e2;
+}
+
+/* Modal Actions */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.cancel-button,
+.confirm-button {
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+}
+
+.cancel-button {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.cancel-button:hover {
+    background-color: #e1e1e1;
+}
+
+.confirm-button {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.confirm-button:hover {
+    background-color: #3a7cc7;
+}
+
+.cancel-button:disabled,
+.confirm-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Chapter Edit Modal */
+.chapter-edit-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.chapter-edit-modal-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 500px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.chapter-edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e1e1e1;
+}
+
+.chapter-edit-modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.chapter-edit-close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chapter-edit-close-button:hover {
+    color: #333;
+}
+
+.chapter-edit-form-group {
+    margin-bottom: 20px;
+}
+
+.chapter-edit-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.chapter-edit-form-group input,
+.chapter-edit-form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    font-size: 16px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.chapter-edit-form-group input:focus,
+.chapter-edit-form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.chapter-edit-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.chapter-edit-cancel-button,
+.chapter-edit-confirm-button {
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+}
+
+.chapter-edit-cancel-button {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.chapter-edit-cancel-button:hover {
+    background-color: #e1e1e1;
+}
+
+.chapter-edit-confirm-button {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.chapter-edit-confirm-button:hover {
+    background-color: #3a7cc7;
+}
+
+.chapter-edit-cancel-button:disabled,
+.chapter-edit-confirm-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Lesson Edit Modal */
+.lesson-edit-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.lesson-edit-modal-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 500px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.lesson-edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e1e1e1;
+}
+
+.lesson-edit-modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.lesson-edit-close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lesson-edit-close-button:hover {
+    color: #333;
+}
+
+.lesson-edit-form-group {
+    margin-bottom: 20px;
+}
+
+.lesson-edit-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.lesson-edit-form-group input,
+.lesson-edit-form-group textarea,
+.lesson-edit-form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    font-size: 16px;
+    font-family: inherit;
+}
+
+.lesson-edit-form-group input[type="file"] {
+    padding: 8px;
+    border: 1px dashed #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.lesson-edit-form-group input:focus,
+.lesson-edit-form-group textarea:focus,
+.lesson-edit-form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.file-hint {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 12px;
+}
+
+.selected-file {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background-color: #f0f9ff;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.clear-file-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.clear-file-btn:hover {
+    background-color: #e1e1e1;
+    color: #333;
+}
+
+.lesson-edit-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.lesson-edit-cancel-button,
+.lesson-edit-confirm-button {
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+}
+
+.lesson-edit-cancel-button {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.lesson-edit-cancel-button:hover {
+    background-color: #e1e1e1;
+}
+
+.lesson-edit-confirm-button {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.lesson-edit-confirm-button:hover {
+    background-color: #3a7cc7;
+}
+
+.lesson-edit-cancel-button:disabled,
+.lesson-edit-confirm-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Teacher Modal Styles */
+.teacher-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.teacher-modal {
+    background-color: white;
+    border-radius: 8px;
+    width: 400px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-in-out;
+}
+
+.teacher-modal h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.teacher-modal-content {
+    margin-bottom: 20px;
+}
+
+.teacher-modal-content label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.teacher-modal-content input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    color: #333;
+    font-family: inherit;
+}
+
+.teacher-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.teacher-modal-cancel,
+.teacher-modal-confirm {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.teacher-modal-cancel {
+    background-color: #f0f0f0;
+    color: #212529;
+    transition: background-color 0.2s ease;
+}
+
+.teacher-modal-cancel:hover {
+    background-color: #ddd;
+}
+
+.teacher-modal-confirm {
+    background-color: var(--primary-color);
+    color: white;
+    transition: background-color 0.2s ease;
+}
+
+.teacher-modal-confirm:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 } 

@@ -1,0 +1,324 @@
+/* Ghi đè và mở rộng CSS từ learning-page.css */
+
+.teacher-info {
+    background-color: #00478f;
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+/* Điều chỉnh cho chế độ xem giảng viên */
+.learning-header {
+    background-color: #1e40af;
+}
+
+.lesson-item {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.lesson-content {
+    padding: 20px;
+}
+
+.lesson-content h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #1e40af;
+}
+
+.lesson-preview {
+    background-color: #f8f9fa;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-placeholder {
+    background-color: #e2e8f0;
+    padding: 30px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 800px;
+    height: 450px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.quiz-answer {
+    margin-top: 20px;
+    padding: 10px 15px;
+    background-color: #dbeafe;
+    border-radius: 6px;
+    color: #1e40af;
+    font-weight: 500;
+}
+
+/* Chế độ xem cho người dùng là giảng viên */
+.learning-container.teacher-mode .course-sidebar {
+    border-left: 1px solid #cbd5e1;
+    background-color: #f8fafc;
+}
+
+.learning-container.teacher-mode .chapter-header {
+    background-color: #e2e8f0;
+}
+
+.learning-container.teacher-mode .chapter-header.active {
+    background-color: #cbd5e1;
+}
+
+.learning-container.teacher-mode .lesson-item.active {
+    background-color: #dbeafe;
+}
+
+.toggle-sidebar-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #475569;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.toggle-sidebar-button:hover {
+    background-color: #e2e8f0;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.content-html {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fff;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.content-preview {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 1px solid #e0e0e0;
+}
+
+.video-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 1px solid #e0e0e0;
+    min-height: 200px;
+}
+
+.video-path {
+    margin-top: 10px;
+    font-family: monospace;
+    padding: 5px 10px;
+    background-color: #e9e9e9;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.lesson-content h2 {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #333;
+}
+
+/* Các styles cho nội dung HTML của bài học */
+.content-html h1, .content-html h2, .content-html h3, .content-html h4 {
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    color: #333;
+}
+
+.content-html p {
+    margin-bottom: 1em;
+    line-height: 1.6;
+}
+
+.content-html ul, .content-html ol {
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+.content-html code {
+    background-color: #f1f1f1;
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.content-html pre {
+    background-color: #f5f5f5;
+    padding: 1em;
+    overflow-x: auto;
+    border-radius: 4px;
+    margin-bottom: 1em;
+}
+
+.content-html img {
+    max-width: 100%;
+    height: auto;
+    margin: 1em 0;
+}
+
+.content-html table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+}
+
+.content-html th, .content-html td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.content-html th {
+    background-color: #f2f2f2;
+}
+
+.content-html tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.file-document-wrapper {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #edf2f7;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.file-info h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #2d3748;
+}
+
+.file-download-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.file-download-button:hover {
+    background-color: #2c5282;
+}
+
+.file-download-button:disabled {
+    background-color: #a0aec0;
+    cursor: not-allowed;
+}
+
+.file-preview {
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+.file-preview-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 15px;
+}
+
+.file-path {
+    font-family: monospace;
+    background-color: #edf2f7;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    margin: 10px 0;
+    word-break: break-all;
+    max-width: 100%;
+}
+
+/* CSS cho tải xuống tài liệu */
+.material-download {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.material-download:hover {
+    background-color: #2c5282;
+}
+
+.material-download:disabled {
+    background-color: #a0aec0;
+    cursor: not-allowed;
+}
+
+.file-material-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.file-material-header h2 {
+    margin: 0;
+} 

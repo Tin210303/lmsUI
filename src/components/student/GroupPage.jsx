@@ -259,8 +259,8 @@ const GroupPage = () => {
                           />
                       ))
                     ) : (
-                      <div className="no-groups">
-                        <p>Không tìm thấy nhóm nào</p>
+                      <div className="empty-message">
+                        <p>Bạn chưa tham gia nhóm nào.</p>
                       </div>
                     )}
                 </div>

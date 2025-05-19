@@ -195,8 +195,13 @@ const TeacherAddQuiz = () => {
                 }
             }
             
+            // Điều hướng về trang danh sách khóa học, truyền expandedLessonId để chương vừa thêm quiz được mở rộng
+            // giúp người dùng dễ dàng thấy được câu hỏi vừa thêm vào
             navigate('/teacher/course', {
-                state: { courseId }
+                state: { 
+                    courseId,
+                    expandedLessonId: lessonId
+                }
             });
         } catch (error) {
             console.error('Error creating quiz:', error);
@@ -211,7 +216,7 @@ const TeacherAddQuiz = () => {
         <div className="teacher-add-quiz-container">
             <div className="quiz-header">
                 <h2>Thêm câu hỏi kiểm tra</h2>
-                <p className="lesson-name">{lessonName}</p>
+                <p className="quiz-lesson-name">{lessonName}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="quiz-form">
@@ -222,7 +227,7 @@ const TeacherAddQuiz = () => {
                             {quizzes.length > 1 && (
                                 <button
                                     type="button"
-                                    className="remove-question-button"
+                                    className="quiz-remove-question-button"
                                     onClick={() => removeQuestion(index)}
                                 >
                                     <Trash2 size={16} />
@@ -230,7 +235,7 @@ const TeacherAddQuiz = () => {
                             )}
                         </div>
 
-                        <div className="form-group">
+                        <div className="quiz-form-group">
                             <label>Nội dung:</label>
                             <textarea
                                 value={quiz.question}
@@ -240,12 +245,12 @@ const TeacherAddQuiz = () => {
                             />
                         </div>
 
-                        <div className="options-group">
-                            <div className="options-header">
+                        <div className="quiz-options-group">
+                            <div className="quiz-options-header">
                                 <label>Các lựa chọn:</label>
                                 <button
                                     type="button"
-                                    className="add-option-button"
+                                    className="quiz-add-option-button"
                                     onClick={() => addNewOption(index)}
                                     disabled={Object.keys(quiz.options).length >= 6}
                                 >
@@ -254,7 +259,7 @@ const TeacherAddQuiz = () => {
                                 </button>
                             </div>
                             {Object.entries(quiz.options).map(([key, value]) => (
-                                <div key={key} className="option-item">
+                                <div key={key} className="quiz-option-item">
                                     <label>{key}.</label>
                                     <input
                                         type="text"
@@ -266,7 +271,7 @@ const TeacherAddQuiz = () => {
                                     {Object.keys(quiz.options).length > 2 && (
                                         <button
                                             type="button"
-                                            className="remove-option-button"
+                                            className="quiz-remove-option-button"
                                             onClick={() => removeOption(index, key)}
                                         >
                                             <Trash2 size={16} />
@@ -276,7 +281,7 @@ const TeacherAddQuiz = () => {
                             ))}
                         </div>
 
-                        <div className="form-group">
+                        <div className="quiz-form-group">
                             <label>Đáp án đúng:</label>
                             <select
                                 value={quiz.answer}
@@ -295,29 +300,36 @@ const TeacherAddQuiz = () => {
 
                 <button
                     type="button"
-                    className="add-question-button"
+                    className="quiz-add-question-button"
                     onClick={addNewQuestion}
                 >
                     <Plus size={16} />
                     <span>Thêm câu hỏi</span>
                 </button>
 
-                {error && <div className="error-message">{error}</div>}
+                {error && <div className="quiz-error-message">{error}</div>}
 
-                <div className="form-actions">
+                <div className="quiz-form-actions">
                     <button
                         type="button"
-                        className="cancel-button"
-                        onClick={() => navigate('/teacher/course', {
-                            state: { courseId }
-                        })}
+                        className="quiz-cancel-button"
+                        onClick={() => {
+                            // Khi hủy, vẫn truyền expandedLessonId để khi quay lại trang TeacherCourseDetail
+                            // chương sẽ được mở rộng, giúp cải thiện UX
+                            navigate('/teacher/course', {
+                                state: { 
+                                    courseId,
+                                    expandedLessonId: lessonId
+                                }
+                            });
+                        }}
                         disabled={submitting}
                     >
                         Hủy
                     </button>
                     <button
                         type="submit"
-                        className="submit-button"
+                        className="quiz-submit-button"
                         disabled={submitting}
                     >
                         {submitting ? 'Đang tạo...' : 'Lưu các câu hỏi'}

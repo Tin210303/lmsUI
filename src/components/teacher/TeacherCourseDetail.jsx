@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
 import '../../assets/css/teacher-course-detail.css';
-import { CircleGauge, Film, Clock, AlarmClock, FileText, FileQuestion, File, Plus, SquareUser, GraduationCap, FolderPen } from 'lucide-react';
+import { CircleGauge, Film, Clock, AlarmClock, FileText, FileQuestion, File, Plus, SquareUser, GraduationCap, FolderPen, BookOpen, Image, Video } from 'lucide-react';
 import Alert from '../common/Alert';
 import { API_BASE_URL, ADD_LESSON_API } from '../../services/apiService';
 
 const TeacherCourseDetail = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { courseId } = location.state || {};
+    const { courseId, expandedLessonId } = location.state || {};
     const [course, setCourse] = useState(null);
     console.log(course);
     
@@ -49,8 +49,12 @@ const TeacherCourseDetail = () => {
 
                 setCourse(response.data.result);
                 
-                // Mở rộng chương có thứ tự nhỏ nhất
-                if (response.data.result.lesson?.length > 0) {
+                // Nếu có expandedLessonId từ location.state, mở chương đó
+                if (expandedLessonId) {
+                    setExpandedLessons({ [expandedLessonId]: true });
+                }
+                // Nếu không, mở rộng chương có thứ tự nhỏ nhất
+                else if (response.data.result.lesson?.length > 0) {
                     const sortedLessons = [...response.data.result.lesson].sort((a, b) => a.order - b.order);
                     const firstLessonId = sortedLessons[0].id;
                     setExpandedLessons({ [firstLessonId]: true });
@@ -64,7 +68,7 @@ const TeacherCourseDetail = () => {
         };
 
         fetchCourseDetail();
-    }, [courseId]);
+    }, [courseId, expandedLessonId]);
 
     // Thêm useEffect để lấy ảnh đại diện khóa học nếu có
     useEffect(() => {
@@ -152,6 +156,18 @@ const TeacherCourseDetail = () => {
             month: '2-digit',
             day: '2-digit'
         });
+    };
+
+    // Hàm trả về icon phù hợp với loại bài học (file, image, video)
+    const getChapterIcon = (type) => {
+        switch (type) {
+            case 'image':
+                return <Image size={16} />;
+            case 'video':
+                return <Video size={16} />;
+            default:
+                return <FileText size={16} />;
+        }
     };
 
     const handleAddLesson = async () => {
@@ -245,7 +261,7 @@ const TeacherCourseDetail = () => {
                             </button>
                         </div>
                         <div className="teacher-content-summary">
-                            {sortedLessons.length} chương • {totalChapters} bài học • {course.learningDurationType}
+                            {sortedLessons.length} chương • {totalChapters} bài học
                         </div>
                     </div>
                     
@@ -273,7 +289,7 @@ const TeacherCourseDetail = () => {
                                                     .map((chapter) => (
                                                     <div key={chapter.id} className="teacher-lesson-item">
                                                         <div className="teacher-lesson-icon">
-                                                            <FileText size={16} />
+                                                            {getChapterIcon(chapter.type)}
                                                         </div>
                                                         <div className="teacher-lesson-title">
                                                             {chapter.name}
@@ -329,7 +345,7 @@ const TeacherCourseDetail = () => {
                                                     }
                                                 })}
                                             >
-                                                <FileText size={16} />
+                                                <File size={16} />
                                                 <span>Thêm tài liệu</span>
                                             </button>
                                             <button 
@@ -385,11 +401,19 @@ const TeacherCourseDetail = () => {
                             </div>
                         )}
                     </div>
-
-                    <button className="teacher-edit-button d-flex justify-center align-center" onClick={handleManageCourse}>
-                        <FolderPen size={16} />
-                        <span style={{marginLeft: '8px'}}>Quản lý khóa học</span>
-                    </button>
+                    <div className='d-flex justify-center align-center'>
+                        <button className="teacher-edit-button d-flex justify-center align-center" onClick={handleManageCourse}>
+                            <FolderPen size={16} />
+                            <span style={{marginLeft: '8px'}}>Quản lý khóa học</span>
+                        </button>
+                        <button 
+                            className="teacher-edit-button d-flex justify-center align-center"
+                            onClick={() => navigate(`/teacher/course-content/${courseId}`)}
+                        >
+                            <BookOpen size={16} />
+                            <span style={{marginLeft: '8px'}}>Chi tiết khóa học</span>
+                        </button>
+                    </div>
 
                     <div className="teacher-course-info">
                         <div className="teacher-info-item">
@@ -408,7 +432,9 @@ const TeacherCourseDetail = () => {
                         </div>
                         <div className="teacher-info-item">
                             <Clock size={16} className='mr-16'/>
-                            <span className="teacher-info-text">{course.learningDurationType}</span>
+                            <span className="teacher-info-text">
+                                {course.learningDurationType === 'LIMITED' ? "Không thời hạn" : "Có thời hạn"}
+                            </span>
                         </div>
                         <div className="teacher-info-item">
                             <AlarmClock size={16} className='mr-16'/>

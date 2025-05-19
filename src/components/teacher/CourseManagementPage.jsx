@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../../assets/css/course-management.css';
-import { Trash2, UserPlus } from 'lucide-react';
+import { Trash2, UserPlus, MoreVertical, Edit, ChevronRight, Book, Folder, Plus, FileText, FileQuestion, File, Film, X, Loader2 } from 'lucide-react';
 import logo from '../../logo.svg';
 import Alert from '../common/Alert';
-import { API_BASE_URL, GET_PROGRESS_PERCENT, GET_JOINCLASS_REQUEST, GET_STUDENT_COURSE, JOINCLASS_APPROVED_API, JOINCLASS_REJECTED_API, DELETE_STUDENT_COURSE, UPDATE_COURSE_API, GET_MAJOR_API, DELETE_MULTIPLE_STUDENTS_COURSE } from '../../services/apiService';
+import { API_BASE_URL, GET_PROGRESS_PERCENT, GET_JOINCLASS_REQUEST, GET_STUDENT_COURSE, JOINCLASS_APPROVED_API, JOINCLASS_REJECTED_API, DELETE_STUDENT_COURSE, UPDATE_COURSE_API, GET_MAJOR_API, DELETE_MULTIPLE_STUDENTS_COURSE, ADD_LESSON_API } from '../../services/apiService';
 
 const CourseManagementPage = () => {
     const { courseId } = useParams();
@@ -44,6 +44,47 @@ const CourseManagementPage = () => {
 
     const [alert, setAlert] = useState(null);
 
+    // States for course content management
+    const [chapters, setChapters] = useState([]);
+    const [expandedChapters, setExpandedChapters] = useState({});
+    const [menuOpen, setMenuOpen] = useState({ type: null, id: null });
+    const [showDeleteLessonConfirm, setShowDeleteLessonConfirm] = useState(false);
+    const [showDeleteChapterConfirm, setShowDeleteChapterConfirm] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+
+    // States for modals
+    const [showEditChapterModal, setShowEditChapterModal] = useState(false);
+    const [editChapterData, setEditChapterData] = useState({
+        idLesson: '',
+        description: '',
+        order: 1
+    });
+    const [editChapterLoading, setEditChapterLoading] = useState(false);
+    
+    // State cho modal thêm chương
+    const [showAddChapterModal, setShowAddChapterModal] = useState(false);
+    const [newChapter, setNewChapter] = useState({
+        description: '',
+        order: 1
+    });
+    const [addChapterLoading, setAddChapterLoading] = useState(false);
+
+    // States for lesson (chapter in API) modals
+    const [showEditLessonModal, setShowEditLessonModal] = useState(false);
+    const [editLessonData, setEditLessonData] = useState({
+        chapterId: '',
+        name: '',
+        order: 1,
+        type: 'video',
+    });
+    const [editLessonLoading, setEditLessonLoading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const fileInputRef = useRef(null);
+
+    // Thêm states cho quản lý bài kiểm tra và tài liệu học tập
+    const [showDeleteQuizConfirm, setShowDeleteQuizConfirm] = useState(false);
+    const [showDeleteMaterialConfirm, setShowDeleteMaterialConfirm] = useState(false);
+
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -61,6 +102,19 @@ const CourseManagementPage = () => {
                     setActionMenuOpen(false);
                 }
             }
+            
+            // Handle course content menus
+            if (menuOpen.type && menuOpen.id) {
+                const isMenuButton = event.target.closest('.menu-trigger-button');
+                if (isMenuButton) {
+                    return;
+                }
+                
+                const isInsideMenu = event.target.closest('.item-menu');
+                if (!isInsideMenu) {
+                    setMenuOpen({ type: null, id: null });
+                }
+            }
         };
         
         // Thêm event listener khi component mount
@@ -70,7 +124,7 @@ const CourseManagementPage = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [actionMenuOpen]);
+    }, [actionMenuOpen, menuOpen]);
 
     // Reset selected students when component mounts or when tab changes
     useEffect(() => {
@@ -83,7 +137,10 @@ const CourseManagementPage = () => {
     useEffect(() => {
         fetchData();
         fetchMajors();
-    }, [courseId]);
+        if (activeTab === 'content') {
+            fetchCourseContent();
+        }
+    }, [courseId, activeTab]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -437,6 +494,422 @@ const CourseManagementPage = () => {
             setBulkDeleteLoading(false);
             setConfirmDialogOpen(false);
         }
+    };
+
+    // New function to fetch course content
+    const fetchCourseContent = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            // Fetch course with all content
+            const response = await axios.get(`${API_BASE_URL}/lms/course/${courseId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data && response.data.code === 0) {
+                // Set course data
+                setCourse(response.data.result);
+                
+                // Lưu ý: trong API, 'lesson' thực chất là các chương và 'chapter' trong lesson là các bài học
+                const lessons = response.data.result.lesson || [];
+                
+                // Sort lessons by order
+                const sortedLessons = [...lessons].sort((a, b) => (a.order || 0) - (b.order || 0));
+                setChapters(sortedLessons);
+                
+                // Initialize expanded state for lessons/chapters
+                const expanded = {};
+                sortedLessons.forEach(lesson => {
+                    expanded[lesson.id] = false;
+                });
+                setExpandedChapters(expanded);
+            } else {
+                throw new Error(response.data?.message || 'Failed to fetch course content');
+            }
+        } catch (err) {
+            console.error('Error fetching course content:', err);
+            setError(err.response?.data?.message || err.message || 'An error occurred');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Toggle chapter expansion
+    const toggleChapter = (chapterId) => {
+        setExpandedChapters(prev => ({
+            ...prev,
+            [chapterId]: !prev[chapterId]
+        }));
+    };
+
+    // Toggle menu for chapter or lesson
+    const toggleMenu = (e, type, id) => {
+        e.stopPropagation();
+        if (menuOpen.type === type && menuOpen.id === id) {
+            setMenuOpen({ type: null, id: null });
+        } else {
+            setMenuOpen({ type, id });
+        }
+    };
+
+    // Handle edit chapter (lesson in API) button click
+    const handleEditChapter = (e, lesson) => {
+        e.stopPropagation();
+        setMenuOpen({ type: null, id: null });
+        setEditChapterData({
+            idLesson: lesson.id,
+            description: lesson.description || '',
+            order: lesson.order || 1
+        });
+        setShowEditChapterModal(true);
+    };
+
+    // Handle update chapter (lesson in API)
+    const handleUpdateChapter = async (e) => {
+        e.preventDefault();
+        setEditChapterLoading(true);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            // API call to update lesson (which is a chapter in the UI)
+            const response = await axios.put(`${API_BASE_URL}/lms/lesson/update`, editChapterData, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã cập nhật chương học thành công!');
+                fetchCourseContent();
+                setShowEditChapterModal(false);
+            } else {
+                throw new Error(response.data?.message || 'Failed to update chapter');
+            }
+        } catch (err) {
+            console.error('Error updating chapter:', err);
+            showAlert('error', 'Lỗi', 'Không thể cập nhật chương học. Vui lòng thử lại sau.');
+        } finally {
+            setEditChapterLoading(false);
+        }
+    };
+
+    // Handle delete chapter (lesson in API)
+    const handleDeleteChapter = async () => {
+        if (!itemToDelete) return;
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            // API call to delete lesson (which is a chapter in the UI)
+            const response = await axios.delete(`${API_BASE_URL}/lms/lesson/${itemToDelete.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã xóa chương học thành công!');
+                fetchCourseContent();
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete chapter');
+            }
+        } catch (err) {
+            console.error('Error deleting chapter:', err);
+            showAlert('error', 'Lỗi', 'Không thể xóa chương học. Vui lòng thử lại sau.');
+        } finally {
+            setShowDeleteChapterConfirm(false);
+            setItemToDelete(null);
+        }
+    };
+
+    // Handle edit lesson (chapter in API)
+    const handleEditLesson = (e, chapter) => {
+        e.stopPropagation();
+        setMenuOpen({ type: null, id: null });
+        setEditLessonData({
+            chapterId: chapter.id,
+            name: chapter.name || '',
+            order: chapter.order || 1,
+            type: chapter.type || 'video'
+        });
+        setShowEditLessonModal(true);
+    };
+
+    // Handle update lesson (chapter in API)
+    const handleUpdateLesson = async (e) => {
+        e.preventDefault();
+        setEditLessonLoading(true);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            if (!selectedFile) {
+                showAlert('error', 'Lỗi', 'Vui lòng chọn file cho bài học');
+                setEditLessonLoading(false);
+                return;
+            }
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('chapterId', editLessonData.chapterId);
+            formData.append('name', editLessonData.name);
+            formData.append('order', editLessonData.order);
+            formData.append('type', editLessonData.type);
+            formData.append('file', selectedFile);
+
+            // API call to update chapter (lesson in UI)
+            const response = await axios.put(`${API_BASE_URL}/lms/chapter/update`, formData, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã cập nhật bài học thành công!');
+                fetchCourseContent();
+                setShowEditLessonModal(false);
+                setSelectedFile(null);
+            } else {
+                throw new Error(response.data?.message || 'Failed to update lesson');
+            }
+        } catch (err) {
+            console.error('Error updating lesson:', err);
+            showAlert('error', 'Lỗi', 'Không thể cập nhật bài học. Vui lòng thử lại sau.');
+        } finally {
+            setEditLessonLoading(false);
+        }
+    };
+
+    // Handle delete lesson (chapter in API)
+    const handleDeleteLesson = async () => {
+        if (!itemToDelete) return;
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            // Create FormData for the delete request
+            const formData = new FormData();
+            formData.append('chapterId', itemToDelete.id);
+
+            // API call to delete chapter (lesson in UI)
+            const response = await axios.delete(`${API_BASE_URL}/lms/chapter/delete`, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`
+                },
+                params: {
+                    chapterId: itemToDelete.id
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã xóa bài học thành công!');
+                fetchCourseContent();
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete lesson');
+            }
+        } catch (err) {
+            console.error('Error deleting lesson:', err);
+            showAlert('error', 'Lỗi', 'Không thể xóa bài học. Vui lòng thử lại sau.');
+        } finally {
+            setShowDeleteLessonConfirm(false);
+            setItemToDelete(null);
+        }
+    };
+
+    // Handle file change
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    };
+
+    // Reset file input
+    const resetFileInput = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        setSelectedFile(null);
+    };
+
+    // Function to get file extension
+    const getFileExtension = (filename) => {
+        return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2);
+    }
+
+    // Function to handle adding a new chapter (lesson in API)
+    const handleAddChapter = () => {
+        setShowAddChapterModal(true);
+    };
+    
+    // Function to handle submitting new chapter
+    const handleAddChapterSubmit = async () => {
+        if (!newChapter.description.trim()) return;
+        
+        setAddChapterLoading(true);
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            // Tính order mới là max hiện tại + 1
+            const currentMaxOrder = Math.max(...chapters.map(chapter => chapter.order || 0), 0);
+            const newOrder = currentMaxOrder + 1;
+
+            const response = await axios.post(ADD_LESSON_API, {
+                courseId,
+                description: newChapter.description,
+                order: newOrder
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Thêm chương mới thành công!');
+                fetchCourseContent();
+                setShowAddChapterModal(false);
+                setNewChapter({ description: '', order: 1 });
+            } else {
+                throw new Error(response.data?.message || 'Failed to add chapter');
+            }
+        } catch (err) {
+            console.error('Error adding chapter:', err);
+            showAlert('error', 'Lỗi', 'Không thể thêm chương mới. Vui lòng thử lại sau.');
+        } finally {
+            setAddChapterLoading(false);
+        }
+    };
+
+    // Function to handle adding a new lesson (chapter in API)
+    const handleAddLesson = (lessonId) => {
+        navigate('/teacher/add-lesson', {
+            state: { 
+                courseId,
+                lessonId: lessonId,
+                lessonName: `${chapters.find(lesson => lesson.id === lessonId)?.description || ''}`,
+                type: 'content'
+            }
+        });
+    };
+
+    // Function to handle adding material
+    const handleAddMaterial = (lessonId) => {
+        navigate('/teacher/add-material', {
+            state: { 
+                courseId,
+                lessonId: lessonId,
+                lessonName: `${chapters.find(lesson => lesson.id === lessonId)?.description || ''}`,
+                type: 'material'
+            }
+        });
+    };
+
+    // Function to handle adding quiz
+    const handleAddQuiz = (lessonId) => {
+        navigate('/teacher/add-quiz', {
+            state: { 
+                courseId,
+                lessonId: lessonId,
+                lessonName: `${chapters.find(lesson => lesson.id === lessonId)?.description || ''}`,
+                type: 'quiz'
+            }
+        });
+    };
+
+    // Handle delete lesson (chapter in API) confirmation
+    const handleDeleteLessonConfirm = (e, chapter) => {
+        e.stopPropagation();
+        setItemToDelete(chapter);
+        setShowDeleteLessonConfirm(true);
+        setMenuOpen({ type: null, id: null });
+    };
+
+    // Handle delete quiz
+    const handleDeleteQuiz = async () => {
+        if (!itemToDelete) return;
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            // API call to delete quiz
+            const response = await axios.delete(`${API_BASE_URL}/lms/lessonquiz/${itemToDelete.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã xóa bài kiểm tra thành công!');
+                fetchCourseContent();
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete quiz');
+            }
+        } catch (err) {
+            console.error('Error deleting quiz:', err);
+            showAlert('error', 'Lỗi', 'Không thể xóa bài kiểm tra. Vui lòng thử lại sau.');
+        } finally {
+            setShowDeleteQuizConfirm(false);
+            setItemToDelete(null);
+        }
+    };
+
+    // Handle delete material
+    const handleDeleteMaterial = async () => {
+        if (!itemToDelete) return;
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            // API call to delete material
+            const response = await axios.delete(`${API_BASE_URL}/lms/lessonmaterial/${itemToDelete.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã xóa tài liệu học tập thành công!');
+                fetchCourseContent();
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete material');
+            }
+        } catch (err) {
+            console.error('Error deleting material:', err);
+            showAlert('error', 'Lỗi', 'Không thể xóa tài liệu học tập. Vui lòng thử lại sau.');
+        } finally {
+            setShowDeleteMaterialConfirm(false);
+            setItemToDelete(null);
+        }
+    };
+
+    // Handle delete quiz confirmation
+    const handleDeleteQuizConfirm = (e, quiz) => {
+        e.stopPropagation();
+        const quizToDelete = {
+            id: quiz.id,
+            question: quiz.question
+        };
+        setItemToDelete(quizToDelete);
+        setShowDeleteQuizConfirm(true);
+        setMenuOpen({ type: null, id: null });
+    };
+
+    // Handle delete material confirmation
+    const handleDeleteMaterialConfirm = (e, material) => {
+        e.stopPropagation();
+        const materialToDelete = {
+            id: material.id,
+            fileName: material.fileName || 'Tài liệu không tên'
+        };
+        setItemToDelete(materialToDelete);
+        setShowDeleteMaterialConfirm(true);
+        setMenuOpen({ type: null, id: null });
     };
 
     const renderCourseInfo = () => (
@@ -809,27 +1282,326 @@ const CourseManagementPage = () => {
                 </div>
             )}
 
-            {/* Thêm hộp thoại xác nhận xóa nhiều sinh viên */}
-            {confirmDialogOpen && (
+            {/* Modal chỉnh sửa chương */}
+            {showEditChapterModal && (
+                <div className="chapter-edit-modal-overlay">
+                    <div className="chapter-edit-modal-container">
+                        <div className="chapter-edit-modal-header">
+                            <h2>Chỉnh sửa chương</h2>
+                            <button 
+                                className="chapter-edit-close-button"
+                                onClick={() => setShowEditChapterModal(false)}
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateChapter}>
+                            <div className="chapter-edit-form-group">
+                                <label htmlFor="chapterDescription">Tên chương:</label>
+                                <input
+                                    id="chapterDescription"
+                                    type='text'
+                                    value={editChapterData.description}
+                                    onChange={(e) => setEditChapterData({
+                                        ...editChapterData,
+                                        description: e.target.value
+                                    })}
+                                    required
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="chapter-edit-form-group">
+                                <label htmlFor="chapterOrder">Thứ tự:</label>
+                                <input
+                                    id="chapterOrder"
+                                    type="number"
+                                    min="1"
+                                    value={editChapterData.order}
+                                    onChange={(e) => setEditChapterData({
+                                        ...editChapterData,
+                                        order: parseInt(e.target.value) || 1
+                                    })}
+                                    required
+                                />
+                            </div>
+                            <div className="chapter-edit-modal-actions">
+                                <button 
+                                    type="button" 
+                                    className="chapter-edit-cancel-button"
+                                    onClick={() => setShowEditChapterModal(false)}
+                                    disabled={editChapterLoading}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="chapter-edit-confirm-button"
+                                    disabled={editChapterLoading}
+                                >
+                                    {editChapterLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation dialog for chapter deletion */}
+            {showDeleteChapterConfirm && (
                 <div className="delete-modal-overlay">
                     <div className="delete-modal-container">
-                        <h2>Xác nhận xóa</h2>
-                        <p>Bạn có chắc chắn muốn xóa {selectedStudents.length} sinh viên đã chọn khỏi khóa học?</p>
-                        <p>Hành động này không thể hoàn tác.</p>
+                        <h2>Xác nhận xóa chương</h2>
+                        <p>Bạn có chắc chắn muốn xóa chương "{itemToDelete?.description}" không?</p>
+                        <p>Tất cả bài học, bài kiểm tra và tài liệu trong chương này cũng sẽ bị xóa. Hành động này không thể hoàn tác.</p>
                         <div className="delete-modal-actions">
                             <button 
                                 className="btn-cancel-delete"
-                                onClick={() => setConfirmDialogOpen(false)}
-                                disabled={bulkDeleteLoading}
+                                onClick={() => {
+                                    setShowDeleteChapterConfirm(false);
+                                    setItemToDelete(null);
+                                }}
                             >
                                 Hủy
                             </button>
                             <button 
                                 className="btn-confirm-delete"
-                                onClick={handleDeleteMultipleStudents}
-                                disabled={bulkDeleteLoading}
+                                onClick={handleDeleteChapter}
                             >
-                                {bulkDeleteLoading ? 'Đang xóa...' : 'Xóa'}
+                                <Trash2 size={16} /> Xác nhận xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal chỉnh sửa bài học (chapter trong API) */}
+            {showEditLessonModal && (
+                <div className="lesson-edit-modal-overlay">
+                    <div className="lesson-edit-modal-container">
+                        <div className="lesson-edit-modal-header">
+                            <h2>Chỉnh sửa bài học</h2>
+                            <button 
+                                className="lesson-edit-close-button"
+                                onClick={() => {
+                                    setShowEditLessonModal(false);
+                                    resetFileInput();
+                                }}
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateLesson}>
+                            <div className="lesson-edit-form-group">
+                                <label htmlFor="lessonName">Tên bài học:</label>
+                                <input
+                                    id="lessonName"
+                                    type="text"
+                                    value={editLessonData.name}
+                                    onChange={(e) => setEditLessonData({
+                                        ...editLessonData,
+                                        name: e.target.value
+                                    })}
+                                    required
+                                />
+                            </div>
+                            <div className="lesson-edit-form-group">
+                                <label htmlFor="lessonOrder">Thứ tự:</label>
+                                <input
+                                    id="lessonOrder"
+                                    type="number"
+                                    min="1"
+                                    value={editLessonData.order}
+                                    onChange={(e) => setEditLessonData({
+                                        ...editLessonData,
+                                        order: parseInt(e.target.value) || 1
+                                    })}
+                                    required
+                                />
+                            </div>
+                            <div className="lesson-edit-form-group">
+                                <label htmlFor="lessonType">Loại bài học:</label>
+                                <select
+                                    id="lessonType"
+                                    value={editLessonData.type}
+                                    onChange={(e) => setEditLessonData({
+                                        ...editLessonData,
+                                        type: e.target.value
+                                    })}
+                                    required
+                                >
+                                    <option value="video">Video</option>
+                                    <option value="file">Tài liệu</option>
+                                </select>
+                            </div>
+                            <div className="lesson-edit-form-group">
+                                <label htmlFor="lessonFile">File bài học:</label>
+                                <input
+                                    id="lessonFile"
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    required
+                                    accept={editLessonData.type === 'video' ? 'video/*' : '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx'}
+                                />
+                                <small className="file-hint">
+                                    {editLessonData.type === 'video' 
+                                        ? "Chấp nhận các định dạng video phổ biến (MP4, MOV, AVI, etc.)" 
+                                        : "Chấp nhận các định dạng tài liệu phổ biến (PDF, DOC, DOCX, PPT, etc.)"}
+                                </small>
+                                {selectedFile && (
+                                    <div className="selected-file">
+                                        <span>Đã chọn: {selectedFile.name}</span>
+                                        <button 
+                                            type="button" 
+                                            className="clear-file-btn"
+                                            onClick={resetFileInput}
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="lesson-edit-modal-actions">
+                                <button 
+                                    type="button" 
+                                    className="lesson-edit-cancel-button"
+                                    onClick={() => {
+                                        setShowEditLessonModal(false);
+                                        resetFileInput();
+                                    }}
+                                    disabled={editLessonLoading}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="lesson-edit-confirm-button"
+                                    disabled={editLessonLoading || !selectedFile}
+                                >
+                                    {editLessonLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation dialog for lesson deletion */}
+            {showDeleteLessonConfirm && (
+                <div className="delete-modal-overlay">
+                    <div className="delete-modal-container">
+                        <h2>Xác nhận xóa bài học</h2>
+                        <p>Bạn có chắc chắn muốn xóa bài học "{itemToDelete?.name}" không?</p>
+                        <p>Hành động này không thể hoàn tác.</p>
+                        <div className="delete-modal-actions">
+                            <button 
+                                className="btn-cancel-delete"
+                                onClick={() => {
+                                    setShowDeleteLessonConfirm(false);
+                                    setItemToDelete(null);
+                                }}
+                            >
+                                Hủy
+                            </button>
+                            <button 
+                                className="btn-confirm-delete"
+                                onClick={handleDeleteLesson}
+                            >
+                                <Trash2 size={16} /> Xác nhận xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation dialog for quiz deletion */}
+            {showDeleteQuizConfirm && (
+                <div className="delete-modal-overlay">
+                    <div className="delete-modal-container">
+                        <h2>Xác nhận xóa bài kiểm tra</h2>
+                        <p>Bạn có chắc chắn muốn xóa bài kiểm tra "{itemToDelete?.question}" không?</p>
+                        <p>Hành động này không thể hoàn tác.</p>
+                        <div className="delete-modal-actions">
+                            <button 
+                                className="btn-cancel-delete"
+                                onClick={() => {
+                                    setShowDeleteQuizConfirm(false);
+                                    setItemToDelete(null);
+                                }}
+                            >
+                                Hủy
+                            </button>
+                            <button 
+                                className="btn-confirm-delete"
+                                onClick={handleDeleteQuiz}
+                            >
+                                <Trash2 size={16} /> Xác nhận xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation dialog for material deletion */}
+            {showDeleteMaterialConfirm && (
+                <div className="delete-modal-overlay">
+                    <div className="delete-modal-container">
+                        <h2>Xác nhận xóa tài liệu học tập</h2>
+                        <p>Bạn có chắc chắn muốn xóa tài liệu học tập "{itemToDelete?.fileName}" không?</p>
+                        <p>Hành động này không thể hoàn tác.</p>
+                        <div className="delete-modal-actions">
+                            <button 
+                                className="btn-cancel-delete"
+                                onClick={() => {
+                                    setShowDeleteMaterialConfirm(false);
+                                    setItemToDelete(null);
+                                }}
+                            >
+                                Hủy
+                            </button>
+                            <button 
+                                className="btn-confirm-delete"
+                                onClick={handleDeleteMaterial}
+                            >
+                                <Trash2 size={16} /> Xác nhận xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal for adding a new chapter */}
+            {showAddChapterModal && (
+                <div className="teacher-modal-overlay">
+                    <div className="teacher-modal">
+                        <h3>Thêm chương mới</h3>
+                        <div className="teacher-modal-content">
+                            <div className="form-group">
+                                <label>Tiêu đề chương</label>
+                                <input
+                                    type="text"
+                                    value={newChapter.description}
+                                    onChange={(e) => setNewChapter({...newChapter, description: e.target.value})}
+                                    placeholder="Nhập tên chương"
+                                />
+                            </div>
+                        </div>
+                        <div className="teacher-modal-actions">
+                            <button 
+                                onClick={() => {
+                                    setShowAddChapterModal(false);
+                                    setNewChapter({ description: '', order: 1 });
+                                }} 
+                                className="teacher-modal-cancel"
+                            >
+                                Hủy
+                            </button>
+                            <button 
+                                onClick={handleAddChapterSubmit}
+                                className="teacher-modal-confirm" 
+                                disabled={addChapterLoading || !newChapter.description.trim()}
+                            >
+                                {addChapterLoading ? 'Đang xử lý...' : 'Thêm chương'}
                             </button>
                         </div>
                     </div>

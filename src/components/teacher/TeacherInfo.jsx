@@ -13,7 +13,56 @@ const CourseCard = ({ course }) => {
     const [lessonCount] = useState(course?.lessonCount || '0');
     const [teacherName] = useState(course.teacher?.fullName || 'Giảng viên');
     const [studentCount] = useState(course?.studentCount || '0');
-    const [courseImage] = useState(null);
+    const [courseImage, setCourseImage] = useState(null);
+
+    // Thêm useEffect để lấy ảnh đại diện khóa học nếu có
+    useEffect(() => {
+        let imageObjectUrl = null;
+        
+        const fetchCourseImage = async () => {
+            // Kiểm tra nếu course.image không null
+            if (course.image) {
+                try {
+                    // Lấy token xác thực
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                        console.error('No authentication token found');
+                        return;
+                    }
+                    
+                    // Tạo URL đầy đủ cho ảnh
+                    const imageUrl = `${API_BASE_URL}${course.image}`;
+                    console.log(`Đang tải ảnh khóa học từ: ${imageUrl}`);
+                    
+                    // Gọi API để lấy ảnh với Bearer token sử dụng axios
+                    const response = await axios({
+                        method: 'GET',
+                        url: imageUrl,
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        responseType: 'blob' // Quan trọng: yêu cầu response dạng blob
+                    });
+                    
+                    // Tạo URL object từ blob
+                    imageObjectUrl = URL.createObjectURL(response.data);
+                    // Cập nhật state với URL ảnh
+                    setCourseImage(imageObjectUrl);
+                } catch (error) {
+                    console.error('Lỗi khi tải ảnh khóa học:', error);
+                }
+            }
+        };
+        
+        fetchCourseImage();
+        
+        // Cleanup function để giải phóng URL object khi component unmount
+        return () => {
+            if (imageObjectUrl) {
+                URL.revokeObjectURL(imageObjectUrl);
+            }
+        };
+    }, [course.image]);
 
     const handleClick = () => {
         navigate('/teacher/course', {
@@ -112,6 +161,8 @@ const TeacherInfo = () => {
         avatar: null,
         id: null
     });
+    console.log(studentData);
+    
     
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -352,16 +403,7 @@ const TeacherInfo = () => {
                         {avatarUrl ? (
                             <img src={avatarUrl} alt="Avatar" />
                         ) : (
-                            <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="100" cy="100" r="100" fill="#ff4757" />
-                                <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
-                                <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
-                                <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
-                                <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
-                                <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
-                                <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
-                            </svg>
-                            
+                            <img src='https://randomuser.me/api/portraits/men/1.jpg' />
                         )}
                     </div>
                 </div>
@@ -413,9 +455,9 @@ const TeacherInfo = () => {
                     </>
                 ) : (
                     <div className="no-courses-container">
-                        <p className="no-courses-message">Bạn chưa đăng ký khóa học nào.</p>
-                        <button className="browse-courses-btn" onClick={() => navigate('/courses')}>
-                            Tìm khóa học ngay
+                        <p className="no-courses-message">Bạn chưa có khóa học nào.</p>
+                        <button className="browse-courses-btn" onClick={() => navigate('/teacher/add-course')}>
+                            Tạo khóa học ngay
                         </button>
                     </div>
                 )}
@@ -449,15 +491,7 @@ const TeacherInfo = () => {
                                         className="avatar-preview-image"
                                     />
                                 ) : (
-                                    <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="100" cy="100" r="100" fill="#ff4757" />
-                                        <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
-                                        <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
-                                        <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
-                                        <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
-                                        <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
-                                        <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
-                                    </svg>
+                                    <img src='https://randomuser.me/api/portraits/men/1.jpg' className="avatar-preview-image"/>
                                 )}
                             </div>
                             <label className="upload-avatar-button">

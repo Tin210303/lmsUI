@@ -47,7 +47,7 @@
 }
 
 /* Modal styles */
-.modal-overlay {
+.header-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -60,23 +60,30 @@
     z-index: 1000;
 }
 
-.modal-container {
+.header-modal-container {
     background-color: #f9f9f9;
     width: 100%;
     max-width: 600px;
+    max-height: 98vh;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
 }
 
-.modal-header {
+.header-modal-header {
     display: flex;
     justify-content: space-between;
     padding: 1rem;
     border-bottom: 1px solid #eee;
+    background-color: #f9f9f9;
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 
-.back-btn, .close-btn {
+.header-back-btn, .header-close-btn {
     background: none;
     border: none;
     cursor: pointer;
@@ -84,18 +91,20 @@
     color: #666;
 }
 
-.close-btn {
+.header-close-btn {
     font-size: 1.5rem;
 }
 
-.modal-content {
+.header-modal-content {
     padding: 2rem 4rem;
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px); /* 60px is approx header height */
 }
 
-.login-logo {
+.header-login-logo {
     font-size: 1.5rem;
     width: 70px;
     height: 75px;
@@ -104,13 +113,13 @@
     align-items: center;
 }
 
-.modal-title {
+.header-modal-title {
     font-size: 1.75rem;
     text-align: center;
     margin: 20px 0;
 }
 
-.modal-warning {
+.header-modal-warning {
     color: #f05123;
     text-align: center;
     margin-bottom: 1.5rem;
@@ -118,39 +127,39 @@
     max-width: 80%;
 }
 
-.login-form {
+.header-login-form {
     width: 100%;
 }
 
-.login-form p {
+.header-login-form p {
     text-align: center;
     font-size: 12px;
     margin-bottom: 1rem;
 }
 
-.form-group {
+.header-form-group {
     margin-bottom: 1rem;
     width: 100%;
 }
 
-.login-options {
+.header-login-options {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
 }
 
-.login-options .phone-option {
+.header-login-options .header-phone-option {
     color: #666;
     cursor: pointer;
 }
 
-.login-options .active {
+.header-login-options .active {
     color: #333;
     font-weight: bold;
 }
 
-.form-group-login {
+.header-form-group-login {
     width: 100%;
     padding: 0.8rem 0.75rem 0.8rem 1rem;
     border: 1px solid #ddd;
@@ -159,17 +168,25 @@
     outline: none;
 }
 
-.form-checkbox {
+.header-form-checkbox {
     display: flex;
     align-items: center;
 }
 
-.form-checkbox label {
+.header-form-checkbox label {
     margin-left: 0.5rem;
     font-size: 0.8rem;
 }
 
-.login-submit-btn {
+.forgot-link {
+    font-size: 12px;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
+.header-login-submit-btn {
     width: 100%;
     padding: 0.75rem;
     border: none;
@@ -180,7 +197,7 @@
     transition: background-color 0.3s ease;
 }
 
-.login-submit-btn.disabled {
+.header-login-submit-btn.disabled {
     background-color: #23cfb5;
     background-image: linear-gradient(to right, #23cfb5, #45dbf6);
     color: white;
@@ -188,14 +205,14 @@
     opacity: 0.5;
 }
 
-.login-submit-btn.active {
+.header-login-submit-btn.active {
     background-color: #23cfb5;
     color: white;
     cursor: pointer;
     background-image: linear-gradient(to right, #23cfb5, #45dbf6);
 }
 
-.form-footer {
+.header-form-footer {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -205,16 +222,16 @@
     font-size: 14px;
 }
 
-.register-link {
+.header-register-link {
     color: #2356b8;;
     text-decoration: none;
 }
 
-.register-link:hover {
+.header-register-link:hover {
     text-decoration: underline;
 }
 
-.forgot-link {
+.header-forgot-link {
     color: #666;
     text-decoration: none;
 }
@@ -229,7 +246,7 @@
     color: #666;
 }
 
-.role-selection-buttons {
+.header-role-selection-buttons {
     display: flex;
     gap: 10px;
     margin: auto;
@@ -237,7 +254,7 @@
     width: 50%;
 }
 
-.role-btn {
+.header-role-btn {
     padding: 20px 10px;
     border-radius: 8px;
     font-size: 14px;
@@ -248,19 +265,19 @@
     transition: 0.3s;
 }
 
-.role-btn.student {
+.header-role-btn.student {
     background-color: var(--primary-color);
 }
 
-.role-btn.teacher {
+.header-role-btn.teacher {
     background-color: #6f42c1;
 }
 
-.role-btn.active {
+.header-role-btn.active {
     transform: scale(1.05);
 }
 
-.role-btn:hover {
+.header-role-btn:hover {
     opacity: 0.85;
 }
 
@@ -1116,10 +1133,21 @@ select.form-group-login:focus {
 .alert.alert-danger {
     background-color: #ffebee;
     color: #d32f2f;
-    padding: 10px;
+    padding: 12px 16px;
     border-radius: 8px;
-    margin-bottom: 15px;
+    margin-bottom: 16px;
     font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-left: 4px solid #d32f2f;
+    line-height: 1.4;
+    word-wrap: break-word;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 /* Mắt xem mật khẩu */
@@ -1367,4 +1395,66 @@ select.form-group-login:focus {
 
 .modal-exit {
     animation: fadeOut 0.3s ease forwards;
+}
+
+/* Thêm CSS cho các nút xác thực */
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.header-register-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+    border: 1px solid #fff;
+}
+
+.header-register-btn:hover {
+    background-color: #fff;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+/* CSS cho container input mật khẩu */
+.password-input-container {
+    position: relative;
+    width: 100%;
+}
+
+.password-toggle-button {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+}
+
+.password-toggle-button:hover {
+    color: #333;
+}
+
+.password-toggle-button:focus {
+    outline: none;
+}
+
+/* CSS cho thông báo lỗi mật khẩu không khớp */
+.password-mismatch-error {
+    color: #ef4444;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
 }

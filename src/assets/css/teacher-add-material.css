@@ -1,7 +1,7 @@
 .teacher-add-material-container {
-    max-width: 800px;
+    width: 70%;
     margin: 2rem auto;
-    padding: 2rem;
+    padding: 20px 60px;
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -17,7 +17,7 @@
     margin-bottom: 0.5rem;
 }
 
-.lesson-name {
+.material-lesson-name {
     color: #666;
     font-size: 1rem;
 }
@@ -28,7 +28,7 @@
     gap: 1.5rem;
 }
 
-.file-upload-area {
+.material-file-upload-area {
     border: 2px dashed #ddd;
     border-radius: 8px;
     padding: 2rem;
@@ -37,123 +37,155 @@
     transition: all 0.3s ease;
 }
 
-.file-upload-area.drag-active {
+.material-file-upload-area.material-drag-active {
     border-color: #1a73e8;
     background-color: rgba(26, 115, 232, 0.05);
 }
 
-.upload-icon {
+.material-file-upload-area.material-file-selected {
+    cursor: default;
+    padding: 1rem;
+}
+
+.material-upload-icon {
     color: #666;
     margin-bottom: 1rem;
 }
 
-.upload-text {
+.material-upload-text {
     font-size: 1rem;
     color: #333;
     margin-bottom: 0.5rem;
 }
 
-.upload-hint {
+.material-upload-hint {
     font-size: 0.875rem;
     color: #666;
 }
 
-.file-input {
+.material-file-input {
     display: none;
 }
 
-.file-input-label {
+.material-file-input-label {
     color: #1a73e8;
     cursor: pointer;
     text-decoration: underline;
 }
 
-.file-input-label:hover {
+.material-file-input-label:hover {
     color: #1557b0;
 }
 
-.selected-file {
+.material-selected-file {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
     background-color: #f8f9fa;
     border-radius: 4px;
+    width: 100%;
 }
 
-.file-info {
+.material-file-info {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    flex: 1;
 }
 
-.file-name {
+.material-file-name {
     font-weight: 500;
     color: #333;
+    word-break: break-all;
 }
 
-.file-size {
+.material-file-size {
     font-size: 0.875rem;
     color: #666;
 }
 
-.remove-file {
-    background: none;
+.material-file-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.material-change-file-btn,
+.material-remove-file {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
     border: none;
-    color: #666;
+    border-radius: 4px;
+    font-size: 0.875rem;
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
 }
 
-.remove-file:hover {
-    background-color: #eee;
+.material-change-file-btn {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    border: 1px solid #1a73e8;
 }
 
-.error-message {
+.material-change-file-btn:hover {
+    background-color: #d2e3fc;
+}
+
+.material-remove-file {
+    background-color: #fbe8e8;
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+.material-remove-file:hover {
+    background-color: #f5d1d1;
+}
+
+.material-error-message {
     color: #dc3545;
     font-size: 0.875rem;
     margin-top: -0.5rem;
 }
 
-.form-actions {
+.material-form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
     margin-top: 1rem;
 }
 
-.cancel-button,
-.submit-button {
-    padding: 0.75rem 1.5rem;
+.material-cancel-button,
+.material-submit-button {
+    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 999px;
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
-.cancel-button {
-    background-color: #e0e0e0;
-    color: #333;
+.material-cancel-button {
+    background-color: #dc3545;
+    color: #fff;
 }
 
-.submit-button {
-    background-color: #1a73e8;
+.material-submit-button {
+    background-color: var(--primary-color);
     color: white;
 }
 
-.cancel-button:hover {
-    background-color: #d0d0d0;
+.material-cancel-button:hover:not(:disabled) {
+    background-color: #c82333;
 }
 
-.submit-button:hover {
-    background-color: #1557b0;
+.material-submit-button:hover:not(:disabled) {
+    background-color: var(--primary-hover-color);
 }
 
-.cancel-button:disabled,
-.submit-button:disabled {
+.material-cancel-button:disabled,
+.material-submit-button:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 } 

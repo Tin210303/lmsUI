@@ -1928,7 +1928,6 @@ const ManageDocument = () => {
                 {/* Add bulk actions dropdown */}
                 {selectedDocuments.length > 0 && (
                     <div className="filter-item">
-                        <span className="filter-label">Thao tác:</span>
                         <div className="filter-dropdown bulk-actions" ref={bulkActionsRef}>
                             <button 
                                 className="filter-button" 
