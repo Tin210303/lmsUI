@@ -10,7 +10,7 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     const [loading, setLoading] = useState(true);
     
     // Đảm bảo các state là kiểu dữ liệu chuỗi
-    const [lessonCount, setLessonCount] = useState(course?.lessonCount?.toString() || '0');
+    const [lessonCount, setLessonCount] = useState(course?.chapterCount?.toString() || '0');
     
     // Đảm bảo teacherName là chuỗi, tránh render trực tiếp đối tượng teacher
     const [teacherName, setTeacherName] = useState(
@@ -144,6 +144,23 @@ const CourseCard = ({ course, isEnrolled = false }) => {
     // Đảm bảo course status là chuỗi
     const courseStatus = typeof course.status === 'string' ? course.status : 'Unknown';
 
+    // Format giá tiền
+    const formatPrice = (price) => {
+        if (!price && price !== 0) return 'Miễn phí';
+        if (price === 0) return 'Miễn phí';
+        return `${price.toLocaleString('vi-VN')}$`;
+    };
+
+    // Xác định nội dung hiển thị cho phí khóa học
+    const renderCourseFee = () => {
+        if (course.feeType === 'NON_CHARGEABLE' || !course.feeType) {
+            return <span className="status-badge free">Miễn phí</span>;
+        } else if (course.feeType === 'CHARGEABLE') {
+            return <span className="status-badge price">{formatPrice(course.price)}</span>;
+        }
+        return null;
+    };
+
     return (
         <div className="course-card" onClick={handleClick}>
             <div className="course-image">
@@ -172,6 +189,7 @@ const CourseCard = ({ course, isEnrolled = false }) => {
                     <span className={`status-badge ${courseStatus.toLowerCase()}`}>
                         {courseStatus}
                     </span>
+                    {renderCourseFee()}
                 </div>
             </div>
             <div className="course-stats">

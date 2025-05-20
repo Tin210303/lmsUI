@@ -210,6 +210,18 @@
     color: #d22424;
 }
 
+.status-badge.free {
+    background-color: #e6f7e6;
+    color: #28a745;
+    margin-left: 8px;
+}
+
+.status-badge.price {
+    background-color: #fff2e6;
+    color: #ff6b00;
+    margin-left: 8px;
+}
+
 .loading {
     text-align: center;
     padding: 3rem;

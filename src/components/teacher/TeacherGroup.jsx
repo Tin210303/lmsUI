@@ -759,7 +759,14 @@ const GroupPage = () => {
                 ))
               ) : (
                 <div className="no-groups">
-                  <p>Không tìm thấy nhóm nào</p>
+                  <p>Bạn chưa tạo nhóm nào, bấm vào nút Add group để tạo nhóm</p>
+                  <button 
+                    className="create-group-btn"
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    <Plus size={18} style={{marginRight: '4px'}}/>
+                    Add Group
+                  </button>
                 </div>
               )}
             </div>

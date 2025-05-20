@@ -411,7 +411,7 @@ const StudentHeader = () => {
                             lastStudied: lastStudiedInfo,
                             progress: progressPercentage,
                             path: `/learning/${course.id}`,
-                            image: courseDetail.image || null
+                            image: courseDetail.image
                         };
                     } catch (error) {
                         console.error(`Lỗi khi xử lý khóa học ${course.id}:`, error);
@@ -691,15 +691,15 @@ const StudentHeader = () => {
                     {courses.map(course => (
                         <Link to={course.path} key={course.id} className="header-course-item">
                             <div className="header-course-image">
-                                {course.image ? (
-                                    <img src={course.image} alt={course.title} className="header-course-img" />
+                                {courseImages[course.id] ? (
+                                    <img 
+                                        src={courseImages[course.id]} 
+                                        alt={course.title} 
+                                        className="search-result-img" 
+                                    />
                                 ) : (
-                                    <div className="header-course-placeholder" style={{ background: getConsistentColor(course.id) }}>
-                                        <div className="header-image-text">
-                                            <div style={{ fontSize: "24px", fontWeight: "bold" }}>
-                                                {course.title?.charAt(0).toUpperCase() || 'C'}
-                                            </div>
-                                        </div>
+                                    <div className="search-result-placeholder" style={{ background: getConsistentColor(course.id) }}>
+                                        {course.title.charAt(0).toUpperCase()}
                                     </div>
                                 )}
                             </div>

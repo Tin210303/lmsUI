@@ -18,7 +18,12 @@ const TeacherAddCourse = () => {
         endDate: '',
         learningDurationType: 'UNLIMITED',
         majorId: '',
+        feeType: 'FREE',
+        price: 0
     });
+
+    // Thêm state cho việc kiểm soát hiển thị trường price
+    const [showPriceField, setShowPriceField] = useState(false);
 
     // Thêm state cho ảnh đại diện
     const [courseImage, setCourseImage] = useState(null);
@@ -60,6 +65,11 @@ const TeacherAddCourse = () => {
         fetchMajors();
     }, []);
 
+    // Cập nhật useEffect để kiểm soát hiển thị trường price dựa vào feeType
+    useEffect(() => {
+        setShowPriceField(formData.feeType === 'CHARGEABLE');
+    }, [formData.feeType]);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         
@@ -67,7 +77,6 @@ const TeacherAddCourse = () => {
             ...prev,
             [name]: value
         }));
-        console.log(formData);
     };
 
     // Xử lý khi thay đổi checkbox ngày kết thúc
@@ -101,6 +110,17 @@ const TeacherAddCourse = () => {
         fileInputRef.current.click();
     };
 
+    // Xử lý thay đổi loại phí
+    const handleFeeTypeChange = (e) => {
+        const value = e.target.value;
+        setFormData(prev => ({
+            ...prev,
+            feeType: value,
+            // Reset giá tiền nếu chuyển sang miễn phí
+            price: value === 'FREE' ? 0 : prev.price
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -113,7 +133,9 @@ const TeacherAddCourse = () => {
                 status: formData.status,
                 startDate: formData.startDate,
                 majorId: formData.majorId,
-                learningDurationType: formData.learningDurationType
+                learningDurationType: formData.learningDurationType,
+                feeType: formData.feeType,
+                price: formData.feeType === 'CHARGEABLE' ? Number(formData.price) : 0
             };
             
             // Chỉ gửi endDate nếu đã bật tùy chọn có thời hạn
@@ -293,6 +315,32 @@ const TeacherAddCourse = () => {
                         required={isEndDateEnabled}
                     />
                 </div>
+                <div className="teacher-form-group">
+                    <label>Loại phí <span style={{color: '#f00', marginLeft: '20px'}}>*</span></label>
+                    <select 
+                        name="feeType"
+                        value={formData.feeType}
+                        onChange={handleFeeTypeChange}
+                        required
+                    >
+                        <option value="FREE">Miễn phí</option>
+                        <option value="CHARGEABLE">Có phí</option>
+                    </select>
+                </div>
+                {showPriceField && (
+                    <div className="teacher-form-group">
+                        <label>Giá tiền (USD) <span style={{color: '#f00', marginLeft: '20px'}}>*</span></label>
+                        <input 
+                            type="number" 
+                            name="price"
+                            value={formData.price}
+                            onChange={handleInputChange}
+                            min="0"
+                            step="0.01"
+                            required={formData.feeType === 'CHARGEABLE'}
+                        />
+                    </div>
+                )}
                 <div className="teacher-form-group">
                     <label>Ảnh đại diện cho khóa học</label>
                     <div className="course-image-container">

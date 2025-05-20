@@ -3,6 +3,31 @@
     width: 100%;
 }
 
+.section-header-with-back {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.course-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: transparent;
+    border: none;
+    border-radius: 999px;
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.course-back-btn:hover {
+    background-color: #e0e0e0;
+    transform: translateX(-3px);
+}
+
 .course-management-header {
     margin-bottom: 30px;
 }
@@ -84,11 +109,6 @@
     max-width: 800px;
 }
 
-.course-info-form h2 {
-    color: #333;
-    margin-bottom: 20px;
-}
-
 .form-group-manage {
     display: flex;
     flex-direction: row;
@@ -163,12 +183,6 @@
 /* Members Section */
 .course-members {
     margin-bottom: 30px;
-}
-
-.course-members h2,
-.course-registrations h2 {
-    color: #333;
-    margin-bottom: 20px;
 }
 
 .course-section-title {
@@ -1223,4 +1237,199 @@
 .teacher-modal-confirm:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+}
+
+.image-upload-container {
+    width: 70%;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.image-upload-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    position: relative;
+    cursor: pointer;
+    background-color: #f9f9f9;
+}
+
+.image-upload-box input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.upload-icon {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.image-preview {
+    position: relative;
+}
+
+.image-preview img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+}
+
+.image-actions {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f0f0f0;
+}
+
+.upload-new-btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.delete-image-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.major-name-display {
+    margin-top: 5px;
+    font-style: italic;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .course-management-container {
+        padding: 15px;
+    }
+    
+    .course-back-btn {
+        font-size: 13px;
+        padding: 6px 12px;
+    }
+    
+    .course-back-btn span {
+        display: none;
+    }
+    
+    .content-left,
+    .content-right {
+        width: 100%;
+    }
+}
+
+/* CSS cho phần upload ảnh đại diện khóa học */
+.course-image-upload-container {
+    width: 70%;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.course-image-preview-box {
+    border: 2px dashed #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.course-image-preview {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.course-auto-generated-wrapper {
+    width: 100%;
+    max-width: 400px;
+}
+
+.course-auto-generated-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.course-initial {
+    font-size: 72px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.course-name-display {
+    font-size: 18px;
+    text-align: center;
+    max-width: 80%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.course-change-image-btn {
+    margin-top: 10px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.course-change-image-btn:hover {
+    background-color: var(--primary-hover-color);
+}
+
+.course-image-filename {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+.course-image-size {
+    margin-left: 5px;
+    font-size: 12px;
+    color: #999;
+}
+
+/* Course Image Actions */
+.course-image-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    justify-content: center;
+}
+
+.course-remove-image-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.course-remove-image-btn:hover {
+    background-color: #c82333;
 } 

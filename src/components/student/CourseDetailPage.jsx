@@ -4,7 +4,7 @@ import { getCourseById } from '../../services/courseService';
 import { GET_STATUS_API, API_BASE_URL, GET_STUDENT_INFO } from '../../services/apiService';
 import axios from 'axios';
 import '../../assets/css/course-detail.css';
-import { Check, CirclePlay, Film, Clock, AlarmClock, Plus, Minus, SquareUser, GraduationCap } from 'lucide-react';
+import { Check, CirclePlay, Film, Clock, AlarmClock, Plus, Minus, SquareUser, GraduationCap, DollarSign } from 'lucide-react';
 import Alert from '../common/Alert';
 
 const CourseDetailPage = () => {
@@ -20,6 +20,7 @@ const CourseDetailPage = () => {
     const [studentId, setStudentId] = useState(null);
     const [alert, setAlert] = useState(null);
     const [courseImage, setCourseImage] = useState(null);
+    const [isPurchasing, setIsPurchasing] = useState(false);
 
     const showAlert = (type, title, message) => {
         setAlert({ type, title, message });
@@ -186,7 +187,63 @@ const CourseDetailPage = () => {
         }));
     };
 
+    // Hàm mua khóa học qua Paypal
+    const handlePurchaseCourse = async () => {
+        try {
+            setIsPurchasing(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            // Dữ liệu thanh toán
+            const paymentData = {
+                price: course.price,
+                currency: "USD",
+                method: "paypal",
+                intent: "sale",
+                description: `Payment for course: ${course.name}`,
+                cancelUrl: "http://localhost:3000/paypal/cancel",
+                successUrl: "http://localhost:3000/paypal/success",
+                courseId: course.id
+            };
+
+            // Gọi API thanh toán
+            const response = await axios.post('http://localhost:8080/lms/paypal/pay', paymentData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                // Mở URL thanh toán trong tab mới
+                const paymentUrl = response.data.message;
+                if (paymentUrl) {
+                    window.open(paymentUrl, '_blank');
+                    showAlert('info', 'Chuyển hướng', 'Đang chuyển sang trang thanh toán PayPal. Vui lòng hoàn tất thanh toán.');
+                } else {
+                    throw new Error('Không nhận được đường dẫn thanh toán');
+                }
+            } else {
+                throw new Error(response.data?.message || 'Khởi tạo thanh toán thất bại');
+            }
+        } catch (error) {
+            console.error('Error purchasing course:', error);
+            showAlert('error', 'Lỗi', `Có lỗi xảy ra khi khởi tạo thanh toán: ${error.message}`);
+        } finally {
+            setIsPurchasing(false);
+        }
+    };
+
     const handleRegister = async () => {
+        // Nếu khóa học có phí
+        if (course.feeType === 'CHARGEABLE') {
+            handlePurchaseCourse();
+            return;
+        }
+
+        // Xử lý khóa học miễn phí
         if (isEnrolled || isPending) {
             navigate(`/learning/${course.id}`);
         } else {
@@ -230,6 +287,22 @@ const CourseDetailPage = () => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
         return date.toLocaleDateString('vi-VN');
+    };
+
+    // Format giá tiền
+    const formatPrice = (price) => {
+        if (!price && price !== 0) return 'Miễn phí';
+        if (price === 0) return 'Miễn phí';
+        return `${price.toLocaleString('vi-VN')}$`;
+    };
+
+    // Xác định text và style cho button
+    const getButtonText = () => {
+        if (isEnrolled) return 'TIẾP TỤC HỌC';
+        if (isPending) return 'ĐANG CHỜ DUYỆT';
+        if (isRejected) return 'ĐÃ BỊ TỪ CHỐI';
+        if (isPurchasing || isRegistering) return 'ĐANG XỬ LÝ...';
+        return course.feeType === 'CHARGEABLE' ? 'MUA KHÓA HỌC' : 'ĐĂNG KÝ HỌC';
     };
 
     const numChapters = course.lesson.length;
@@ -294,7 +367,7 @@ const CourseDetailPage = () => {
                     <p>
                         <strong>{sortedLessons.length}</strong> chương · 
                         <strong>{displayLessonOrItemCount}</strong> {lessonOrItemText} · 
-                        Thời gian học: <strong>{formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}</strong>
+                        Thời gian học: <strong>{course.endDate ? `${formatDate(course.startDate)} - ${formatDate(course.endDate)}` : "Không giới hạn"}</strong>
                     </p>
                 </div>
 
@@ -379,22 +452,26 @@ const CourseDetailPage = () => {
                     )}
                 </div>
                 <div className="price-box">
-                    {console.log(typeof isEnrolled, isEnrolled)}
+                    {course.feeType === 'CHARGEABLE' && (
+                        <div className="course-price">
+                            <DollarSign size={18} />
+                            <span>{formatPrice(course.price)}</span>
+                        </div>
+                    )}
+                    
                     <button 
-                        className="register-btn" 
+                        className={`register-btn ${course.feeType === 'CHARGEABLE' ? 'purchase-btn' : ''}`}
                         onClick={handleRegister}
-                        disabled={isPending}
+                        disabled={isPending || isPurchasing || isRegistering}
                     >
-                        {isEnrolled ? 'TIẾP TỤC HỌC' : 
-                         isPending ? 'ĐANG CHỜ DUYỆT' : 
-                         isRejected ? 'ĐÃ BỊ TỪ CHỐI' :
-                         isRegistering ? 'ĐANG ĐĂNG KÝ...' : 'ĐĂNG KÝ HỌC'}
+                        {getButtonText()}
                     </button>
+                    
                     <ul className="info-list">
                         <li><SquareUser size={16} className='mr-16'/>Giảng viên: {course.teacher?.fullName || 'Người dạy học'}</li>
                         <li><GraduationCap size={16} className='mr-16'/>Chuyên ngành: {course.major}</li>
                         <li><Film size={16} className='mr-16'/> Tổng số {numChapters} chương / {displayLessonOrItemCount} {lessonOrItemText}</li>
-                        <li><AlarmClock size={16} className='mr-16'/> {course.learningDurationType}</li>
+                        <li><AlarmClock size={16} className='mr-16'/> {course.learningDurationType === 'LIMITED' ? 'Có thời hạn' : 'Không thời hạn'}</li>
                         <li><Clock size={16} className='mr-16'/> Thời gian học: {formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}</li>
                     </ul>
                 </div>

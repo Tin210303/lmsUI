@@ -318,7 +318,7 @@ function Header() {
                 }
             });
 
-            if (response.data && response.data.code === 0) {
+            if (response.data.result === true && response.data.code === 0) {
                 setRegistrationStep(3);
                 setError('');
             } else {
@@ -377,23 +377,126 @@ function Header() {
         }
     };
 
-    // Xử lý nhập mã xác nhận
+    // Xử lý nhập mã xác nhận (cho trường hợp paste hoặc input khác không qua keydown)
     const handleVerificationCodeChange = (index, value) => {
-        if (value.length > 1) {
-            value = value.charAt(value.length - 1);
-        }
-        
-        if (!/^\d*$/.test(value) && value !== '') {
+        // Chỉ cho phép nhập số
+        if (!/^\d*$/.test(value)) {
             return;
         }
 
-        const newCode = [...verificationCode];
-        newCode[index] = value;
-        setVerificationCode(newCode);
+        // Nếu nhập nhiều ký tự (như khi paste), xử lý từng ký tự
+        if (value.length > 1) {
+            const digits = value.split('').filter(digit => /^\d$/.test(digit));
+            
+            // Cập nhật các ô từ vị trí hiện tại
+            const newCode = [...verificationCode];
+            for (let i = 0; i < Math.min(digits.length, 6 - index); i++) {
+                newCode[index + i] = digits[i];
+            }
+            setVerificationCode(newCode);
+            
+            // Focus vào ô tiếp theo sau khi đã điền
+            const nextIndex = Math.min(index + digits.length, 5);
+            const nextInput = document.getElementById(`verification-${nextIndex}`);
+            if (nextInput) nextInput.focus();
+        } else {
+            // Xử lý nhập một ký tự thông thường
+            const newCode = [...verificationCode];
+            newCode[index] = value;
+            setVerificationCode(newCode);
+            
+            // Tự động chuyển đến ô tiếp theo
+            if (value !== '' && index < 5) {
+                const nextInput = document.getElementById(`verification-${index + 1}`);
+                if (nextInput) nextInput.focus();
+            }
+        }
+    };
 
-        // Auto-focus next input
-        if (value !== '' && index < 5) {
-            const nextInput = document.getElementById(`verification-${index + 1}`);
+    // Xử lý sự kiện phím để hỗ trợ điều hướng giữa các ô nhập mã xác nhận
+    const handleVerificationKeyDown = (index, e) => {
+        // Xử lý các phím điều hướng và xóa
+        switch (e.key) {
+            case 'Backspace':
+                // Ngăn chặn xử lý mặc định của trình duyệt
+                e.preventDefault();
+
+                const newCode = [...verificationCode];
+
+                // Nếu ô hiện tại không trống, xóa giá trị của ô hiện tại
+                if (verificationCode[index] !== '') {
+                    newCode[index] = '';
+                    setVerificationCode(newCode);
+                } 
+                // Nếu ô hiện tại trống và không phải ô đầu tiên, chuyển focus về ô trước và xóa nó
+                else if (index > 0) {
+                    newCode[index - 1] = '';
+                    setVerificationCode(newCode);
+                    
+                    // Focus vào ô trước đó
+                    const prevInput = document.getElementById(`verification-${index - 1}`);
+                    if (prevInput) prevInput.focus();
+                }
+                break;
+            
+            case 'ArrowLeft':
+                // Di chuyển sang ô bên trái nếu có thể
+                if (index > 0) {
+                    const prevInput = document.getElementById(`verification-${index - 1}`);
+                    if (prevInput) prevInput.focus();
+                }
+                break;
+            
+            case 'ArrowRight':
+                // Di chuyển sang ô bên phải nếu có thể
+                if (index < 5) {
+                    const nextInput = document.getElementById(`verification-${index + 1}`);
+                    if (nextInput) nextInput.focus();
+                }
+                break;
+            
+            // Trường hợp nhấn phím là số từ 0-9, tự động điền và chuyển đến ô tiếp theo
+            default:
+                if (/^\d$/.test(e.key)) {
+                    e.preventDefault();
+                    const newCode = [...verificationCode];
+                    newCode[index] = e.key;
+                    setVerificationCode(newCode);
+                    
+                    // Tự động chuyển đến ô tiếp theo nếu không phải ô cuối
+                    if (index < 5) {
+                        const nextInput = document.getElementById(`verification-${index + 1}`);
+                        if (nextInput) nextInput.focus();
+                    }
+                }
+        }
+    };
+
+    // Xử lý sự kiện paste đặc biệt cho các ô nhập mã xác nhận
+    const handleVerificationPaste = (index, e) => {
+        // Ngăn xử lý mặc định của trình duyệt
+        e.preventDefault();
+        
+        // Lấy nội dung từ clipboard
+        const clipboardData = e.clipboardData || window.clipboardData;
+        const pastedData = clipboardData.getData('Text');
+        
+        // Lọc chỉ lấy các ký tự số
+        const digits = pastedData.split('').filter(char => /^\d$/.test(char));
+        
+        if (digits.length > 0) {
+            // Cập nhật các ô từ vị trí hiện tại
+            const newCode = [...verificationCode];
+            
+            for (let i = 0; i < Math.min(digits.length, 6 - index); i++) {
+                newCode[index + i] = digits[i];
+            }
+            
+            setVerificationCode(newCode);
+            
+            // Focus vào ô tiếp theo sau khi đã điền hoặc ô cuối cùng
+            const nextIndex = Math.min(index + digits.length, 5);
+            const nextInput = document.getElementById(`verification-${nextIndex}`);
             if (nextInput) nextInput.focus();
         }
     };
@@ -482,6 +585,8 @@ function Header() {
                                     maxLength="1"
                                     value={digit}
                                     onChange={(e) => handleVerificationCodeChange(index, e.target.value)}
+                                    onKeyDown={(e) => handleVerificationKeyDown(index, e)}
+                                    onPaste={(e) => handleVerificationPaste(index, e)}
                                     disabled={loading}
                                     autoFocus={index === 0}
                                 />

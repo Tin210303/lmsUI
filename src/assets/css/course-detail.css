@@ -125,6 +125,20 @@
     align-items: center;
 }
 
+/* Hiển thị giá khóa học */
+.course-price {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #ff6b00;
+    margin-bottom: 16px;
+}
+
+.course-price svg {
+    margin-right: 4px;
+}
+
 .register-btn {
     background-color: #0056b3;
     color: white;
@@ -138,8 +152,23 @@
     transition: background-color .2s;
 }
 
+/* Style riêng cho nút mua khóa học */
+.register-btn.purchase-btn {
+    background-color: #ff6b00;
+    width: 70%;
+}
+
+.register-btn.purchase-btn:hover {
+    background-color: #e06000;
+}
+
 .register-btn:hover {
     background-color: #1658e9;
+}
+
+.register-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
 }
 
 .info-list {

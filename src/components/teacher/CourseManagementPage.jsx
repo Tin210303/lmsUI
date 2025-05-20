@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../../assets/css/course-management.css';
-import { Trash2, UserPlus, MoreVertical, Edit, ChevronRight, Book, Folder, Plus, FileText, FileQuestion, File, Film, X, Loader2 } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import logo from '../../logo.svg';
 import Alert from '../common/Alert';
 import { API_BASE_URL, GET_PROGRESS_PERCENT, GET_JOINCLASS_REQUEST, GET_STUDENT_COURSE, JOINCLASS_APPROVED_API, JOINCLASS_REJECTED_API, DELETE_STUDENT_COURSE, UPDATE_COURSE_API, GET_MAJOR_API, DELETE_MULTIPLE_STUDENTS_COURSE, ADD_LESSON_API } from '../../services/apiService';
@@ -36,10 +36,16 @@ const CourseManagementPage = () => {
         name: '',
         type: 'Khóa học chung',
         major: '',
+        majorName: '',
+        startDate: '',
         endDate: '',
         description: '',
         image: null,
+        imageUrl: null,
         learningDurationType: 'Không thời hạn',
+        feeType: 'FREE',
+        price: 0,
+        newImageSelected: false,
     });
 
     const [alert, setAlert] = useState(null);
@@ -84,6 +90,15 @@ const CourseManagementPage = () => {
     // Thêm states cho quản lý bài kiểm tra và tài liệu học tập
     const [showDeleteQuizConfirm, setShowDeleteQuizConfirm] = useState(false);
     const [showDeleteMaterialConfirm, setShowDeleteMaterialConfirm] = useState(false);
+
+    // Thêm state để theo dõi lỗi tải ảnh
+    const [imageLoadError, setImageLoadError] = useState(false);
+
+    // Xử lý lỗi khi tải ảnh
+    const handleImageError = (e) => {
+        console.error("Không thể tải ảnh đại diện khóa học:", e);
+        setImageLoadError(true);
+    };
 
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
@@ -189,15 +204,45 @@ const CourseManagementPage = () => {
             });
             setRegistrations(registrationsResponse.data.result.content || []);
 
+            // Map feeType từ backend sang frontend
+            const feeTypeMapping = {
+                'NON_CHARGEABLE': 'FREE',
+                'CHARGEABLE': 'PAID'
+            };
+
+            // Lưu giữ trạng thái ảnh và URL hiện tại
+            const currentImageUrl = formData.imageUrl;
+            const currentImage = formData.image;
+            const wasImageError = imageLoadError;
+
+            // Cập nhật formData với thông tin khóa học
             setFormData({
                 name: courseResponse.data.result.name,
                 type: courseResponse.data.result.status,
                 major: courseResponse.data.result.majorId || '',
+                majorName: courseResponse.data.result.major || '',
+                startDate: courseResponse.data.result.startDate,
                 endDate: courseResponse.data.result.endDate,
                 description: courseResponse.data.result.description,
-                image: courseResponse.data.result.image,
-                learningDurationType: courseResponse.data.result.learningDurationType || 'Không thời hạn',
+                image: courseResponse.data.result.image || currentImage,
+                imageUrl: currentImageUrl, // Giữ nguyên URL đã tạo trước đó nếu có
+                learningDurationType: mapLearningDurationType(courseResponse.data.result.learningDurationType),
+                feeType: feeTypeMapping[courseResponse.data.result.feeType] || 'FREE',
+                price: courseResponse.data.result.price || 0,
+                newImageSelected: false,
             });
+            
+            // Log để kiểm tra thông tin ảnh đại diện
+            console.log("Thông tin ảnh đại diện khóa học:", courseResponse.data.result.image);
+            console.log("Thông tin loại phí khóa học:", courseResponse.data.result.feeType);
+            
+            // Chỉ reset lỗi tải ảnh khi đang trong trạng thái lỗi và API trả về ảnh
+            if (wasImageError && courseResponse.data.result.image) {
+                setImageLoadError(false);
+            } else {
+                // Giữ nguyên trạng thái lỗi tải ảnh hiện tại
+                setImageLoadError(wasImageError);
+            }
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'An error occurred');
             console.error("Error fetching course management data:", err);
@@ -285,26 +330,184 @@ const CourseManagementPage = () => {
         setAlert({ type, title, message });
     };
 
+    // Thêm hàm upload ảnh đại diện khóa học
+    const uploadCoursePhoto = async (courseId, imageFile) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+            
+            console.log(`Uploading image for course ${courseId}, file:`, imageFile);
+            
+            // Tạo FormData để gửi file ảnh
+            const formData = new FormData();
+            formData.append('file', imageFile);
+            
+            // Gọi API upload ảnh đại diện cho khóa học
+            const response = await axios.post(
+                `${API_BASE_URL}/lms/course/${courseId}/upload-photo`,
+                formData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        // Quan trọng: Không set Content-Type trong headers, để axios tự xác định
+                        // khi sử dụng FormData với file upload
+                    }
+                }
+            );
+            
+            if (response.data && response.data.code === 0) {
+                console.log('Upload ảnh đại diện thành công:', response.data.result);
+                return response.data.result;
+            } else {
+                throw new Error(response.data?.message || 'Không thể upload ảnh đại diện');
+            }
+        } catch (error) {
+            console.error('Error uploading course photo:', error);
+            if (error.response && error.response.status === 415) {
+                console.error('Lỗi kiểu dữ liệu không được hỗ trợ. Vui lòng kiểm tra định dạng file.');
+            }
+            throw error;
+        }
+    };
+
+    // Thêm hàm xóa ảnh đại diện khóa học
+    const deleteCoursePhoto = async (courseId) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+            
+            console.log(`Deleting image for course ${courseId}`);
+            
+            // Gọi API xóa ảnh đại diện cho khóa học
+            // Tùy thuộc vào API, có thể cần gửi dưới dạng FormData hoặc JSON
+            const response = await axios({
+                method: 'DELETE',
+                url: `${API_BASE_URL}/lms/course/${courseId}/remove-photo`,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                console.log('Xóa ảnh đại diện thành công');
+                return true;
+            } else {
+                throw new Error(response.data?.message || 'Không thể xóa ảnh đại diện');
+            }
+        } catch (error) {
+            console.error('Error deleting course photo:', error);
+            if (error.response) {
+                console.error(`Server returned status: ${error.response.status}`);
+                console.error('Response data:', error.response.data);
+            }
+            throw error;
+        }
+    };
+
     const handleUpdateCourse = async (e) => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
-            await axios.put(`${UPDATE_COURSE_API}`, {
+            
+            // Chuyển đổi feeType từ frontend sang backend
+            const backendFeeType = mapFeeTypeToBackend(formData.feeType);
+            
+            console.log('------ THÔNG TIN CẬP NHẬT KHÓA HỌC ------');
+            console.log('Frontend feeType:', formData.feeType);
+            console.log('Backend feeType:', backendFeeType);
+            
+            // Tạo đối tượng cơ bản cho dữ liệu cập nhật
+            const baseUpdateData = {
                 idCourse: courseId,
                 name: formData.name,
                 description: formData.description,
+                startDate: formData.startDate,
                 endDate: formData.learningDurationType === 'Có thời hạn' ? formData.endDate : '',
                 majorId: formData.major,
                 status: formData.type,
-                learningDurationType: formData.learningDurationType
-            }, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                learningDurationType: mapLearningDurationTypeToBackend(formData.learningDurationType),
+                feeType: backendFeeType,
+            };
+            
+            // Thêm trường price chỉ khi khóa học có phí
+            const courseUpdateData = formData.feeType === 'FREE' 
+                ? baseUpdateData 
+                : { ...baseUpdateData, price: formData.price };
+                
+            console.log('Loại phí:', formData.feeType === 'FREE' ? 'Miễn phí (không gửi giá tiền)' : `Có phí (${formData.price})`);
+            console.log('Sending course update data:', courseUpdateData);
+            
+            // Cập nhật thông tin khóa học (không bao gồm ảnh)
+            const updateResponse = await axios.put(`${UPDATE_COURSE_API}`, courseUpdateData, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
+            
+            let uploadResult = null;
+            let needRefresh = false;
+            
+            // Chỉ upload ảnh mới nếu đã chọn ảnh mới
+            if (formData.newImageSelected && formData.image instanceof File) {
+                try {
+                    console.log("Tiến hành upload ảnh đại diện mới");
+                    uploadResult = await uploadCoursePhoto(courseId, formData.image);
+                    if (uploadResult) {
+                        console.log("Upload thành công, đường dẫn mới:", uploadResult);
+                        
+                        // Cập nhật formData với đường dẫn ảnh mới từ server
+                        setFormData(prev => ({
+                            ...prev,
+                            image: uploadResult,  // Lưu đường dẫn ảnh mới từ server
+                            newImageSelected: false  // Reset trạng thái ảnh mới
+                        }));
+                        
+                        // Đã upload ảnh mới, không cần tải lại dữ liệu
+                        needRefresh = false;
+                        setImageLoadError(false);
+                    }
+                } catch (uploadError) {
+                    showAlert('warning', 'Lưu ý', 'Thông tin khóa học đã được cập nhật nhưng không thể upload ảnh đại diện.');
+                    console.error("Lỗi upload ảnh:", uploadError);
+                    // Nếu upload thất bại, cần tải lại dữ liệu
+                    needRefresh = true;
+                }
+            } else {
+                console.log("Không upload ảnh mới vì không có thay đổi");
+                // Nếu không thay đổi ảnh, cần tải lại dữ liệu để cập nhật các thông tin khác
+                needRefresh = true;
+            }
+            
             showAlert('success', 'Thành công', 'Cập nhật thông tin khóa học thành công!');
-            fetchData();
+            
+            if (needRefresh) {
+                // Lưu lại trạng thái ảnh hiện tại trước khi gọi fetchData()
+                const currentImageUrl = formData.imageUrl;
+                const currentImage = formData.image;
+                const wasImageError = imageLoadError;
+                
+                // Tải lại dữ liệu
+                await fetchData();
+                
+                // Nếu không phải là ảnh mới và không có lỗi, giữ nguyên thông tin ảnh hiện tại
+                if (!formData.newImageSelected && !wasImageError && currentImageUrl) {
+                    setFormData(prev => ({
+                        ...prev,
+                        imageUrl: currentImageUrl,
+                        image: currentImage
+                    }));
+                }
+            }
         } catch (err) {
             showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi cập nhật thông tin khóa học');
+            console.error("Error updating course:", err);
+            if (err.response) {
+                console.error("Response status:", err.response.status);
+                console.error("Response data:", err.response.data);
+            }
         }
     };
 
@@ -912,9 +1115,167 @@ const CourseManagementPage = () => {
         setMenuOpen({ type: null, id: null });
     };
 
+    // Hàm chuyển đổi learningDurationType từ backend sang frontend
+    const mapLearningDurationType = (type) => {
+        const typeMapping = {
+            'UNLIMITED': 'Không thời hạn',
+            'LIMITED': 'Có thời hạn'
+        };
+        return typeMapping[type] || 'Không thời hạn';
+    };
+
+    // Hàm chuyển đổi learningDurationType từ frontend sang backend
+    const mapLearningDurationTypeToBackend = (type) => {
+        const typeMapping = {
+            'Không thời hạn': 'UNLIMITED',
+            'Có thời hạn': 'LIMITED'
+        };
+        return typeMapping[type] || 'UNLIMITED';
+    };
+
+    // Hàm chuyển đổi feeType từ frontend sang backend
+    const mapFeeTypeToBackend = (type) => {
+        const typeMapping = {
+            'FREE': 'NON_CHARGEABLE',
+            'PAID': 'CHARGEABLE'
+        };
+        return typeMapping[type] || 'NON_CHARGEABLE';
+    };
+
+    // Thêm useEffect để theo dõi và cleanup URL ảnh khi unmount
+    useEffect(() => {
+        // Cleanup function để giải phóng URL object khi component unmount hoặc imageUrl thay đổi
+        return () => {
+            if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(formData.imageUrl);
+            }
+        };
+    }, [formData.imageUrl]);
+
+    // Hàm để tải ảnh đại diện dưới dạng blob
+    const fetchImageWithAuth = async (url) => {
+        if (!url) return null;
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return null;
+            
+            let fullUrl;
+            // Xử lý URL - hỗ trợ nhiều loại URL khác nhau từ backend
+            if (url.startsWith('http')) {
+                // URL đầy đủ
+                fullUrl = url;
+            } else if (url.startsWith('/')) {
+                // URL bắt đầu bằng / - thêm API_BASE_URL
+                fullUrl = `${API_BASE_URL}${url}`;
+            } else {
+                // URL không bắt đầu bằng / - thêm API_BASE_URL và /
+                fullUrl = `${API_BASE_URL}/${url}`;
+            }
+            
+            console.log(`Đang tải ảnh khóa học từ: ${fullUrl}`);
+            
+            const response = await axios({
+                method: 'GET',
+                url: fullUrl,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob', // Quan trọng: yêu cầu response dạng blob
+                timeout: 10000 // Timeout sau 10 giây
+            });
+            
+            if (response.status !== 200) {
+                console.error(`Lỗi tải ảnh: HTTP status ${response.status}`);
+                setImageLoadError(true);
+                return null;
+            }
+            
+            if (response.data.size === 0) {
+                console.error('Lỗi tải ảnh: Kích thước file = 0');
+                setImageLoadError(true);
+                return null;
+            }
+            
+            // Kiểm tra loại tệp
+            const contentType = response.headers['content-type'];
+            if (!contentType || !contentType.startsWith('image/')) {
+                console.error(`Lỗi: File không phải hình ảnh (${contentType})`);
+                setImageLoadError(true);
+                return null;
+            }
+            
+            // Tạo URL object từ blob
+            const imageObjectUrl = URL.createObjectURL(response.data);
+            console.log("Đã tạo blob URL:", imageObjectUrl);
+            return imageObjectUrl;
+        } catch (error) {
+            console.error("Error fetching image:", error);
+            setImageLoadError(true);
+            return null;
+        }
+    };
+
+    // Use effect để tải ảnh sau khi có URL
+    useEffect(() => {
+        if (formData.image && !formData.newImageSelected) {
+            const loadCourseImage = async () => {
+                try {
+                    console.log("Tải ảnh khóa học:", formData.image);
+                    // Đối với ảnh mới đã chọn, đã có URL blob nên không cần tải lại
+                    const blobUrl = await fetchImageWithAuth(formData.image);
+                    if (blobUrl) {
+                        console.log("Đã tải ảnh thành công, cập nhật imageUrl");
+                        setFormData(prev => ({...prev, imageUrl: blobUrl}));
+                        setImageLoadError(false);
+                    } else {
+                        console.error("Không thể tải được ảnh");
+                        setImageLoadError(true);
+                    }
+                } catch (error) {
+                    console.error("Error loading image:", error);
+                    setImageLoadError(true);
+                }
+            };
+            
+            loadCourseImage();
+        }
+    }, [formData.image, formData.newImageSelected]);
+
+    // Tạo màu nền dựa trên ID khóa học (để luôn cố định cho mỗi khóa học)
+    const getConsistentColor = (id) => {
+        const colors = [
+            'linear-gradient(to right, #4b6cb7, #182848)',
+            'linear-gradient(to right, #1d75fb, #3e60ff)',
+            'linear-gradient(to right, #ff416c, #ff4b2b)',
+            'linear-gradient(to right, #11998e, #38ef7d)',
+            'linear-gradient(to right, #8e2de2, #4a00e0)',
+            'linear-gradient(to right, #fc4a1a, #f7b733)',
+            'linear-gradient(to right, #5433ff, #20bdff)',
+            'linear-gradient(to right, #2b5876, #4e4376)'
+        ];
+        if (!id) return colors[0]; 
+        // Đảm bảo ID là chuỗi trước khi xử lý
+        const idStr = String(id);
+        const sum = idStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return colors[sum % colors.length];
+    };
+
     const renderCourseInfo = () => (
         <div className="course-info-form">
-            <h2>Thông tin khóa học</h2>
+            <div className="section-header-with-back">
+                <button 
+                    className="course-back-btn" 
+                    onClick={() => {
+                        navigate('/teacher/course', {
+                            state: { courseId: course.id }
+                        })
+                    }}
+                >
+                    &lt;
+                </button>
+                <h2>Thông tin khóa học</h2>
+            </div>
             <form onSubmit={handleUpdateCourse}>
                 <div className="form-group-manage">
                     <label>Tên khóa học</label>
@@ -939,13 +1300,57 @@ const CourseManagementPage = () => {
                     <label>Chuyên ngành</label>
                     <select
                         value={formData.major}
-                        onChange={(e) => setFormData({...formData, major: e.target.value})}
+                        onChange={(e) => {
+                            const selectedMajor = majors.find(m => m.id === e.target.value);
+                            setFormData({
+                                ...formData, 
+                                major: e.target.value,
+                                majorName: selectedMajor ? selectedMajor.name : ''
+                            });
+                        }}
                     >
                         <option value="">-- Chọn chuyên ngành --</option>
                         {majors.map((major) => (
                             <option key={major.id} value={major.id}>{major.name}</option>
                         ))}
                     </select>
+                </div>
+                <div className="form-group-manage">
+                    <label>Loại học phí</label>
+                    <select
+                        value={formData.feeType}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData((prev) => ({
+                                ...prev,
+                                feeType: val,
+                                price: val === 'FREE' ? 0 : prev.price
+                            }));
+                        }}
+                    >
+                        <option value="FREE">Miễn phí</option>
+                        <option value="PAID">Có phí</option>
+                    </select>
+                </div>
+                {formData.feeType === 'PAID' && (
+                    <div className="form-group-manage">
+                        <label>Giá (USD)</label>
+                        <input
+                            type="number"
+                            min="0"
+                            step="10"
+                            value={formData.price}
+                            onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                        />
+                    </div>
+                )}
+                <div className="form-group-manage">
+                    <label>Ngày bắt đầu khóa học</label>
+                    <input
+                        type="date"
+                        value={formData.startDate ? formData.startDate.split('T')[0] : ''}
+                        onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                    />
                 </div>
                 <div className="form-group-manage">
                     <label>Kiểu thời lượng</label>
@@ -975,13 +1380,91 @@ const CourseManagementPage = () => {
                 </div>
                 <div className="form-group-manage">
                     <label>Ảnh đại diện cho khóa học</label>
-                    <div className="image-upload">
-                        <input type="file" accept="image/*" onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                                setFormData({...formData, image: URL.createObjectURL(file)});
-                            }
-                        }} />
+                    <div className="course-image-upload-container">
+                        <div className="course-image-preview-box">
+                            {formData.imageUrl && !imageLoadError ? (
+                                <img 
+                                    src={formData.imageUrl} 
+                                    alt="Ảnh đại diện khóa học" 
+                                    className="course-image-preview" 
+                                    onError={handleImageError}
+                                />
+                            ) : (
+                                <div className="course-auto-generated-wrapper">
+                                    <div 
+                                        className="course-auto-generated-image" 
+                                        style={{ 
+                                            background: getConsistentColor(courseId),
+                                            width: '100%',
+                                            height: '200px',
+                                            borderRadius: '8px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: '#fff',
+                                            fontWeight: 'bold',
+                                            padding: '20px',
+                                        }}
+                                    >
+                                        <div className="course-initial">{formData.name ? formData.name.charAt(0).toUpperCase() : 'C'}</div>
+                                        <div className="course-name-display">{formData.name || 'Course'}</div>
+                                    </div>
+                                </div>
+                            )}
+                            {formData.imageUrl && formData.newImageSelected && (
+                                <div className="course-image-filename">
+                                    Ảnh mới đã được chọn
+                                    <span className="course-image-size">
+                                        ({Math.round(formData.image.size / 1024)} KB)
+                                    </span>
+                                </div>
+                            )}
+                            <div className="course-image-actions">
+                                <button 
+                                    type="button" 
+                                    className="course-change-image-btn"
+                                    onClick={() => document.getElementById('courseImageInput').click()}
+                                >
+                                    Thay đổi ảnh
+                                </button>
+                            </div>
+                            <input 
+                                id="courseImageInput"
+                                type="file" 
+                                accept="image/*" 
+                                style={{display: 'none'}} 
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        // Kiểm tra kích thước file (tối đa 5MB)
+                                        if (file.size > 5 * 1024 * 1024) {
+                                            showAlert('error', 'Lỗi', 'Kích thước ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 5MB.');
+                                            return;
+                                        }
+                                        
+                                        // Kiểm tra loại file
+                                        if (!file.type.startsWith('image/')) {
+                                            showAlert('error', 'Lỗi', 'Vui lòng chỉ chọn file ảnh.');
+                                            return;
+                                        }
+
+                                        const imageUrl = URL.createObjectURL(file);
+                                        console.log("Đã chọn ảnh mới, tạo URL:", imageUrl);
+                                        setFormData({
+                                            ...formData, 
+                                            image: file,
+                                            imageUrl: imageUrl,
+                                            newImageSelected: true
+                                        });
+                                        setImageLoadError(false); // Reset lỗi tải ảnh khi chọn ảnh mới
+                                        
+                                        // Hiển thị thông báo thành công
+                                        showAlert('info', 'Ảnh mới', 'Đã chọn ảnh mới. Nhấn "Xác nhận" để lưu thay đổi.');
+                                    }
+                                }} 
+                            />
+                        </div>
                     </div>
                 </div>
                 <div className="form-group-manage">
@@ -1001,7 +1484,19 @@ const CourseManagementPage = () => {
 
     const renderMembers = () => (
         <div className="course-members">
-            <h2>Thành viên khóa học</h2>
+            <div className="section-header-with-back">
+                <button 
+                    className="course-back-btn" 
+                    onClick={() => {
+                        navigate('/teacher/course', {
+                            state: { courseId: course.id }
+                        })
+                    }}
+                >
+                    &lt;
+                </button>
+                <h2>Thông tin khóa học</h2>
+            </div>
             <div className="members-list">
                 <div className="members-section">
                     <h3>Giáo Viên</h3>
@@ -1022,7 +1517,7 @@ const CourseManagementPage = () => {
                     <h3 className="course-section-title">
                         Sinh Viên
                         <button className="add-student-btn" onClick={() => navigate(`/teacher/course/${courseId}/add-students`)}>
-                            <UserPlus size={20} enableBackground={0}/>
+                            <LucideIcons.UserPlus size={20} enableBackground={0}/>
                         </button>
                     </h3>
                     
@@ -1049,7 +1544,7 @@ const CourseManagementPage = () => {
                                                 className="action-menu-item delete-action"
                                                 onClick={openDeleteConfirmation}
                                             >
-                                                <Trash2 size={16} />
+                                                <LucideIcons.Trash2 size={16} />
                                                 <span>Xóa</span>
                                             </button>
                                         </div>
@@ -1104,7 +1599,7 @@ const CourseManagementPage = () => {
                                     <span className="progress-text">{completionPercentages[student.id] || 0}%</span>
                                 </div>
                                 <button className="remove-member-btn" onClick={() => handleRemoveStudent(student.id, courseId)}>
-                                    <Trash2 size={16}/>
+                                    <LucideIcons.Trash2 size={16}/>
                                 </button>
                             </div>
                         );
@@ -1116,7 +1611,19 @@ const CourseManagementPage = () => {
 
     const renderRegistrations = () => (
         <div className="course-registrations">
-            <h2>Đơn đăng ký khóa học của sinh viên</h2>
+            <div className="section-header-with-back">
+                <button 
+                    className="course-back-btn" 
+                    onClick={() => {
+                        navigate('/teacher/course', {
+                            state: { courseId: course.id }
+                        })
+                    }}
+                >
+                    &lt;
+                </button>
+                <h2>Thông tin khóa học</h2>
+            </div>
             <div className="registrations-table">
                 <table>
                     <thead>
@@ -1175,6 +1682,26 @@ const CourseManagementPage = () => {
         return '#52c41a'; // Green for high progress
     };
 
+    // Format giá tiền
+    const formatPrice = (price) => {
+        if (!price && price !== 0) return 'Miễn phí';
+        if (price === 0) return 'Miễn phí';
+        return `${price.toLocaleString('vi-VN')} VND`;
+    };
+
+    // Xác định nội dung hiển thị cho phí khóa học
+    const renderCourseFee = () => {
+        if (!course) return null;
+        
+        // Lưu ý giá trị feeType từ backend có thể là NON_CHARGEABLE hoặc CHARGEABLE
+        if (course.feeType === 'NON_CHARGEABLE' || !course.feeType) {
+            return <span className="status-badge free">Miễn phí</span>;
+        } else if (course.feeType === 'CHARGEABLE') {
+            return <span className="status-badge price">{formatPrice(course.price)}</span>;
+        }
+        return null;
+    };
+
     if (loading) return <div className="loading">Đang tải...</div>;
     if (error) return <div className="error">Lỗi: {error}</div>;
 
@@ -1190,6 +1717,7 @@ const CourseManagementPage = () => {
                     />
                 </div>
             )}
+            
             <div className="course-management-content">
                 <div className="content-left">
                     {activeTab === 'info' && renderCourseInfo()}
@@ -1275,7 +1803,7 @@ const CourseManagementPage = () => {
                                     setShowDeleteConfirm(false);
                                 }}
                             >
-                                <Trash2 size={16} /> Xác nhận xóa
+                                <LucideIcons.Trash2 size={16} /> Xác nhận xóa
                             </button>
                         </div>
                     </div>
@@ -1292,7 +1820,7 @@ const CourseManagementPage = () => {
                                 className="chapter-edit-close-button"
                                 onClick={() => setShowEditChapterModal(false)}
                             >
-                                <X size={24} />
+                                <LucideIcons.X size={24} />
                             </button>
                         </div>
                         <form onSubmit={handleUpdateChapter}>
@@ -1367,7 +1895,7 @@ const CourseManagementPage = () => {
                                 className="btn-confirm-delete"
                                 onClick={handleDeleteChapter}
                             >
-                                <Trash2 size={16} /> Xác nhận xóa
+                                <LucideIcons.Trash2 size={16} /> Xác nhận xóa
                             </button>
                         </div>
                     </div>
@@ -1387,7 +1915,7 @@ const CourseManagementPage = () => {
                                     resetFileInput();
                                 }}
                             >
-                                <X size={24} />
+                                <LucideIcons.X size={24} />
                             </button>
                         </div>
                         <form onSubmit={handleUpdateLesson}>
@@ -1456,7 +1984,7 @@ const CourseManagementPage = () => {
                                             className="clear-file-btn"
                                             onClick={resetFileInput}
                                         >
-                                            <X size={16} />
+                                            <LucideIcons.X size={16} />
                                         </button>
                                     </div>
                                 )}
@@ -1507,7 +2035,7 @@ const CourseManagementPage = () => {
                                 className="btn-confirm-delete"
                                 onClick={handleDeleteLesson}
                             >
-                                <Trash2 size={16} /> Xác nhận xóa
+                                <LucideIcons.Trash2 size={16} /> Xác nhận xóa
                             </button>
                         </div>
                     </div>
@@ -1535,7 +2063,7 @@ const CourseManagementPage = () => {
                                 className="btn-confirm-delete"
                                 onClick={handleDeleteQuiz}
                             >
-                                <Trash2 size={16} /> Xác nhận xóa
+                                <LucideIcons.Trash2 size={16} /> Xác nhận xóa
                             </button>
                         </div>
                     </div>
@@ -1563,7 +2091,7 @@ const CourseManagementPage = () => {
                                 className="btn-confirm-delete"
                                 onClick={handleDeleteMaterial}
                             >
-                                <Trash2 size={16} /> Xác nhận xóa
+                                <LucideIcons.Trash2 size={16} /> Xác nhận xóa
                             </button>
                         </div>
                     </div>

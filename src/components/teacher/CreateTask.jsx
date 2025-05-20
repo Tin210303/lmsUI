@@ -643,7 +643,7 @@ const CreateTask = () => {
                     <div className="form-actions">
                         <button
                             type="button"
-                            className="cancel-button"
+                            className="test-cancel-button"
                             onClick={handleCancel}
                             disabled={loading}
                         >

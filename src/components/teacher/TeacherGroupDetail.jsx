@@ -2321,16 +2321,9 @@ const TeacherGroupDetail = () => {
             formData.append('title', ''); // Có thể để trống hoặc điền title nếu có
             formData.append('text', text); // Sử dụng text từ tham số
             
-            // Thêm danh sách các ID file hiện có mà người dùng chưa xóa
-            if (existingFileIds && existingFileIds.length > 0) {
-                // Cách 1: Gửi từng ID riêng lẻ 
-                existingFileIds.forEach((id, idx) => {
-                    formData.append(`existingFileIds[${idx}]`, id);
-                });
-            }
-            
-            // Thêm các file mới vào request theo đúng cấu trúc FileUploadRequest
+            // Backend chỉ yêu cầu truyền các file mới vào fileUploadRequests
             if (newFiles && newFiles.length > 0) {
+                // Chỉ gửi các file mới trong fileUploadRequests
                 newFiles.forEach((file, idx) => {
                     // Thêm file - đây là trường MultipartFile trong FileUploadRequest
                     formData.append(`fileUploadRequests[${idx}].file`, file);
@@ -2346,8 +2339,7 @@ const TeacherGroupDetail = () => {
             
             // Debug - kiểm tra dữ liệu đang gửi đi
             console.log("Sending update for post:", editPostId);
-            console.log("Existing files kept:", existingFileIds);
-            console.log("New files count:", newFiles?.length || 0);
+            console.log("New files to upload:", newFiles?.length || 0);
             
             for (let pair of formData.entries()) {
                 console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File: ${pair[1].name}` : pair[1]));

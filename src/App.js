@@ -40,6 +40,8 @@ import GroupDetailPage from './components/student/GroupDetailPage';
 import TaskDetail from './components/student/TaskDetail';
 import DocumentsPage from './components/student/DocumentsPage';
 import MajorDocuments from './components/student/MajorDocuments';
+import PaymentSuccess from './components/student/PaymentSuccess';
+import PaymentCancel from './components/student/PaymentCancel';
 
 // Common Routes
 import Header from './components/Header';
@@ -48,6 +50,7 @@ import PopularCourses from './components/PopularCourses';
 import FreeCoursesSignup from './components/FreeCoursesSignup';
 import Footer from './components/Footer';
 import './App.css';
+import './assets/css/payment.css';
 
 function App() {
   return (
@@ -140,6 +143,22 @@ function App() {
             <ProtectedRoute allowedRoles={['student']}>
               <StudentLayout>
                 <MajorDocuments />
+              </StudentLayout>
+            </ProtectedRoute>
+          } />
+          
+          {/* PayPal payment routes */}
+          <Route path="/paypal/success" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentLayout>
+                <PaymentSuccess />
+              </StudentLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/paypal/cancel" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentLayout>
+                <PaymentCancel />
               </StudentLayout>
             </ProtectedRoute>
           } />

@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 const CourseCard = ({ course }) => {
     const navigate = useNavigate();
     
-    const [lessonCount] = useState(course?.lessonCount || '0');
+    const [lessonCount] = useState(course?.chapterCount || '0');
     const [teacherName] = useState(course.teacher?.fullName || 'Giảng viên');
     const [studentCount] = useState(course?.studentCount || '0');
     const [courseImage, setCourseImage] = useState(null);
@@ -104,6 +104,23 @@ const CourseCard = ({ course }) => {
         return name.substring(0, maxLength) + '..';
     };
 
+    // Format giá tiền
+    const formatPrice = (price) => {
+        if (!price && price !== 0) return 'Miễn phí';
+        if (price === 0) return 'Miễn phí';
+        return `${price.toLocaleString('vi-VN')}$`;
+    };
+
+    // Xác định nội dung hiển thị cho phí khóa học
+    const renderCourseFee = () => {
+        if (course.feeType === 'NON_CHARGEABLE' || !course.feeType) {
+            return <span className="status-badge free">Miễn phí</span>;
+        } else if (course.feeType === 'CHARGEABLE') {
+            return <span className="status-badge price">{formatPrice(course.price)}</span>;
+        }
+        return null;
+    };
+
     return (
         <div className="course-card" onClick={handleClick}>
             <div className="course-image">
@@ -132,6 +149,7 @@ const CourseCard = ({ course }) => {
                     <span className={`status-badge ${course.status?.toLowerCase() || 'unknown'}`}>
                         {course.status || 'Unknown'}
                     </span>
+                    {renderCourseFee()}
                 </div>
             </div>
             <div className="course-stats">
