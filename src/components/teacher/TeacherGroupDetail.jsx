@@ -2305,7 +2305,7 @@ const TeacherGroupDetail = () => {
     };
     
     // Hàm để xử lý cập nhật bài đăng
-    const handleUpdatePost = async ({ text, newFiles, existingFileIds }) => {
+    const handleUpdatePost = async ({ text, newFiles, existingFiles }) => {
         if (!editPostId) return;
         
         try {
@@ -2321,9 +2321,16 @@ const TeacherGroupDetail = () => {
             formData.append('title', ''); // Có thể để trống hoặc điền title nếu có
             formData.append('text', text); // Sử dụng text từ tham số
             
-            // Backend chỉ yêu cầu truyền các file mới vào fileUploadRequests
+            // Thêm các oldFileIds[] cho file hiện tại muốn giữ lại
+            if (existingFiles && existingFiles.length > 0) {
+                existingFiles.forEach((file, idx) => {
+                    formData.append(`oldFileIds[${idx}]`, file.id);
+                });
+            }
+            
+            // Thêm các fileUploadRequests[] cho các file mới
             if (newFiles && newFiles.length > 0) {
-                // Chỉ gửi các file mới trong fileUploadRequests
+                // Gửi từng file mới
                 newFiles.forEach((file, idx) => {
                     // Thêm file - đây là trường MultipartFile trong FileUploadRequest
                     formData.append(`fileUploadRequests[${idx}].file`, file);
@@ -2340,6 +2347,7 @@ const TeacherGroupDetail = () => {
             // Debug - kiểm tra dữ liệu đang gửi đi
             console.log("Sending update for post:", editPostId);
             console.log("New files to upload:", newFiles?.length || 0);
+            console.log("Existing files to keep:", existingFiles?.length || 0);
             
             for (let pair of formData.entries()) {
                 console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File: ${pair[1].name}` : pair[1]));
@@ -2536,7 +2544,7 @@ const TeacherGroupDetail = () => {
             onSave({
                 text,
                 newFiles: selectedFiles,
-                existingFileIds: remainingFiles.map(file => file.id)
+                existingFiles: remainingFiles
             });
         };
         

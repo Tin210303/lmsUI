@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { X, ChevronDown, Calendar, Copy, Plus, CircleCheck, SquareCheck, ListCheck, AlertCircle } from 'lucide-react';
-import { API_BASE_URL, CREATE_TEST_API } from '../../services/apiService';
+import { API_BASE_URL, CREATE_TEST_API, TEST_GROUP_DETAIL, UPDATE_TEST_API, DELETE_TEST_API } from '../../services/apiService';
 import '../../assets/css/create-task.css';
 import Select from 'react-select';
 import Alert from '../common/Alert';
@@ -23,9 +23,15 @@ const DEFAULT_QUESTION = () => ({
 });
 
 const CreateTask = () => {
-    const { id: groupId } = useParams();
+    const { id: groupId, testId: testInGroupId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    
+    // Kiểm tra xem đang ở chế độ chỉnh sửa hay không
+    const isEditMode = location.pathname.includes('edit-test') && testInGroupId;
+
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(isEditMode);
     const [groupName, setGroupName] = useState('');
     const [error, setError] = useState(null);
 
@@ -79,7 +85,7 @@ const CreateTask = () => {
     
     // Validation state
     const [dateTimeError, setDateTimeError] = useState('');
-    
+
     // Fetch group name when component mounts
     useEffect(() => {
         const fetchGroupName = () => {
@@ -97,6 +103,119 @@ const CreateTask = () => {
         
         fetchGroupName();
     }, [groupId]);
+
+    // Fetch test details if in edit mode
+    useEffect(() => {
+        if (isEditMode && testInGroupId) {
+            const fetchTestDetails = async () => {
+                setInitialLoading(true);
+                setError(null);
+                
+                try {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                        throw new Error('No authentication token found');
+                    }
+                    
+                    const response = await axios.get(
+                        `${TEST_GROUP_DETAIL}?testId=${testInGroupId}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        }
+                    );
+                    
+                    if (response.data && response.data.code === 0) {
+                        const testData = response.data.result;
+                        
+                        // Điền thông tin bài kiểm tra vào form
+                        setTitle(testData.title || '');
+                        setInstructions(testData.description || '');
+                        
+                        // Xử lý thời gian bắt đầu
+                        if (testData.startedAt) {
+                            const startDateTime = new Date(testData.startedAt);
+                            const startDateFormatted = startDateTime.toISOString().split('T')[0];
+                            const startTimeFormatted = `${String(startDateTime.getHours()).padStart(2, '0')}:${String(startDateTime.getMinutes()).padStart(2, '0')}`;
+                            
+                            setStartDate(startDateFormatted);
+                            setStartTime(startTimeFormatted);
+                            setStartDateText(formatDueDateTime(startDateFormatted, startTimeFormatted));
+                        }
+                        
+                        // Xử lý thời gian kết thúc/hạn nộp
+                        if (testData.expiredAt) {
+                            const dueDateTime = new Date(testData.expiredAt);
+                            const dueDateFormatted = dueDateTime.toISOString().split('T')[0];
+                            const dueTimeFormatted = `${String(dueDateTime.getHours()).padStart(2, '0')}:${String(dueDateTime.getMinutes()).padStart(2, '0')}`;
+                            
+                            setDueDate(dueDateFormatted);
+                            setDueTime(dueTimeFormatted);
+                            setDueDateText(formatDueDateTime(dueDateFormatted, dueTimeFormatted));
+                        }
+                        
+                        // Xử lý câu hỏi
+                        if (testData.questions && testData.questions.length > 0) {
+                            const formattedQuestions = testData.questions.map(q => {
+                                const questionData = {
+                                    title: q.content || '',
+                                    type: q.type || 'SINGLE_CHOICE',
+                                    points: q.point || 0,
+                                    options: [],
+                                    correctAnswer: null,
+                                    correctAnswers: []
+                                };
+                                
+                                // Xử lý các lựa chọn
+                                if (q.options) {
+                                    // Format: "A. Option1;B. Option2;C. Option3"
+                                    const optionsArray = q.options.split(';').map(opt => {
+                                        // Loại bỏ phần chữ cái và dấu chấm ở đầu (A., B., etc.)
+                                        return opt.replace(/^[A-Z]\.\s/, '');
+                                    });
+                                    
+                                    questionData.options = optionsArray;
+                                    
+                                    // Xử lý đáp án
+                                    if (q.correctAnswers) {
+                                        if (q.type === 'SINGLE_CHOICE') {
+                                            // Lấy vị trí của đáp án đúng (A -> 0, B -> 1, etc.)
+                                            const correctIndex = q.correctAnswers.charCodeAt(0) - 'A'.charCodeAt(0);
+                                            questionData.correctAnswer = correctIndex;
+                                        } else if (q.type === 'MULTIPLE_CHOICE') {
+                                            // Chuyển đổi chuỗi đáp án (A,B,C) thành mảng các vị trí (0,1,2)
+                                            const correctIndices = q.correctAnswers.split(',').map(
+                                                letter => letter.charCodeAt(0) - 'A'.charCodeAt(0)
+                                            );
+                                            questionData.correctAnswers = correctIndices;
+                                        }
+                                    }
+                                } else {
+                                    questionData.options = [''];
+                                }
+                                
+                                return questionData;
+                            });
+                            
+                            setQuestions(formattedQuestions);
+                        }
+                        
+                    } else {
+                        throw new Error(response.data?.message || 'Failed to fetch test details');
+                    }
+                } catch (error) {
+                    console.error('Error fetching test details:', error);
+                    setError('Không thể tải thông tin bài kiểm tra. Vui lòng thử lại sau.');
+                    showAlert('error', 'Lỗi', 'Không thể tải thông tin bài kiểm tra');
+                } finally {
+                    setInitialLoading(false);
+                }
+            };
+            
+            fetchTestDetails();
+        }
+    }, [isEditMode, testInGroupId]);
 
     // Kiểm tra thời gian bắt đầu phải là tương lai
     const validateStartDateTime = () => {
@@ -141,17 +260,17 @@ const CreateTask = () => {
         e.preventDefault();
         
         if (!title.trim()) {
-            alert('Vui lòng nhập tiêu đề bài kiểm tra');
+            showAlert('error', 'Lỗi', 'Vui lòng nhập tiêu đề bài kiểm tra');
             return;
         }
 
         if (questions.length === 0) {
-            alert('Vui lòng thêm ít nhất một câu hỏi');
+            showAlert('error', 'Lỗi', 'Vui lòng thêm ít nhất một câu hỏi');
             return;
         }
 
         if (questions.some(q => !q.title.trim())) {
-            alert('Vui lòng nhập nội dung cho tất cả câu hỏi');
+            showAlert('error', 'Lỗi', 'Vui lòng nhập nội dung cho tất cả câu hỏi');
             return;
         }
         
@@ -214,31 +333,50 @@ const CreateTask = () => {
                 listQuestionRequest: listQuestionRequest
             };
             
-            // Call API to create test
-            const response = await axios.post(
-                CREATE_TEST_API,
-                requestBody,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+            let response;
+            
+            if (isEditMode) {
+                // Sử dụng tên trường testInGroupId thay cho testId khi chỉnh sửa, phù hợp với API
+                requestBody.testInGroupId = testInGroupId;
+                
+                // Call API to update test
+                response = await axios.put(
+                    UPDATE_TEST_API,
+                    requestBody,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
                     }
-                }
-            );
+                );
+            } else {
+                // Call API to create new test
+                response = await axios.post(
+                    CREATE_TEST_API,
+                    requestBody,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+            }
             
             if (response.data && response.data.code === 0) {
-                showAlert('success', 'Thành công', `Tạo bài kiểm tra thành công`);
+                showAlert('success', 'Thành công', isEditMode ? 'Cập nhật bài kiểm tra thành công' : 'Tạo bài kiểm tra thành công');
                 setTimeout(() => {
                     // Navigate back to group detail page
                     navigate(`/teacher/groups/${groupId}`);
-                }, 1000)
+                }, 1000);
             } else {
-                showAlert('error', 'Lỗi', `${response.data?.message}`);
-                throw new Error(response.data?.message || 'Failed to create test');
+                showAlert('error', 'Lỗi', `${response.data?.message || 'Đã xảy ra lỗi'}`);
+                throw new Error(response.data?.message || 'Failed to process test');
             }
         } catch (error) {
-            console.error('Error creating test:', error);
-            setError('Có lỗi xảy ra khi tạo bài kiểm tra. Vui lòng thử lại sau.');
+            console.error(isEditMode ? 'Error updating test:' : 'Error creating test:', error);
+            setError(isEditMode ? 'Có lỗi xảy ra khi cập nhật bài kiểm tra.' : 'Có lỗi xảy ra khi tạo bài kiểm tra.');
         } finally {
             setLoading(false);
         }
@@ -246,6 +384,48 @@ const CreateTask = () => {
     
     const handleCancel = () => {
         navigate(`/teacher/groups/${groupId}`);
+    };
+    
+    // Xử lý xóa bài kiểm tra
+    const handleDeleteTest = async () => {
+        if (!isEditMode || !testInGroupId) return;
+        
+        // Hiển thị xác nhận trước khi xóa
+        if (!window.confirm('Bạn có chắc chắn muốn xóa bài kiểm tra này không?')) {
+            return;
+        }
+        
+        setLoading(true);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+            
+            // Gọi API xóa bài kiểm tra với tham số testInGroupId
+            const response = await axios.delete(
+                `${DELETE_TEST_API}?testInGroupId=${testInGroupId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Xóa bài kiểm tra thành công');
+                setTimeout(() => {
+                    // Quay về trang danh sách
+                    navigate(`/teacher/groups/${groupId}`);
+                }, 1000);
+            } else {
+                showAlert('error', 'Lỗi', `${response.data?.message || 'Đã xảy ra lỗi khi xóa bài kiểm tra'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting test:', error);
+            showAlert('error', 'Lỗi', 'Không thể xóa bài kiểm tra. Vui lòng thử lại sau.');
+        } finally {
+            setLoading(false);
+        }
     };
     
     // Close dropdowns when clicking outside
@@ -352,314 +532,322 @@ const CreateTask = () => {
                     />
                 </div>
             )}
+            
             <div className="create-task-header">
-                <h1>Bài kiểm tra</h1>
+                <h1>{isEditMode ? 'Chỉnh sửa bài kiểm tra' : 'Bài kiểm tra'}</h1>
             </div>
             
-            <div className="create-task-content">
-                <div className="create-task-form-container">
-                    <form onSubmit={handleSubmit} className="create-task-form">
-                        <div className="tasks-form-group">
-                            <input
-                                type="text"
-                                placeholder="Tiêu đề"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="title-input"
-                                required
-                            />
-                        </div>
-                        
-                        <div className="tasks-form-group">
-                            <textarea
-                                ref={editorRef}
-                                placeholder="Mô tả (không bắt buộc)"
-                                value={instructions}
-                                onChange={(e) => setInstructions(e.target.value)}
-                                className="instructions-input"
-                                rows={5}
-                            />
-                        </div>
-                        
-                        {/* Question section */}
-                        <div className="questions-section">
-                            {questions.map((q, idx) => (
-                                <div className="question-card" key={idx}>
-                                    <div className="question-header">
-                                        <input
-                                            className="question-title-input"
-                                            placeholder="Untitled Question"
-                                            value={q.title}
-                                            onChange={e => updateQuestion(idx, { title: e.target.value })}
-                                        />
-                                        <div className="question-type-dropdown">
-                                            <Select
-                                                value={QUESTION_TYPES.find(t => t.value === q.type)}
-                                                onChange={selected => updateQuestion(idx, { type: selected.value })}
-                                                options={QUESTION_TYPES}
-                                                isSearchable={false}
-                                                getOptionLabel={e => (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    {e.icon} {e.label}
+            {initialLoading ? (
+                <div className="initial-loading">
+                    <div className="test-detail-spinner"></div>
+                    <p>Đang tải thông tin bài kiểm tra...</p>
+                </div>
+            ) : (
+                <div className="create-task-content">
+                    <div className="create-task-form-container">
+                        <form onSubmit={handleSubmit} className="create-task-form">
+                            <div className="tasks-form-group">
+                                <input
+                                    type="text"
+                                    placeholder="Tiêu đề"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="title-input"
+                                    required
+                                />
+                            </div>
+                            
+                            <div className="tasks-form-group">
+                                <textarea
+                                    ref={editorRef}
+                                    placeholder="Mô tả (không bắt buộc)"
+                                    value={instructions}
+                                    onChange={(e) => setInstructions(e.target.value)}
+                                    className="instructions-input"
+                                    rows={5}
+                                />
+                            </div>
+                            
+                            {/* Question section */}
+                            <div className="questions-section">
+                                {questions.map((q, idx) => (
+                                    <div className="question-card" key={idx}>
+                                        <div className="question-header">
+                                            <input
+                                                className="question-title-input"
+                                                placeholder="Untitled Question"
+                                                value={q.title}
+                                                onChange={e => updateQuestion(idx, { title: e.target.value })}
+                                            />
+                                            <div className="question-type-dropdown">
+                                                <Select
+                                                    value={QUESTION_TYPES.find(t => t.value === q.type)}
+                                                    onChange={selected => updateQuestion(idx, { type: selected.value })}
+                                                    options={QUESTION_TYPES}
+                                                    isSearchable={false}
+                                                    getOptionLabel={e => (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        {e.icon} {e.label}
+                                                        </div>
+                                                    )}
+                                                />
+                                            </div>
+                                        </div>
+                                        {q.type === 'SINGLE_CHOICE' && (
+                                            <div className="question-options">
+                                                {q.options.map((opt, optIdx) => (
+                                                    <div className="option-row" key={optIdx}>
+                                                        <input
+                                                            type="radio"
+                                                            name={`correct-${idx}`}
+                                                            checked={q.correctAnswer === optIdx}
+                                                            onChange={() => setCorrectAnswer(idx, optIdx)}
+                                                        />
+                                                        <input
+                                                            className="option-input"
+                                                            placeholder={`Option ${optIdx + 1}`}
+                                                            value={opt}
+                                                            onChange={e => updateOption(idx, optIdx, e.target.value)}
+                                                        />
+                                                        {q.options.length > 1 && (
+                                                            <button type="button" className="remove-option-btn" onClick={() => removeOption(idx, optIdx)}><X size={16} /></button>
+                                                        )}
                                                     </div>
-                                                )}
+                                                ))}
+                                                <div className="add-option-row">
+                                                    <button type="button" className="add-option-btn" onClick={() => addOption(idx)}>
+                                                        <Plus size={16} /> Thêm tùy chọn
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {q.type === 'MULTIPLE_CHOICE' && (
+                                            <div className="question-options">
+                                                {q.options.map((opt, optIdx) => (
+                                                    <div className="option-row" key={optIdx}>
+                                                        <input
+                                                            type="checkbox"
+                                                            name={`correct-multi-${idx}-${optIdx}`}
+                                                            checked={q.correctAnswers.includes(optIdx)}
+                                                            onChange={() => toggleCorrectAnswerMulti(idx, optIdx)}
+                                                        />
+                                                        <input
+                                                            className="option-input"
+                                                            placeholder={`Option ${optIdx + 1}`}
+                                                            value={opt}
+                                                            onChange={e => updateOption(idx, optIdx, e.target.value)}
+                                                        />
+                                                        {q.options.length > 1 && (
+                                                            <button type="button" className="remove-option-btn" onClick={() => removeOption(idx, optIdx)}><X size={16} /></button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                <div className="add-option-row">
+                                                    <button type="button" className="add-option-btn" onClick={() => addOption(idx)}>
+                                                        <Plus size={16} /> Thêm tùy chọn
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="question-footer">
+                                            <div className="answer-key">
+                                                <input
+                                                    className="points-input"
+                                                    type="number"
+                                                    min={0}
+                                                    value={q.points}
+                                                    onChange={e => setQuestionPoints(idx, e.target.value)}
+                                                /> điểm
+                                            </div>
+                                            <div className="question-actions">
+                                                <button type="button" className="duplicate-btn" onClick={() => duplicateQuestion(idx)}><Copy size={16} /></button>
+                                                <button type="button" className="delete-btn" onClick={() => removeQuestion(idx)}><X size={16} /></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="add-question-row">
+                                    <button type="button" className="add-question-btn" onClick={addQuestion}>
+                                        <Plus size={18} /> Thêm câu hỏi
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div className="create-task-sidebar">
+                        {/* Hiển thị thông báo lỗi */}
+                        {dateTimeError && (
+                            <div className="date-time-error">
+                                <AlertCircle size={16} />
+                                <span>{dateTimeError}</span>
+                            </div>
+                        )}
+                        
+                        {/* Dành cho (Group name) */}
+                        <div className="tasks-form-group">
+                            <div className="dropdown-container for-group">
+                                <div className="dropdown-label">Dành cho</div>
+                                <div className="assigned-group">
+                                    {groupName}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Điểm (Points) */}
+                        <div className="tasks-form-group">
+                            <div className="dropdown-container points">
+                                <div className="dropdown-label">Điểm</div>
+                                <div
+                                    className="dropdown-toggle"
+                                    onClick={() => setShowPointsDropdown(!showPointsDropdown)}
+                                >
+                                    {points}
+                                    <ChevronDown size={16} />
+                                </div>
+                                {showPointsDropdown && (
+                                    <div className="dropdown-menu">
+                                        {pointsOptions.map((option) => (
+                                            <div
+                                                key={option}
+                                                className={`dropdown-item ${points === option ? 'active' : ''}`}
+                                                onClick={() => {
+                                                    setPoints(option);
+                                                    setShowPointsDropdown(false);
+                                                }}
+                                            >
+                                                {option}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        
+                        {/* Thời gian bắt đầu (Start time) */}
+                        <div className="tasks-form-group">
+                            <div className="dropdown-container start-date">
+                                <div className="dropdown-label">Thời gian bắt đầu</div>
+                                <div className="due-date-dropdown-box" onClick={() => setShowStartDatePicker(v => !v)}>
+                                    <span className="due-date-formatted">
+                                        {startDateText}
+                                    </span>
+                                    <span style={{marginLeft: 'auto'}}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="#5f6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                    </span>
+                                </div>
+                                {showStartDatePicker && (
+                                    <div className="due-date-picker-popup">
+                                        <div className='d-flex align-center' style={{margin: 'auto'}}>
+                                            <input
+                                                type="date"
+                                                className="time-picker-inline"
+                                                value={startDate}
+                                                onChange={e => setStartDate(e.target.value)}
+                                                min={todayFormatted}
+                                            />
+                                            <input
+                                                type="time"
+                                                className="time-picker-inline"
+                                                value={startTime}
+                                                onChange={e => setStartTime(e.target.value)}
+                                                style={{marginLeft: 12}}
                                             />
                                         </div>
+                                        <div className="due-date-actions">
+                                            <button
+                                                type="button"
+                                                className="picker-inline-btn"
+                                                onClick={() => setShowStartDatePicker(false)}
+                                            >
+                                                Ok
+                                            </button>
+                                        </div>
                                     </div>
-                                    {q.type === 'SINGLE_CHOICE' && (
-                                        <div className="question-options">
-                                            {q.options.map((opt, optIdx) => (
-                                                <div className="option-row" key={optIdx}>
-                                                    <input
-                                                        type="radio"
-                                                        name={`correct-${idx}`}
-                                                        checked={q.correctAnswer === optIdx}
-                                                        onChange={() => setCorrectAnswer(idx, optIdx)}
-                                                    />
-                                                    <input
-                                                        className="option-input"
-                                                        placeholder={`Option ${optIdx + 1}`}
-                                                        value={opt}
-                                                        onChange={e => updateOption(idx, optIdx, e.target.value)}
-                                                    />
-                                                    {q.options.length > 1 && (
-                                                        <button type="button" className="remove-option-btn" onClick={() => removeOption(idx, optIdx)}><X size={16} /></button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                            <div className="add-option-row">
-                                                <button type="button" className="add-option-btn" onClick={() => addOption(idx)}>
-                                                    <Plus size={16} /> Thêm tùy chọn
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {q.type === 'MULTIPLE_CHOICE' && (
-                                        <div className="question-options">
-                                            {q.options.map((opt, optIdx) => (
-                                                <div className="option-row" key={optIdx}>
-                                                    <input
-                                                        type="checkbox"
-                                                        name={`correct-multi-${idx}-${optIdx}`}
-                                                        checked={q.correctAnswers.includes(optIdx)}
-                                                        onChange={() => toggleCorrectAnswerMulti(idx, optIdx)}
-                                                    />
-                                                    <input
-                                                        className="option-input"
-                                                        placeholder={`Option ${optIdx + 1}`}
-                                                        value={opt}
-                                                        onChange={e => updateOption(idx, optIdx, e.target.value)}
-                                                    />
-                                                    {q.options.length > 1 && (
-                                                        <button type="button" className="remove-option-btn" onClick={() => removeOption(idx, optIdx)}><X size={16} /></button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                            <div className="add-option-row">
-                                                <button type="button" className="add-option-btn" onClick={() => addOption(idx)}>
-                                                    <Plus size={16} /> Thêm tùy chọn
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div className="question-footer">
-                                        <div className="answer-key">
+                                )}
+                            </div>
+                        </div>
+                        
+                        {/* Hạn nộp (Due date) */}
+                        <div className="tasks-form-group">
+                            <div className="dropdown-container due-date">
+                                <div className="dropdown-label">Hạn nộp</div>
+                                {dueDate ? (
+                                    <div className="due-date-dropdown-box" onClick={() => setShowDueDatePicker(v => !v)}>
+                                        <span className="due-date-formatted">
+                                            {formatDueDateTime(dueDate, dueTime)}
+                                        </span>
+                                        <span style={{marginLeft: 'auto'}}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="#5f6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div 
+                                        className="due-date-dropdown-box" 
+                                        onClick={() => {
+                                            setDueDate(todayFormatted);
+                                            setDueDateText(formatDueDateTime(todayFormatted, '23:59'));
+                                            setShowDueDatePicker(true);
+                                        }}
+                                    >
+                                        <span style={{marginLeft: 'auto'}}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="#5f6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                        </span>
+                                    </div>
+                                )}
+                                {dueDate && showDueDatePicker && (
+                                    <div className="due-date-picker-popup">
+                                        <div className='d-flex align-center' style={{margin: 'auto'}}>
                                             <input
-                                                className="points-input"
-                                                type="number"
-                                                min={0}
-                                                value={q.points}
-                                                onChange={e => setQuestionPoints(idx, e.target.value)}
-                                            /> điểm
+                                                type="date"
+                                                className="time-picker-inline"
+                                                value={dueDate}
+                                                onChange={e => setDueDate(e.target.value)}
+                                                min={startDate}
+                                            />
+                                            <input
+                                                type="time"
+                                                className="time-picker-inline"
+                                                value={dueTime}
+                                                onChange={e => setDueTime(e.target.value)}
+                                                style={{marginLeft: 12}}
+                                            />
                                         </div>
-                                        <div className="question-actions">
-                                            <button type="button" className="duplicate-btn" onClick={() => duplicateQuestion(idx)}><Copy size={16} /></button>
-                                            <button type="button" className="delete-btn" onClick={() => removeQuestion(idx)}><X size={16} /></button>
+                                        <div className="due-date-actions">
+                                            <button
+                                                type="button"
+                                                className="picker-inline-btn"
+                                                onClick={() => setShowDueDatePicker(false)}
+                                            >
+                                                Ok
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                            <div className="add-question-row">
-                                <button type="button" className="add-question-btn" onClick={addQuestion}>
-                                    <Plus size={18} /> Thêm câu hỏi
-                                </button>
+                                )}
                             </div>
                         </div>
-                    </form>
-                </div>
-                
-                <div className="create-task-sidebar">
-                    {/* Hiển thị thông báo lỗi */}
-                    {dateTimeError && (
-                        <div className="date-time-error">
-                            <AlertCircle size={16} />
-                            <span>{dateTimeError}</span>
-                        </div>
-                    )}
-                    
-                    {/* Dành cho (Group name) */}
-                    <div className="tasks-form-group">
-                        <div className="dropdown-container for-group">
-                            <div className="dropdown-label">Dành cho</div>
-                            <div className="assigned-group">
-                                {groupName}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* Điểm (Points) */}
-                    <div className="tasks-form-group">
-                        <div className="dropdown-container points">
-                            <div className="dropdown-label">Điểm</div>
-                            <div
-                                className="dropdown-toggle"
-                                onClick={() => setShowPointsDropdown(!showPointsDropdown)}
+                        
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className={isEditMode ? "test-delete-button" : "test-cancel-button"}
+                                onClick={isEditMode ? handleDeleteTest : handleCancel}
+                                disabled={loading}
                             >
-                                {points}
-                                <ChevronDown size={16} />
-                            </div>
-                            {showPointsDropdown && (
-                                <div className="dropdown-menu">
-                                    {pointsOptions.map((option) => (
-                                        <div
-                                            key={option}
-                                            className={`dropdown-item ${points === option ? 'active' : ''}`}
-                                            onClick={() => {
-                                                setPoints(option);
-                                                setShowPointsDropdown(false);
-                                            }}
-                                        >
-                                            {option}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                {isEditMode ? 'Xóa' : 'Hủy'}
+                            </button>
+                            <button
+                                type="button"
+                                className="assign-button"
+                                onClick={handleSubmit}
+                                disabled={loading || !title.trim() || !!dateTimeError}
+                            >
+                                {loading ? 'Đang xử lý...' : (isEditMode ? 'Xác nhận chỉnh sửa' : 'Tạo bài kiểm tra')}
+                            </button>
                         </div>
-                    </div>
-                    
-                    {/* Thời gian bắt đầu (Start time) */}
-                    <div className="tasks-form-group">
-                        <div className="dropdown-container start-date">
-                            <div className="dropdown-label">Thời gian bắt đầu</div>
-                            <div className="due-date-dropdown-box" onClick={() => setShowStartDatePicker(v => !v)}>
-                                <span className="due-date-formatted">
-                                    {startDateText}
-                                </span>
-                                <span style={{marginLeft: 'auto'}}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="#5f6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                </span>
-                            </div>
-                            {showStartDatePicker && (
-                                <div className="due-date-picker-popup">
-                                    <div className='d-flex align-center' style={{margin: 'auto'}}>
-                                        <input
-                                            type="date"
-                                            className="time-picker-inline"
-                                            value={startDate}
-                                            onChange={e => setStartDate(e.target.value)}
-                                            min={todayFormatted}
-                                        />
-                                        <input
-                                            type="time"
-                                            className="time-picker-inline"
-                                            value={startTime}
-                                            onChange={e => setStartTime(e.target.value)}
-                                            style={{marginLeft: 12}}
-                                        />
-                                    </div>
-                                    <div className="due-date-actions">
-                                        <button
-                                            type="button"
-                                            className="picker-inline-btn"
-                                            onClick={() => setShowStartDatePicker(false)}
-                                        >
-                                            Ok
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    
-                    {/* Hạn nộp (Due date) */}
-                    <div className="tasks-form-group">
-                        <div className="dropdown-container due-date">
-                            <div className="dropdown-label">Hạn nộp</div>
-                            {dueDate ? (
-                                <div className="due-date-dropdown-box" onClick={() => setShowDueDatePicker(v => !v)}>
-                                    <span className="due-date-formatted">
-                                        {formatDueDateTime(dueDate, dueTime)}
-                                    </span>
-                                    <span style={{marginLeft: 'auto'}}>
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="#5f6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                    </span>
-                                </div>
-                            ) : (
-                                <div 
-                                    className="due-date-dropdown-box" 
-                                    onClick={() => {
-                                        setDueDate(todayFormatted);
-                                        setDueDateText(formatDueDateTime(todayFormatted, '23:59'));
-                                        setShowDueDatePicker(true);
-                                    }}
-                                >
-                                    <span style={{marginLeft: 'auto'}}>
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="#5f6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                    </span>
-                                </div>
-                            )}
-                            {dueDate && showDueDatePicker && (
-                                <div className="due-date-picker-popup">
-                                    <div className='d-flex align-center' style={{margin: 'auto'}}>
-                                        <input
-                                            type="date"
-                                            className="time-picker-inline"
-                                            value={dueDate}
-                                            onChange={e => setDueDate(e.target.value)}
-                                            min={startDate}
-                                        />
-                                        <input
-                                            type="time"
-                                            className="time-picker-inline"
-                                            value={dueTime}
-                                            onChange={e => setDueTime(e.target.value)}
-                                            style={{marginLeft: 12}}
-                                        />
-                                    </div>
-                                    <div className="due-date-actions">
-                                        <button
-                                            type="button"
-                                            className="picker-inline-btn"
-                                            onClick={() => setShowDueDatePicker(false)}
-                                        >
-                                            Ok
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    
-                    <div className="form-actions">
-                        <button
-                            type="button"
-                            className="test-cancel-button"
-                            onClick={handleCancel}
-                            disabled={loading}
-                        >
-                            Hủy
-                        </button>
-                        <button
-                            type="button"
-                            className="assign-button"
-                            onClick={handleSubmit}
-                            disabled={loading || !title.trim() || !!dateTimeError}
-                        >
-                            {loading ? 'Đang xử lý...' : 'Tạo bài kiểm tra'}
-                        </button>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

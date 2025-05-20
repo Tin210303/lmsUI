@@ -253,6 +253,13 @@ function App() {
               </TeacherLayout>
             </ProtectedRoute>
           } />
+          <Route path="/teacher/groups/:id/edit-test/:testId" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherLayout>
+                <CreateTask />
+              </TeacherLayout>
+            </ProtectedRoute>
+          } />
           <Route path="/teacher/tests/:id" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherLayout>

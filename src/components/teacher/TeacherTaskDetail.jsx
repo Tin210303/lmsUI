@@ -184,6 +184,23 @@ const TaskDetail = () => {
         return `${hours}:${minutes} - ${day}/${month}/${year}`;
     };
     
+    // Kiểm tra xem bài kiểm tra có thể chỉnh sửa không (chưa đến thời gian bắt đầu)
+    const canEditTest = () => {
+        if (!test || !test.startedAt) return false;
+        
+        const startTime = new Date(test.startedAt);
+        const currentTime = new Date();
+        
+        // Chỉ cho phép sửa nếu chưa đến thời gian bắt đầu
+        return currentTime < startTime;
+    };
+    
+    // Chuyển đến trang chỉnh sửa bài kiểm tra
+    const handleEditTest = () => {
+        // Sử dụng id là testInGroupId theo chuẩn API
+        navigate(`/teacher/groups/${test.groupId}/edit-test/${id}`);
+    };
+    
     // Go back to group page
     const goBack = () => {
         navigate(-1);
@@ -548,9 +565,22 @@ const TaskDetail = () => {
                             >
                                 {submissionsLoading ? 'Đang tải...' : 'Xem bài đã nộp'}
                             </button>
-                            <button className="action-button edit-test">
-                                Chỉnh sửa
-                            </button>
+                            {canEditTest() ? (
+                                <button 
+                                    className="action-button edit-test"
+                                    onClick={handleEditTest}
+                                >
+                                    Chỉnh sửa
+                                </button>
+                            ) : (
+                                <button 
+                                    className="action-button edit-test disabled" 
+                                    disabled={true}
+                                    title="Không thể chỉnh sửa sau khi đã bắt đầu"
+                                >
+                                    Chỉnh sửa
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
