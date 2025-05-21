@@ -81,7 +81,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background-color: #3e60ff;
+    background-color: var(--primary-color);
     color: white;
     border: none;
     border-radius: 999px;
@@ -93,7 +93,7 @@
 }
 
 .search-btn:hover {
-    background-color: #2a4ad8;
+    background-color: var(--primary-hover-color);
 }
 
 .search-btn:disabled {
@@ -171,19 +171,20 @@
 }
 
 .add-btn {
-    background: #2563eb;
+    background: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 50%;
     padding: 5px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
 }
 
 .add-btn:hover {
-    background: #1d4ed8;
+    background: var(--primary-hover-color);
 }
 
 .add-btn:disabled {
@@ -230,7 +231,7 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    background: #2563eb;
+    background: var(--primary-color);
     color: white;
     padding: 5px 10px;
     border-radius: 15px;
@@ -263,10 +264,11 @@
     background: #ef4444;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 999px;
     padding: 5px 10px;
     cursor: pointer;
     font-size: 14px;
+    transition: all 0.3s ease;
 }
 
 .remove-btn:hover {
@@ -302,17 +304,18 @@
 }
 
 .confirm-btn {
-    background: #2563eb;
+    background: var(--primary-color);
     color: white;
     border: none;
     border-radius: 999px;
     padding: 10px 20px;
     cursor: pointer;
     font-size: 14px;
+    transition: all 0.3s ease;
 }
 
 .confirm-btn:hover {
-    background: #1d4ed8;
+    background: var(--primary-hover-color);
 }
 
 .confirm-btn:disabled {

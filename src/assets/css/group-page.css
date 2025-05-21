@@ -573,4 +573,139 @@
 .teacher-group-delete-button:disabled {
   background-color: #ffccc7;
   cursor: not-allowed;
+}
+
+/* Phân trang */
+.group-pagination-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+  width: 100%;
+}
+
+.group-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.group-pagination button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background-color: white;
+  border-radius: 4px;
+  margin: 0 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  color: #333;
+}
+
+.group-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.group-pagination button:hover:not(:disabled) {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.group-pagination span {
+  margin: 0 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 5px 0;
+  min-width: 180px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.load-more-btn:hover {
+  background-color: var(--primary-hover-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background-color: #aaa;
+}
+
+.spinner-border-sm {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-right-color: #fff;
+  border-radius: 50%;
+  animation: spinner-border 0.75s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spinner-border {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* CSS cho phân trang bài đăng */
+.posts-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.posts-pagination button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background-color: white;
+  border-radius: 4px;
+  margin: 0 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  color: #333;
+}
+
+.posts-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.posts-pagination button:hover:not(:disabled) {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.posts-pagination span {
+  margin: 0 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Container cho nút tải thêm */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  width: 100%;
 } 

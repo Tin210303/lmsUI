@@ -1371,13 +1371,14 @@
 }
 
 .course-initial {
-    font-size: 72px;
+    font-size: 36px;
     font-weight: bold;
     margin-bottom: 10px;
 }
 
 .course-name-display {
-    font-size: 18px;
+    font-size: 14px;
+    font-weight: 400;
     text-align: center;
     max-width: 80%;
     overflow: hidden;
@@ -1432,4 +1433,24 @@
 
 .course-remove-image-btn:hover {
     background-color: #c82333;
+}
+
+/* Styling for the "no students" message */
+.no-students-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 20px;
+    margin: 20px 0;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.no-students-message p {
+    font-size: 16px;
+    color: #6c757d;
+    text-align: center;
+    margin: 0;
 } 

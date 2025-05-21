@@ -1,7 +1,24 @@
 import React from 'react';
 import '../assets/css/hero.css';
+import { useState, useEffect } from 'react';
 
 function Hero() {
+    const [hovered, setHovered] = useState(false);
+    const [animateClass, setAnimateClass] = useState("");
+
+    useEffect(() => {
+        if (hovered) {
+        setAnimateClass("animate-green");
+        } else {
+        setAnimateClass("animate-red");
+        }
+
+        const interval = setInterval(() => {
+        setAnimateClass(hovered ? "animate-green" : "animate-red");
+        }, 1000); // Mỗi 1 giây lặp lại
+
+        return () => clearInterval(interval);
+    }, [hovered]);
     return (
         <section className="hero">
             <div className="hero-container">
@@ -10,30 +27,14 @@ function Hero() {
                     <p>
                     Khám phá hàng trăm khóa học chất lượng cao được thiết kế bởi các giảng viên hàng đầu của trường Đại học Khoa Học.
                     </p>
-                    <button className="cta-button">BẮT ĐẦU NGAY <span className="arrow">→</span></button>
-                </div>
-                
-                <div className="feature-boxes">
-                    <div className="feature-box">
-                        <div className="icon-container">
-                            <img src="" alt="Course Management" />
-                        </div>
-                        <h3>Course Management</h3>
-                    </div>
-                    
-                    <div className="feature-box active">
-                        <div className="icon-container">
-                            <img src="" alt="Online Learn Courses" />
-                        </div>
-                        <h3>Online Learn Courses</h3>
-                    </div>
-                    
-                    <div className="feature-box">
-                        <div className="icon-container">
-                            <img src="/" alt="Teacher Management" />
-                        </div>
-                        <h3>Teacher Management</h3>
-                    </div>
+                    <button
+                    className={`cta-button ${animateClass}`}
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}
+                    >
+                    <span className="arrow">BẮT ĐẦU NGAY →</span>
+                    </button>
+
                 </div>
             </div>
         </section>

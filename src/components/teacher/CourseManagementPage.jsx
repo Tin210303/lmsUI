@@ -1521,89 +1521,97 @@ const CourseManagementPage = () => {
                         </button>
                     </h3>
                     
-                    {/* Thêm select-all container và action menu */}
-                    <div className="select-all-container">
-                        <label className="select-all-checkbox">
-                            <input 
-                                type="checkbox" 
-                                checked={selectAll}
-                                onChange={handleSelectAllStudents}
-                            />
-                            {selectedStudents.length > 0 && (
-                                <div className="action-menu-container">
-                                    <button 
-                                        className="action-menu-button" 
-                                        onClick={toggleActionMenu}
-                                        disabled={selectedStudents.length === 0}
-                                    >
-                                        Thao tác
-                                    </button>
-                                    {actionMenuOpen && (
-                                        <div className="action-menu">
-                                            <button 
-                                                className="action-menu-item delete-action"
-                                                onClick={openDeleteConfirmation}
-                                            >
-                                                <LucideIcons.Trash2 size={16} />
-                                                <span>Xóa</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </label>
-                    </div>
-                    
-                    {students.map(student => {
-                        const isSelected = selectedStudents.includes(student.id);
-                        return (
-                            <div key={student.id} className={`member-item ${isSelected ? 'selected-member' : ''}`}>
-                                <div className='d-flex align-center' style={{width: '44%'}}>
-                                    <div className="member-checkbox">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={isSelected}
-                                            onChange={(e) => handleSelectStudent(student.id, e.target.checked)}
-                                        />
-                                    </div>
-                                    <div className='d-flex'>
-                                        {avatarUrl[student.id] ? (
-                                            <img src={avatarUrl[student.id]} alt="Avatar" className='course-management-student-avatar'/>
-                                        ) : (
-                                            <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className='course-management-student-avatar'>
-                                                <circle cx="100" cy="100" r="100" fill="#ff4757" />
-                                                <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
-                                                <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
-                                                <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
-                                                <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
-                                                <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
-                                                <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
-                                            </svg>
+                    {/* Chỉ hiển thị select-all container khi có sinh viên */}
+                    {students.length > 0 && (
+                        <div className="select-all-container">
+                            <label className="select-all-checkbox">
+                                <input 
+                                    type="checkbox" 
+                                    checked={selectAll}
+                                    onChange={handleSelectAllStudents}
+                                />
+                                {selectedStudents.length > 0 && (
+                                    <div className="action-menu-container">
+                                        <button 
+                                            className="action-menu-button" 
+                                            onClick={toggleActionMenu}
+                                            disabled={selectedStudents.length === 0}
+                                        >
+                                            Thao tác
+                                        </button>
+                                        {actionMenuOpen && (
+                                            <div className="action-menu">
+                                                <button 
+                                                    className="action-menu-item delete-action"
+                                                    onClick={openDeleteConfirmation}
+                                                >
+                                                    <LucideIcons.Trash2 size={16} />
+                                                    <span>Xóa</span>
+                                                </button>
+                                            </div>
                                         )}
-                                        <div>
-                                            <div>{student.fullName}</div>
-                                            <div className="course-student-email">{student.email}</div>
+                                    </div>
+                                )}
+                            </label>
+                        </div>
+                    )}
+                    
+                    {students.length > 0 ? (
+                        students.map(student => {
+                            const isSelected = selectedStudents.includes(student.id);
+                            return (
+                                <div key={student.id} className={`member-item ${isSelected ? 'selected-member' : ''}`}>
+                                    <div className='d-flex align-center' style={{width: '44%'}}>
+                                        <div className="member-checkbox">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={isSelected}
+                                                onChange={(e) => handleSelectStudent(student.id, e.target.checked)}
+                                            />
+                                        </div>
+                                        <div className='d-flex'>
+                                            {avatarUrl[student.id] ? (
+                                                <img src={avatarUrl[student.id]} alt="Avatar" className='course-management-student-avatar'/>
+                                            ) : (
+                                                <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className='course-management-student-avatar'>
+                                                    <circle cx="100" cy="100" r="100" fill="#ff4757" />
+                                                    <path d="M100,40 C60,40 40,70 40,110 C40,150 60,180 100,180 C140,180 160,150 160,110 C160,70 140,40 100,40 Z" fill="#2f3542" />
+                                                    <path d="M65,90 C65,80 75,70 85,70 C95,70 100,80 100,90 C100,80 105,70 115,70 C125,70 135,80 135,90 C135,100 125,110 115,110 C105,110 100,100 100,90 C100,100 95,110 85,110 C75,110 65,100 65,90 Z" fill="#f1f2f6" />
+                                                    <path d="M70,75 C70,70 75,65 80,65 C85,65 90,70 90,75 C90,80 85,85 80,85 C75,85 70,80 70,75 Z" fill="#3742fa" />
+                                                    <path d="M110,75 C110,70 115,65 120,65 C125,65 130,70 130,75 C130,80 125,85 120,85 C115,85 110,80 110,75 Z" fill="#3742fa" />
+                                                    <path d="M65,120 C65,140 80,160 100,160 C120,160 135,140 135,120 C135,110 120,100 100,100 C80,100 65,110 65,120 Z" fill="#f1f2f6" />
+                                                    <path d="M70,110 C80,120 90,125 100,125 C110,125 120,120 130,110 C120,105 110,100 100,100 C90,100 80,105 70,110 Z" fill="#2f3542" />
+                                                </svg>
+                                            )}
+                                            <div>
+                                                <div>{student.fullName}</div>
+                                                <div className="course-student-email">{student.email}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="student-progress">
-                                    <div className="progress-bar-container">
-                                        <div 
-                                            className="progress-bar" 
-                                            style={{ 
-                                                width: `${completionPercentages[student.id] || 0}%`,
-                                                backgroundColor: getProgressColor(completionPercentages[student.id] || 0)
-                                            }}
-                                        ></div>
+                                    <div className="student-progress">
+                                        <div className="progress-bar-container">
+                                            <div 
+                                                className="progress-bar" 
+                                                style={{ 
+                                                    width: `${completionPercentages[student.id] || 0}%`,
+                                                    backgroundColor: getProgressColor(completionPercentages[student.id] || 0)
+                                                }}
+                                            ></div>
+                                        </div>
+                                        <span className="progress-text">{completionPercentages[student.id] || 0}%</span>
                                     </div>
-                                    <span className="progress-text">{completionPercentages[student.id] || 0}%</span>
+                                    <button className="remove-member-btn" onClick={() => handleRemoveStudent(student.id, courseId)}>
+                                        <LucideIcons.Trash2 size={16}/>
+                                    </button>
                                 </div>
-                                <button className="remove-member-btn" onClick={() => handleRemoveStudent(student.id, courseId)}>
-                                    <LucideIcons.Trash2 size={16}/>
-                                </button>
-                            </div>
-                        );
-                    })}
+                            );
+                        })
+                    ) : (
+                        <div className="no-students-message">
+                            <p>Không có sinh viên trong khóa học</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -1625,52 +1633,58 @@ const CourseManagementPage = () => {
                 <h2>Thông tin khóa học</h2>
             </div>
             <div className="registrations-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>STT</th>
-                            <th>Sinh viên đăng ký</th>
-                            <th>Ngày đăng ký</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {registrations.map((registration, index) => (
-                            <tr key={registration.id}>
-                                <td>{index + 1}</td>
-                                <td>
-                                    <div className="student-info">
-                                        <img src={registration.avatar || logo} alt={registration.fullName} />
-                                        <div>
-                                            <div>{registration.fullName}</div>
-                                            <div className="course-student-email">{registration.email}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    {registration.registrationDate ? 
-                                     new Date(registration.registrationDate).toLocaleDateString('vi-VN') : 'N/A'}
-                                </td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button 
-                                            className="accept-btn"
-                                            onClick={() => handleRegistrationAction(registration.id, 'accept')}
-                                        >
-                                            Chấp nhận
-                                        </button>
-                                        <button 
-                                            className="reject-btn"
-                                            onClick={() => handleRegistrationAction(registration.id, 'reject')}
-                                        >
-                                            Từ chối
-                                        </button>
-                                    </div>
-                                </td>
+                {registrations.length > 0 ? (
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Sinh viên đăng ký</th>
+                                <th>Ngày đăng ký</th>
+                                <th>Thao tác</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {registrations.map((registration, index) => (
+                                <tr key={registration.id}>
+                                    <td>{index + 1}</td>
+                                    <td>
+                                        <div className="student-info">
+                                            <img src={registration.avatar || logo} alt={registration.fullName} />
+                                            <div>
+                                                <div>{registration.fullName}</div>
+                                                <div className="course-student-email">{registration.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {registration.registrationDate ? 
+                                         new Date(registration.registrationDate).toLocaleDateString('vi-VN') : 'N/A'}
+                                    </td>
+                                    <td>
+                                        <div className="action-buttons">
+                                            <button 
+                                                className="accept-btn"
+                                                onClick={() => handleRegistrationAction(registration.id, 'accept')}
+                                            >
+                                                Chấp nhận
+                                            </button>
+                                            <button 
+                                                className="reject-btn"
+                                                onClick={() => handleRegistrationAction(registration.id, 'reject')}
+                                            >
+                                                Từ chối
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    <div className="no-students-message">
+                        <p>Không có yêu cầu đăng ký nào</p>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -7,10 +7,18 @@ Key,
 MapPin, 
 Phone, 
 Mail,
+Printer,
 ChevronLeft,
 ChevronRight,
 ChevronRight as ArrowRight
 } from 'lucide-react';
+import logo from '../assets/imgs/logo.png';
+import recentwork1 from '../assets/imgs/hoc1.jpg';
+import recentwork2 from '../assets/imgs/hoc2.jpg';
+import recentwork3 from '../assets/imgs/hoc3.jpg';
+import recentwork4 from '../assets/imgs/hoc4.jpg';
+import recentwork5 from '../assets/imgs/hoc5.jpg';
+import recentwork6 from '../assets/imgs/section3.jpg';
 
 function Footer() {
     return (
@@ -23,19 +31,19 @@ function Footer() {
                             <div className="feature-icon">
                                 <Book color="white" size={24} />
                             </div>
-                            <div className="feature-text">80,000 ONLINE COURSES</div>
+                            <div className="feature-text">80,000 KHÓA HỌC</div>
                         </div>
                         <div className="feature-item">
                             <div className="feature-icon">
                                 <Users color="white" size={24} />
                             </div>
-                            <div className="feature-text">EXPERT INSTRUCTION</div>
+                            <div className="feature-text">GIẢNG DẠY BỞI CHUYÊN GIA</div>
                         </div>
                         <div className="feature-item">
                             <div className="feature-icon">
                                 <Key color="white" size={24} />
                             </div>
-                            <div className="feature-text">LIFETIME ACCESS</div>
+                            <div className="feature-text">TRUY CẬP TRỌN ĐỜI</div>
                         </div>
                     </div>
                 </div>
@@ -48,72 +56,56 @@ function Footer() {
                         {/* Company Info */}
                         <div className="footer-column company-info">
                             <div className="footer-logo">
-                                <Book color="white" size={28} className="book-icon" />
-                                <span className="logo-text">Bookflare</span>
+                                {/* <Book color="white" size={28} className="book-icon" />
+                                <span className="logo-text">Bookflare</span> */}
+                                <img src={logo} alt='Logo-LMS' style={{width: '12rem'}}/>
                             </div>
                             <p className="company-description">
-                                We are a new design studio based in USA. We have over 20 years of combined experience, and know a thing or two about designing websites and mobile apps.
+                                Với hơn 30 năm kinh nghiệm tổng hợp trong lĩnh vực thiết kế hệ thống học tập và ứng dụng di động, chúng tôi tự tin mang đến trải nghiệm học tập hiệu quả và hiện đại cho người dùng
                             </p>
                             <div className="contact-info">
                                 <div className="contact-item">
                                     <MapPin size={18} />
-                                    <span>1107 Wood Street Saginaw, MI New York 48607</span>
+                                    <span>77 Nguyễn Huệ, Thành phố Huế, Phường Phú Nhuận, Quận Thuận Hóa, Thành phố Huế</span>
                                 </div>
                                 <div className="contact-item">
                                     <Phone size={18} />
-                                    <span>+123 345 678 000</span>
+                                    <span>Điện thoại: (+84) 0234.3823290</span>
                                 </div>
                                 <div className="contact-item">
-                                    <Mail size={18} />
-                                    <span>info@example.com</span>
+                                    <Printer size={18} />
+                                    <span>Fax: (+84) 0234.3824901</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Useful Links */}
                         <div className="footer-column links-column">
-                            <h3 className="column-title">USEFUL LINK</h3>
+                            <h3 className="column-title">LIÊN KẾT</h3>
                             <ul className="footer-links">
                                 <li>
-                                    <a href="#">
-                                        <ArrowRight size={14} className="arrow-icon" /> Register Activation Key
+                                    <a href="https://student.husc.edu.vn" target="_blank" rel="noopener noreferrer">
+                                        <ArrowRight size={14} className="arrow-icon" /> Trang Tín Chỉ
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#">
-                                        <ArrowRight size={14} className="arrow-icon" /> Our Plans
+                                    <a href="https://ums.husc.edu.vn/" target="_blank" rel="noopener noreferrer">
+                                        <ArrowRight size={14} className="arrow-icon" /> Trang Thông Tin Đào Tạo
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#">
-                                        <ArrowRight size={14} className="arrow-icon" /> Government Solutions
+                                    <a href="https://it.husc.edu.vn/" target="_blank" rel="noopener noreferrer">
+                                        <ArrowRight size={14} className="arrow-icon" /> Khoa Công Nghệ Thông Tin
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#">
-                                        <ArrowRight size={14} className="arrow-icon" /> Academic Solutions
+                                    <a href="https://www.facebook.com/husc.edu.vn/" target="_blank" rel="noopener noreferrer">
+                                        <ArrowRight size={14} className="arrow-icon" /> Đại Học Khoa Học Huế
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#">
-                                        <ArrowRight size={14} className="arrow-icon" /> Intellectual Property
-                                    </a>
-                                </li>
-                            </ul>
-                            <ul className="footer-links right-links">
-                                <li>
-                                    <a href="#">
-                                        <ArrowRight size={14} className="arrow-icon" /> Free Trial
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <ArrowRight size={14} className="arrow-icon" /> Support
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <ArrowRight size={14} className="arrow-icon" /> Contact Us
+                                    <a href="https://www.facebook.com/DTDHCTSV.DHKH/" target="_blank" rel="noopener noreferrer">
+                                        <ArrowRight size={14} className="arrow-icon" /> Phòng Đào Tạo ĐH & Công Tác SV
                                     </a>
                                 </li>
                             </ul>
@@ -122,41 +114,32 @@ function Footer() {
                         {/* Recent Work */}
                         <div className="footer-column recent-work">
                             <div className="column-header">
-                                <h3 className="column-title">RECENT WORK</h3>
-                                <div className="navigation-arrows">
-                                    <button className="nav-arrow prev">
-                                        <ChevronLeft size={14} />
-                                    </button>
-                                    <button className="nav-arrow next">
-                                        <ChevronRight size={14} />
-                                    </button>
-                                </div>
+                                <h3 className="column-title">HOẠT ĐỘNG GẦN ĐÂY</h3>
                             </div>
                             <div className="work-gallery">
                                 <div className="gallery-row">
                                     <div className="gallery-item">
-                                        <img src="/api/placeholder/130/100" alt="Work sample" />
+                                        <img src={recentwork1} alt="Work sample" />
                                     </div>
                                     <div className="gallery-item">
-                                        <img src="/api/placeholder/130/100" alt="Work sample" />
+                                        <img src={recentwork2} alt="Work sample" />
                                     </div>
                                     <div className="gallery-item">
-                                        <img src="/api/placeholder/130/100" alt="Work sample" />
+                                        <img src={recentwork3} alt="Work sample" />
                                     </div>
                                 </div>
                                 <div className="gallery-row">
                                     <div className="gallery-item">
-                                        <img src="/api/placeholder/130/100" alt="Work sample" />
+                                        <img src={recentwork4} alt="Work sample" />
                                     </div>
                                     <div className="gallery-item">
-                                        <img src="/api/placeholder/130/100" alt="Work sample" />
+                                        <img src={recentwork5} alt="Work sample" />
                                     </div>
                                     <div className="gallery-item">
-                                        <img src="/api/placeholder/130/100" alt="Work sample" />
+                                        <img src={recentwork6} alt="Work sample" />
                                     </div>
                                 </div>
                             </div>
-                            <a href="#" className="view-more">VIEW MORE »</a>
                         </div>
                     </div>
                 </div>

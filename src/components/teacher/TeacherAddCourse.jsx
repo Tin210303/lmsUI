@@ -18,7 +18,7 @@ const TeacherAddCourse = () => {
         endDate: '',
         learningDurationType: 'UNLIMITED',
         majorId: '',
-        feeType: 'FREE',
+        feeType: 'NON_CHARGEABLE',
         price: 0
     });
 
@@ -73,6 +73,22 @@ const TeacherAddCourse = () => {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         
+        // Xử lý đặc biệt cho trường status
+        if (name === 'status') {
+            const newStatus = value;
+            // Nếu chuyển từ REQUEST sang loại khác và đang có phí
+            if (newStatus !== 'REQUEST' && formData.feeType === 'CHARGEABLE') {
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: value,
+                    feeType: 'FREE',  // Chuyển thành miễn phí
+                    // price: 0  // Reset giá tiền
+                }));
+                return;
+            }
+        }
+        
+        // Xử lý mặc định cho các trường khác
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -116,10 +132,24 @@ const TeacherAddCourse = () => {
         setFormData(prev => ({
             ...prev,
             feeType: value,
-            // Reset giá tiền nếu chuyển sang miễn phí
-            price: value === 'FREE' ? 0 : prev.price
+            // Reset giá tiền nếu chuyển sang miễn phí - đặt thành null
+            price: value === 'NON_CHARGEABLE' ? null : prev.price,
+            // Tự động chuyển status sang REQUEST nếu chọn CHARGEABLE
+            status: value === 'CHARGEABLE' ? 'REQUEST' : prev.status
         }));
     };
+
+    // Thêm useEffect để kiểm tra tính hợp lệ của loại phí và loại khóa học
+    useEffect(() => {
+        // Nếu phí là CHARGEABLE nhưng loại không phải là REQUEST, chuyển phí về FREE
+        if (formData.feeType === 'CHARGEABLE' && formData.status !== 'REQUEST') {
+            setFormData(prev => ({
+                ...prev,
+                feeType: 'NON_CHARGEABLE',
+                price: null
+            }));
+        }
+    }, [formData.status]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -135,8 +165,14 @@ const TeacherAddCourse = () => {
                 majorId: formData.majorId,
                 learningDurationType: formData.learningDurationType,
                 feeType: formData.feeType,
-                price: formData.feeType === 'CHARGEABLE' ? Number(formData.price) : 0
             };
+            
+            // Chỉ thêm price khi feeType là CHARGEABLE, nếu FREE thì price sẽ là null
+            if (formData.feeType === 'CHARGEABLE') {
+                courseData.price = Number(formData.price);
+            } else {
+                courseData.price = null;
+            }
             
             // Chỉ gửi endDate nếu đã bật tùy chọn có thời hạn
             if (isEndDateEnabled && formData.endDate) {
@@ -324,7 +360,7 @@ const TeacherAddCourse = () => {
                         required
                     >
                         <option value="FREE">Miễn phí</option>
-                        <option value="CHARGEABLE">Có phí</option>
+                        <option value="CHARGEABLE" disabled={formData.status !== 'REQUEST'}>Có phí</option>
                     </select>
                 </div>
                 {showPriceField && (

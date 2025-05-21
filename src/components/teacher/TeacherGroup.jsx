@@ -493,7 +493,7 @@ const GroupPage = () => {
       setSelectedGroup(null);
     };
     
-    const fetchGroups = async () => {
+    const fetchGroups = async (isLoadMore = false) => {
       setIsLoading(true);
       setError(null);
       
@@ -525,7 +525,14 @@ const GroupPage = () => {
           // Nếu kết quả trả về là dạng phân trang
           if (responseData.content) {
             const formattedGroups = formatApiDataToDisplayData(responseData.content);
-            setGroups(formattedGroups);
+            
+            // Nếu đang load more, thêm nhóm mới vào danh sách hiện tại
+            if (isLoadMore) {
+              setGroups(prevGroups => [...prevGroups, ...formattedGroups]);
+            } else {
+              // Nếu không phải load more, thay thế danh sách hiện tại
+              setGroups(formattedGroups);
+            }
             
             // Cập nhật thông tin phân trang
             setPagination({
@@ -541,7 +548,13 @@ const GroupPage = () => {
           } else {
             // Nếu kết quả trả về là mảng thông thường
             const formattedGroups = formatApiDataToDisplayData(responseData);
-            setGroups(formattedGroups);
+            
+            // Tương tự xử lý load more
+            if (isLoadMore) {
+              setGroups(prevGroups => [...prevGroups, ...formattedGroups]);
+            } else {
+              setGroups(formattedGroups);
+            }
           }
         } else {
           throw new Error(response.data?.message || 'Failed to fetch groups');
@@ -580,7 +593,9 @@ const GroupPage = () => {
     
     useEffect(() => {
       fetchGroups();
-    }, [pagination.pageNumber, pagination.pageSize]);
+      // Không phụ thuộc vào pagination.pageNumber để tránh gọi API 2 lần khi click nút Xem thêm nhóm
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     
     const handleGroupClick = (group) => {
         const key = `group_${group.id}`;
@@ -699,6 +714,24 @@ const GroupPage = () => {
         ...pagination,
         pageNumber: newPage
       });
+      
+      // Khi chuyển trang, load lại dữ liệu mà không thêm vào danh sách hiện tại
+      fetchGroups(false);
+    };
+
+    // Hàm xử lý khi bấm nút Xem thêm nhóm
+    const handleLoadMore = () => {
+      // Tăng pageNumber lên 1
+      const nextPage = pagination.pageNumber + 1;
+      
+      // Cập nhật state pagination với pageNumber mới
+      setPagination(prev => ({
+        ...prev,
+        pageNumber: nextPage
+      }));
+      
+      // Gọi fetchGroups với tham số isLoadMore = true để thêm vào danh sách hiện tại
+      fetchGroups(true);
     };
 
     return (
@@ -771,24 +804,38 @@ const GroupPage = () => {
               )}
             </div>
             
-            {/* Phân trang */}
+            {/* Nút "Xem thêm nhóm" và phân trang */}
             {pagination.totalPages > 1 && (
-              <div className="group-pagination">
-                <button 
-                  disabled={pagination.pageNumber === 0}
-                  onClick={() => handlePageChange(pagination.pageNumber - 1)}
-                >
-                  Trước
-                </button>
-                <span>
-                  Trang {pagination.pageNumber + 1} / {pagination.totalPages}
-                </span>
-                <button 
-                  disabled={pagination.pageNumber >= pagination.totalPages - 1}
-                  onClick={() => handlePageChange(pagination.pageNumber + 1)}
-                >
-                  Sau
-                </button>
+              <div className="group-pagination-container">
+                {/* Hiển thị nút "Xem thêm nhóm" nếu chưa phải trang cuối */}
+                {pagination.pageNumber < pagination.totalPages - 1 && (
+                  <button
+                    className="load-more-btn"
+                    onClick={handleLoadMore}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Đang tải...' : 'Xem thêm nhóm'}
+                  </button>
+                )}
+                
+                {/* Phân trang */}
+                <div className="group-pagination">
+                  <button 
+                    disabled={pagination.pageNumber === 0}
+                    onClick={() => handlePageChange(pagination.pageNumber - 1)}
+                  >
+                    Trước
+                  </button>
+                  <span>
+                    Trang {pagination.pageNumber + 1} / {pagination.totalPages}
+                  </span>
+                  <button 
+                    disabled={pagination.pageNumber >= pagination.totalPages - 1}
+                    onClick={() => handlePageChange(pagination.pageNumber + 1)}
+                  >
+                    Sau
+                  </button>
+                </div>
               </div>
             )}
           </>

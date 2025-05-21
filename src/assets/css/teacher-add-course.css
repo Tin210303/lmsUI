@@ -204,4 +204,16 @@
     .course-image-container {
         width: 100%;
     }
+}
+
+.fee-type-message {
+    margin-top: 5px;
+    color: #e53935;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.teacher-form-group select option:disabled {
+    color: #999;
+    font-style: italic;
 } 

@@ -51,10 +51,9 @@ function PopularCourses() {
         <section className="popular-courses">
             <div className="popular-container">
                 <div className="section-header">
-                <h2>Discover Our Popular Courses</h2>
+                <h2>Khám Phá Các Khóa Học Phổ Biến Nhất</h2>
                 <p>
-                    Smply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever 
-                    since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
+                    Với nội dung được chọn lọc kỹ lưỡng và giảng viên giàu kinh nghiệm, các khóa học dưới đây đang nhận được sự quan tâm hàng đầu từ học viên. Tăng cường kiến thức và kỹ năng của bạn ngay hôm nay với những khóa học miễn phí chất lượng cao!
                 </p>
                 </div>
 

@@ -14,7 +14,8 @@ import {
     DELETE_MULTIPLE_STUDENTS_GROUP,
     GET_TESTS_IN_GROUP, 
     GET_STUDENT_TEST_RESULT, 
-    UPDATE_POST_API 
+    UPDATE_POST_API,
+    DELETE_TEST_API
 } from '../../services/apiService';
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
@@ -77,7 +78,7 @@ const TeacherGroupDetail = () => {
     const [studentsError, setStudentsError] = useState(null);
     const [studentsPagination, setStudentsPagination] = useState({
         pageNumber: 0,
-        pageSize: 10,
+        pageSize: 5,
         totalPages: 0,
         totalElements: 0
     });
@@ -119,6 +120,13 @@ const TeacherGroupDetail = () => {
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
     const [selectAll, setSelectAll] = useState(false);
+    
+    // Thêm state để quản lý menu test
+    const [activeTestMenu, setActiveTestMenu] = useState(null);
+    const [closingTestMenu, setClosingTestMenu] = useState(null);
+    const [testToDelete, setTestToDelete] = useState(null);
+    const [showDeleteTestConfirm, setShowDeleteTestConfirm] = useState(false);
+    const [testDeleteLoading, setTestDeleteLoading] = useState(false);
     
     // Xử lý đóng menu khi click ra ngoài
     useEffect(() => {
@@ -229,7 +237,7 @@ const TeacherGroupDetail = () => {
     }, [id]);
 
     // Fetch posts for this group
-    const fetchPosts = async () => {
+    const fetchPosts = async (isLoadMore = false, pageNumberParam = null) => {
         setPostLoading(true);
         setPostError(null);
         
@@ -239,11 +247,20 @@ const TeacherGroupDetail = () => {
                 throw new Error('No authentication token found');
             }
             
+            // Xác định pageNumber cần tải
+            // Nếu có pageNumberParam được truyền vào, sử dụng nó
+            // Nếu isLoadMore = true nhưng không có pageNumberParam, sử dụng pageNumber từ state
+            // Nếu isLoadMore = false, sử dụng pageNumber = 0 (trang đầu tiên)
+            const pageToLoad = pageNumberParam !== null ? pageNumberParam : 
+                              (isLoadMore ? pagination.pageNumber : 0);
+            
             // Tạo URLSearchParams để gửi tham số GET
             const params = new URLSearchParams();
             params.append('groupId', id);
-            params.append('pageNumber', pagination.pageNumber.toString());
+            params.append('pageNumber', pageToLoad.toString());
             params.append('pageSize', pagination.pageSize.toString());
+            
+            console.log(`Fetching posts for page ${pageToLoad} with pageSize ${pagination.pageSize}`);
             
             // Gọi API với phương thức GET và params
             const response = await axios.get(
@@ -261,37 +278,85 @@ const TeacherGroupDetail = () => {
                 
                 // Nếu kết quả trả về là dạng phân trang
                 if (responseData.content) {
-                    console.log(responseData);
+                    console.log(`Fetched posts data for page ${pageToLoad}:`, responseData);
                     
+                    // Kiểm tra xem responseData có chứa bài đăng nào không
+                    if (responseData.content.length === 0) {
+                        // Không có bài đăng nào, không cần cập nhật UI
+                        console.log("No posts returned from API");
+                        if (isLoadMore) {
+                            // Nếu đang tải thêm mà không có dữ liệu, đặt lại pageNumber về trang trước đó
+                            setPagination(prev => ({
+                                ...prev,
+                                pageNumber: prev.pageNumber > 0 ? prev.pageNumber - 1 : 0
+                            }));
+                        }
+                        setPostLoading(false);
+                        return;
+                    }
+                    
+                    // Xử lý dữ liệu trả về từ API
+                    if (isLoadMore) {
+                        console.log("Loading more posts, appending to existing list");
+                        
+                        // Thêm bài đăng mới vào danh sách hiện tại
+                        setPosts(prevPosts => {
+                            // Tạo Map để lưu các bài đăng hiện tại theo ID để dễ dàng kiểm tra trùng lặp
+                            const existingPostsMap = new Map();
+                            prevPosts.forEach(post => existingPostsMap.set(post.id, post));
+                            
+                            // Đếm số bài đăng mới
+                            let newPostsCount = 0;
+                            
+                            // Thêm các bài đăng mới vào danh sách
+                            const updatedPosts = [...prevPosts];
+                            responseData.content.forEach(post => {
+                                // Nếu bài đăng chưa tồn tại trong danh sách hiện tại, thêm vào
+                                if (!existingPostsMap.has(post.id)) {
+                                    updatedPosts.push(post);
+                                    newPostsCount++;
+                                }
+                            });
+                            
+                            console.log(`Found ${newPostsCount} new posts out of ${responseData.content.length} posts returned from API`);
+                            
+                            // Sắp xếp lại danh sách theo thời gian tạo (mới nhất lên đầu)
+                            return updatedPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                        });
+                    } else {
+                        console.log("Loading posts, replacing existing list");
                     // Sắp xếp bài đăng mới nhất lên đầu (dựa vào trường createdAt)
                     const sortedPosts = [...responseData.content].sort((a, b) => {
                         return new Date(b.createdAt) - new Date(a.createdAt);
                     });
-                    
                     setPosts(sortedPosts);
+                    }
                     
-                    // Cập nhật thông tin phân trang
-                    setPagination({
-                        ...pagination,
-                        totalPages: responseData.totalPages,
-                        totalElements: responseData.totalElements
+                    // Cập nhật thông tin phân trang từ đối tượng page trong response
+                    setPagination(prev => ({
+                        ...prev,
+                        pageNumber: isLoadMore ? pageToLoad : 0,
+                        pageSize: responseData.page.size,
+                        totalPages: responseData.page.totalPages,
+                        totalElements: responseData.page.totalElements
+                    }));
+                    
+                    console.log("Updated pagination:", {
+                        pageNumber: isLoadMore ? pageToLoad : 0,
+                        totalPages: responseData.page.totalPages,
+                        hasMore: (isLoadMore ? pageToLoad : 0) < responseData.page.totalPages - 1
                     });
 
                     // Fetch avatar if available
-                    // if (responseData.content.teacher?.avatar) {
-                    //     fetchTeacherAvatar(responseData.content.teacher.avatar);
-                    // }
-                    // Fetch avatar if available
-                    responseData.content.forEach(group => {
-                        fetchTeacherAvatar(group.teacher.avatar)
+                    responseData.content.forEach(post => {
+                        if (post.teacher && post.teacher.avatar) {
+                            fetchTeacherAvatar(post.teacher.avatar);
+                        }
                     });
                 } else {
-                    // Nếu kết quả trả về là mảng thông thường, cũng sắp xếp
-                    const sortedPosts = [...responseData].sort((a, b) => {
-                        return new Date(b.createdAt) - new Date(a.createdAt);
-                    });
-                    
-                    setPosts(sortedPosts);
+                    // Xử lý trường hợp responseData không có content
+                    console.warn("Response data doesn't contain content property:", responseData);
+                    setPosts([]);
                 }
             } else {
                 throw new Error(response.data?.message || 'Failed to fetch posts');
@@ -306,9 +371,16 @@ const TeacherGroupDetail = () => {
     
     useEffect(() => {
         if (id && isActive === 'wall') {
-            fetchPosts();
+            // Reset pagination khi tab thay đổi và gọi fetchPosts
+            setPagination(prev => ({
+                ...prev,
+                pageNumber: 0
+            }));
+            // Chỉ gọi fetchPosts khi component mount lần đầu hoặc khi tab thay đổi
+            fetchPosts(false, 0);
         }
-    }, [id, pagination.pageNumber, pagination.pageSize, isActive]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, isActive]); // Không thêm pagination.pageNumber vào dependencies
 
     // Back to groups list
     const backToGroupsList = () => {
@@ -318,6 +390,16 @@ const TeacherGroupDetail = () => {
     // Handle change tabs
     const handleTabChange = (tab) => {
         setisActive(tab);
+        
+        // Reset pagination when changing tabs
+        if (tab === 'wall') {
+            setPagination({
+                pageNumber: 0,
+                pageSize: 5,
+                totalPages: 0,
+                totalElements: 0
+            });
+        }
     }
 
     // Handle comment change
@@ -333,6 +415,9 @@ const TeacherGroupDetail = () => {
         }
     }
 
+    // Thêm state quản lý lỗi validation cho editor
+    const [editorValidationError, setEditorValidationError] = useState('');
+
     // Function to handle opening the editor
     const openEditor = () => {
         setIsEditorOpen(true);
@@ -343,6 +428,9 @@ const TeacherGroupDetail = () => {
         underline: false,
         list: false
         });
+        
+        // Reset validation error
+        setEditorValidationError('');
         
         // Focus on the editor after it renders
         setTimeout(() => {
@@ -357,14 +445,27 @@ const TeacherGroupDetail = () => {
         setIsEditorOpen(false);
         setAnnouncementText('');
         setSelectedFiles([]);
+        setEditorValidationError('');
     };
 
     // Function to handle text changes in the contenteditable div
     const handleEditorChange = () => {
         if (editorRef.current) {
         setAnnouncementText(editorRef.current.innerHTML);
+        // Xóa lỗi validation nếu có nội dung
+        if (editorRef.current.textContent.trim() && editorValidationError) {
+            setEditorValidationError('');
+        }
         }
     };
+
+    // Xóa lỗi validation khi người dùng bắt đầu nhập nội dung hoặc thêm file
+    useEffect(() => {
+        const hasContent = announcementText.trim() || selectedFiles.length > 0;
+        if (hasContent && editorValidationError) {
+            setEditorValidationError('');
+        }
+    }, [announcementText, selectedFiles, editorValidationError]);
 
     // Function for handling formatting with toggle functionality
     const toggleFormatting = (command, format) => {
@@ -394,7 +495,15 @@ const TeacherGroupDetail = () => {
 
     // Function to handle announcement submission
     const submitAnnouncement = async () => {
-        if (announcementText.trim() || selectedFiles.length > 0) {
+        // Kiểm tra xem bài đăng có nội dung hoặc file đính kèm không
+        const hasContent = announcementText.trim() || selectedFiles.length > 0;
+        
+        if (!hasContent) {
+            // Hiển thị thông báo lỗi trực tiếp trong form
+            setEditorValidationError('Nội dung không được để trống');
+            return;
+        }
+        
             try {
                 const token = localStorage.getItem('authToken');
                 const formData = new FormData();
@@ -422,16 +531,17 @@ const TeacherGroupDetail = () => {
                     }
                 );
                 if (response.data && response.data.code === 0) {
-                    fetchPosts();
+                fetchPosts(false, 0);
                     closeEditor();
                     setAnnouncementText('');
                     setSelectedFiles([]);
                 } else {
                     console.error('Error creating post:', response.data?.message);
+                showAlert('error', 'Lỗi', response.data?.message || 'Không thể tạo bài đăng');
                 }
             } catch (error) {
                 console.error('Error creating post:', error);
-            }
+            showAlert('error', 'Lỗi', 'Không thể tạo bài đăng. Vui lòng thử lại sau.');
         }
     };
 
@@ -759,14 +869,6 @@ const TeacherGroupDetail = () => {
         }
     };
 
-    // Xử lý khi thay đổi trang
-    const handlePageChange = (newPage) => {
-        setPagination({
-            ...pagination,
-            pageNumber: newPage
-        });
-    };
-
     // Hàm xử lý hiển thị/ẩn menu cho từng bài viết
     const togglePostMenu = (postId) => {
         if (activeMenu === postId) {
@@ -816,7 +918,7 @@ const TeacherGroupDetail = () => {
             // Kiểm tra kết quả trả về
             if (response.data && response.data.code === 0) {
                 // Xóa thành công, cập nhật lại danh sách bài viết
-                fetchPosts();
+                fetchPosts(false, 0);
                 // Đóng menu
                 setActiveMenu(null);
             } else {
@@ -896,8 +998,8 @@ const TeacherGroupDetail = () => {
         }
     };
 
-    // Fetch students data
-    const fetchStudents = async () => {
+    // Cập nhật hàm fetchStudents để hỗ trợ isLoadMore và pageNumberParam
+    const fetchStudents = async (isLoadMore = false, pageNumberParam = null) => {
         if (!id) return;
         
         setStudentsLoading(true);
@@ -909,11 +1011,20 @@ const TeacherGroupDetail = () => {
                 throw new Error('No authentication token found');
             }
             
+            // Xác định pageNumber cần tải
+            // Nếu có pageNumberParam được truyền vào, sử dụng nó
+            // Nếu isLoadMore = true nhưng không có pageNumberParam, sử dụng pageNumber từ state
+            // Nếu isLoadMore = false, sử dụng pageNumber = 0 (trang đầu tiên)
+            const pageToLoad = pageNumberParam !== null ? pageNumberParam : 
+                              (isLoadMore ? studentsPagination.pageNumber : 0);
+            
             // Tạo URLSearchParams để gửi tham số GET
             const params = new URLSearchParams();
             params.append('groupId', id);
             params.append('pageSize', studentsPagination.pageSize.toString());
-            params.append('pageNumber', studentsPagination.pageNumber.toString());
+            params.append('pageNumber', pageToLoad.toString());
+            
+            console.log(`Fetching students for page ${pageToLoad} with pageSize ${studentsPagination.pageSize}`);
             
             // Gọi API với phương thức GET và params
             const response = await axios.get(
@@ -928,28 +1039,81 @@ const TeacherGroupDetail = () => {
             // Kiểm tra kết quả trả về
             if (response.data && response.data.code === 0) {
                 const responseData = response.data.result;
-                console.log(responseData);
+                console.log(`Fetched students data for page ${pageToLoad}:`, responseData);
                 
+                // Kiểm tra xem responseData có chứa sinh viên nào không
+                if (responseData.content && responseData.content.length === 0) {
+                    console.log("No students returned from API");
+                    if (isLoadMore) {
+                        // Nếu đang tải thêm mà không có dữ liệu, đặt lại pageNumber về trang trước đó
+                        setStudentsPagination(prev => ({
+                            ...prev,
+                            pageNumber: prev.pageNumber > 0 ? prev.pageNumber - 1 : 0
+                        }));
+                    }
+                    setStudentsLoading(false);
+                    return;
+                }
                 
                 // Nếu kết quả trả về là dạng phân trang
                 if (responseData.content) {
+                    // Nếu isLoadMore = true, thêm sinh viên mới vào danh sách hiện tại
+                    // Nếu không, thay thế danh sách hiện tại
+                    if (isLoadMore) {
+                        console.log("Loading more students, appending to existing list");
+                        
+                        // Thêm sinh viên mới vào danh sách hiện tại
+                        setStudents(prevStudents => {
+                            // Tạo Map để lưu các sinh viên hiện tại theo ID để dễ dàng kiểm tra trùng lặp
+                            const existingStudentsMap = new Map();
+                            prevStudents.forEach(student => existingStudentsMap.set(student.id, student));
+                            
+                            // Đếm số sinh viên mới
+                            let newStudentsCount = 0;
+                            
+                            // Thêm các sinh viên mới vào danh sách
+                            const updatedStudents = [...prevStudents];
+                            responseData.content.forEach(student => {
+                                // Nếu sinh viên chưa tồn tại trong danh sách hiện tại, thêm vào
+                                if (!existingStudentsMap.has(student.id)) {
+                                    updatedStudents.push(student);
+                                    newStudentsCount++;
+                                }
+                            });
+                            
+                            console.log(`Found ${newStudentsCount} new students out of ${responseData.content.length} students returned from API`);
+                            
+                            return updatedStudents;
+                        });
+                    } else {
+                        console.log("Loading students, replacing existing list");
                     setStudents(responseData.content);
+                    }
                     
                     // Cập nhật thông tin phân trang
-                    setStudentsPagination({
-                        ...studentsPagination,
-                        totalPages: responseData.totalPages,
-                        totalElements: responseData.totalElements
+                    setStudentsPagination(prev => ({
+                        ...prev,
+                        pageNumber: isLoadMore ? pageToLoad : 0,
+                        totalPages: responseData.totalPages || responseData.page?.totalPages || 0,
+                        totalElements: responseData.totalElements || responseData.page?.totalElements || 0
+                    }));
+                    
+                    console.log("Updated students pagination:", {
+                        pageNumber: isLoadMore ? pageToLoad : 0,
+                        totalPages: responseData.totalPages || responseData.page?.totalPages || 0,
+                        hasMore: (isLoadMore ? pageToLoad : 0) < (responseData.totalPages || responseData.page?.totalPages || 0) - 1
                     });
                     
+                    // Tải avatar cho sinh viên mới
                     responseData.content.forEach(student => {
                         if (student.avatar) {
                             fetchAvatar(student.avatar, student.id);
                         }
                     });
                 } else {
-                    // Nếu kết quả trả về là mảng thông thường
-                    setStudents(responseData);
+                    // Nếu kết quả trả về không phải dạng phân trang
+                    console.warn("Response data doesn't contain content property:", responseData);
+                    setStudents([]);
                 }
             } else {
                 throw new Error(response.data?.message || 'Failed to fetch students');
@@ -962,19 +1126,30 @@ const TeacherGroupDetail = () => {
         }
     };
 
-    // Load students when tab changes to 'people'
+    // Thay đổi useEffect để lấy sinh viên chỉ khi tab thay đổi
     useEffect(() => {
         if (id && isActive === 'people') {
-            fetchStudents();
+            // Reset pagination khi tab thay đổi
+            setStudentsPagination(prev => ({
+                ...prev,
+                pageNumber: 0
+            }));
+            // Chỉ gọi fetchStudents khi tab thay đổi, không gọi khi thay đổi trang
+            fetchStudents(false, 0);
         }
-    }, [id, isActive, studentsPagination.pageNumber, studentsPagination.pageSize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, isActive]); // Loại bỏ studentsPagination.pageNumber và pageSize từ dependencies
 
     // Hàm xử lý khi thay đổi trang trong phần sinh viên
     const handleStudentsPageChange = (newPage) => {
+        // Cập nhật state pagination với pageNumber mới
         setStudentsPagination({
             ...studentsPagination,
             pageNumber: newPage
         });
+        
+        // Gọi fetchStudents với isLoadMore = false và trang mới
+        fetchStudents(false, newPage);
     };
 
     // Hàm xử lý hiển thị/ẩn menu xóa sinh viên
@@ -1046,8 +1221,8 @@ const TeacherGroupDetail = () => {
         navigate(`/teacher/groups/${id}/create-task`);
     };
 
-    // Sửa lại hàm fetchTests để gửi tham số qua form-data
-    const fetchTests = async () => {
+    // Cập nhật hàm fetchTests
+    const fetchTests = async (isLoadMore = false, pageNumberParam = null) => {
         if (!id) return;
         
         setTestsLoading(true);
@@ -1059,11 +1234,18 @@ const TeacherGroupDetail = () => {
                 throw new Error('No authentication token found');
             }
             
+            // Xác định pageNumber cần tải
+            // Nếu có pageNumberParam được truyền vào, sử dụng nó
+            // Nếu isLoadMore = true nhưng không có pageNumberParam, sử dụng pageNumber từ state
+            // Nếu isLoadMore = false, sử dụng pageNumber = 0 (trang đầu tiên)
+            const pageToLoad = pageNumberParam !== null ? pageNumberParam : 
+                              (isLoadMore ? testsPagination.pageNumber : 0);
+            
             // Tạo FormData để gửi tham số
             const formData = new FormData();
             formData.append('groupId', id);
             formData.append('pageSize', testsPagination.pageSize.toString());
-            formData.append('pageNumber', testsPagination.pageNumber.toString());
+            formData.append('pageNumber', pageToLoad.toString());
             
             // Tạo URL với query parameters từ FormData
             let url = GET_TESTS_IN_GROUP;
@@ -1072,6 +1254,8 @@ const TeacherGroupDetail = () => {
                 searchParams.append(key, value);
             }
             url = `${url}?${searchParams.toString()}`;
+            
+            console.log(`Fetching tests for page ${pageToLoad} with pageSize ${testsPagination.pageSize}`);
             
             // Gọi API với phương thức GET
             const response = await axios.get(
@@ -1086,20 +1270,74 @@ const TeacherGroupDetail = () => {
             // Kiểm tra kết quả trả về
             if (response.data && response.data.code === 0) {
                 const responseData = response.data.result;
+                console.log(`Fetched tests data for page ${pageToLoad}:`, responseData);
                 
                 // Nếu kết quả trả về là dạng phân trang
                 if (responseData.content) {
+                    // Kiểm tra xem responseData có chứa bài kiểm tra nào không
+                    if (responseData.content.length === 0) {
+                        console.log("No tests returned from API");
+                        if (isLoadMore) {
+                            // Nếu đang tải thêm mà không có dữ liệu, đặt lại pageNumber về trang trước đó
+                            setTestsPagination(prev => ({
+                                ...prev,
+                                pageNumber: prev.pageNumber > 0 ? prev.pageNumber - 1 : 0
+                            }));
+                        }
+                        setTestsLoading(false);
+                        return;
+                    }
+                    
+                    // Nếu isLoadMore = true, thêm bài kiểm tra mới vào danh sách hiện tại
+                    // Nếu không, thay thế danh sách hiện tại
+                    if (isLoadMore) {
+                        console.log("Loading more tests, appending to existing list");
+                        
+                        // Thêm bài kiểm tra mới vào danh sách hiện tại
+                        setTests(prevTests => {
+                            // Tạo Map để lưu các bài kiểm tra hiện tại theo ID để dễ dàng kiểm tra trùng lặp
+                            const existingTestsMap = new Map();
+                            prevTests.forEach(test => existingTestsMap.set(test.id, test));
+                            
+                            // Đếm số bài kiểm tra mới
+                            let newTestsCount = 0;
+                            
+                            // Thêm các bài kiểm tra mới vào danh sách
+                            const updatedTests = [...prevTests];
+                            responseData.content.forEach(test => {
+                                // Nếu bài kiểm tra chưa tồn tại trong danh sách hiện tại, thêm vào
+                                if (!existingTestsMap.has(test.id)) {
+                                    updatedTests.push(test);
+                                    newTestsCount++;
+                                }
+                            });
+                            
+                            console.log(`Found ${newTestsCount} new tests out of ${responseData.content.length} tests returned from API`);
+                            
+                            return updatedTests;
+                        });
+                    } else {
+                        console.log("Loading tests, replacing existing list");
                     setTests(responseData.content);
+                    }
                     
                     // Cập nhật thông tin phân trang
-                    setTestsPagination({
-                        ...testsPagination,
-                        totalPages: responseData.totalPages,
-                        totalElements: responseData.totalElements
+                    setTestsPagination(prev => ({
+                        ...prev,
+                        pageNumber: isLoadMore ? pageToLoad : 0,
+                        totalPages: responseData.totalPages || responseData.page?.totalPages || 0,
+                        totalElements: responseData.totalElements || responseData.page?.totalElements || 0
+                    }));
+                    
+                    console.log("Updated tests pagination:", {
+                        pageNumber: isLoadMore ? pageToLoad : 0,
+                        totalPages: responseData.totalPages || responseData.page?.totalPages || 0,
+                        hasMore: (isLoadMore ? pageToLoad : 0) < (responseData.totalPages || responseData.page?.totalPages || 0) - 1
                     });
                 } else {
-                    // Nếu kết quả trả về là mảng thông thường
-                    setTests(responseData);
+                    // Nếu kết quả trả về không phải dạng phân trang
+                    console.warn("Response data doesn't contain content property:", responseData);
+                    setTests([]);
                 }
             } else {
                 throw new Error(response.data?.message || 'Failed to fetch tests');
@@ -1112,19 +1350,30 @@ const TeacherGroupDetail = () => {
         }
     };
 
-    // Thêm useEffect để gọi API khi vào tab "tasks"
+    // Thay đổi useEffect để lấy bài kiểm tra chỉ khi tab thay đổi
     useEffect(() => {
         if (id && isActive === 'tasks') {
-            fetchTests();
+            // Reset pagination khi tab thay đổi
+            setTestsPagination(prev => ({
+                ...prev,
+                pageNumber: 0
+            }));
+            // Chỉ gọi fetchTests khi tab thay đổi, không gọi khi thay đổi trang
+            fetchTests(false, 0);
         }
-    }, [id, testsPagination.pageNumber, testsPagination.pageSize, isActive]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, isActive]); // Loại bỏ testsPagination.pageNumber và pageSize từ dependencies
 
     // Hàm xử lý khi thay đổi trang
     const handleTestsPageChange = (newPage) => {
+        // Cập nhật state pagination với pageNumber mới
         setTestsPagination({
             ...testsPagination,
             pageNumber: newPage
         });
+        
+        // Gọi fetchTests với isLoadMore = false và trang mới
+        fetchTests(false, newPage);
     };
 
     // Thêm hàm xử lý khi click vào bài kiểm tra
@@ -1488,6 +1737,14 @@ const TeacherGroupDetail = () => {
                                             </div>
                                         )}
                                         
+                                        {/* Hiển thị thông báo lỗi validation */}
+                                        {editorValidationError && (
+                                            <div className="validation-error-message">
+                                                <AlertCircle size={16} />
+                                                <span>{editorValidationError}</span>
+                                            </div>
+                                        )}
+                                        
                                         <div className="editor-actions">
                                             <button className="post-cancel-button" onClick={closeEditor}>Hủy</button>
                                             <button className="post-button" onClick={submitAnnouncement}>Đăng</button>
@@ -1622,23 +1879,22 @@ const TeacherGroupDetail = () => {
                                                 </>
                                             ))}
                                             
-                                            {/* Phân trang */}
-                                            {pagination.totalPages > 1 && (
-                                                <div className="posts-pagination">
+                                            {/* Hiển thị nút "Tải thêm bài đăng" nếu còn trang để tải */}
+                                            {pagination.pageNumber < pagination.totalPages - 1 && pagination.totalPages > 1 && (
+                                                <div className="load-more-container">
                                                     <button 
-                                                        disabled={pagination.pageNumber === 0}
-                                                        onClick={() => handlePageChange(pagination.pageNumber - 1)}
+                                                        className="load-more-btn"
+                                                        onClick={handleLoadMorePosts}
+                                                        disabled={postLoading}
                                                     >
-                                                        Trước
-                                                    </button>
-                                                    <span>
-                                                        Trang {pagination.pageNumber + 1} / {pagination.totalPages}
-                                                    </span>
-                                                    <button 
-                                                        disabled={pagination.pageNumber >= pagination.totalPages - 1}
-                                                        onClick={() => handlePageChange(pagination.pageNumber + 1)}
-                                                    >
-                                                        Sau
+                                                        {postLoading ? (
+                                                            <>
+                                                                <span className="spinner-border-sm"></span>
+                                                                Đang tải...
+                                                            </>
+                                                        ) : (
+                                                            'Tải thêm bài đăng'
+                                                        )}
                                                     </button>
                                                 </div>
                                             )}
@@ -1745,10 +2001,39 @@ const TeacherGroupDetail = () => {
                                                     <button 
                                                         className="task-more-options"
                                                         onClick={(e) => {
-                                                            e.stopPropagation(); // Ngăn event bubble lên parent
-                                                            // Xử lý menu options cho test
+                                                            e.stopPropagation();
+                                                            toggleTestMenu(test.id);
                                                         }}
-                                                    >⋮</button>
+                                                    >
+                                                        <EllipsisVertical size={20}/>
+                                                    </button>
+                                                    {(activeTestMenu === test.id || closingTestMenu === test.id) && (
+                                                        <div className={`test-options-menu ${closingTestMenu === test.id ? 'test-options-menu-exit' : ''}`}>
+                                                            <button 
+                                                                className="test-option-item test-delete-button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setTestToDelete(test.id);
+                                                                    setShowDeleteTestConfirm(true);
+                                                                    setActiveTestMenu(null);
+                                                                }}
+                                                            >
+                                                                <Trash2 size={16} />
+                                                                Xóa
+                                                            </button>
+                                                            <button 
+                                                                className="test-option-item test-reuse-button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    // TODO: Implement reuse functionality
+                                                                    setActiveTestMenu(null);
+                                                                }}
+                                                            >
+                                                                <FileText size={16} />
+                                                                Sử dụng lại bài kiểm tra
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))
@@ -1760,23 +2045,22 @@ const TeacherGroupDetail = () => {
                                     )}
                                 </div>
                                 
-                                {/* Phân trang */}
-                                {testsPagination.totalPages > 1 && (
-                                    <div className="tests-pagination">
+                                {/* Nút tải thêm bài kiểm tra */}
+                                {testsPagination.pageNumber < testsPagination.totalPages - 1 && (
+                                    <div className="load-more-container">
                                         <button 
-                                            disabled={testsPagination.pageNumber === 0}
-                                            onClick={() => handleTestsPageChange(testsPagination.pageNumber - 1)}
+                                            className="load-more-btn"
+                                            onClick={handleLoadMoreTests}
+                                            disabled={testsLoading}
                                         >
-                                            Trước
-                                        </button>
-                                        <span>
-                                            Trang {testsPagination.pageNumber + 1} / {testsPagination.totalPages}
-                                        </span>
-                                        <button 
-                                            disabled={testsPagination.pageNumber >= testsPagination.totalPages - 1}
-                                            onClick={() => handleTestsPageChange(testsPagination.pageNumber + 1)}
-                                        >
-                                            Sau
+                                            {testsLoading ? (
+                                                <>
+                                                    <span className="spinner-border-sm"></span>
+                                                    Đang tải...
+                                                </>
+                                            ) : (
+                                                'Tải thêm bài kiểm tra'
+                                            )}
                                         </button>
                                     </div>
                                 )}
@@ -1838,6 +2122,7 @@ const TeacherGroupDetail = () => {
                                 
                                 {!studentsLoading && !studentsError && (
                                     <>
+                                        {students.length > 0 && (
                                         <div className="select-all-container">
                                             <label className="select-all-checkbox">
                                                 <input 
@@ -1869,6 +2154,7 @@ const TeacherGroupDetail = () => {
                                                 )}
                                             </label>
                                         </div>
+                                        )}
 
                                         <div className="people-list student-list">
                                             {students.length > 0 ? (
@@ -1940,23 +2226,22 @@ const TeacherGroupDetail = () => {
                                             )}
                                         </div>
                                         
-                                        {/* Pagination - giữ nguyên */}
-                                        {studentsPagination.totalPages > 1 && (
-                                            <div className="students-pagination">
+                                        {/* Nút tải thêm sinh viên */}
+                                        {studentsPagination.pageNumber < studentsPagination.totalPages - 1 && (
+                                            <div className="load-more-container">
                                                 <button 
-                                                    disabled={studentsPagination.pageNumber === 0}
-                                                    onClick={() => handleStudentsPageChange(studentsPagination.pageNumber - 1)}
+                                                    className="load-more-btn"
+                                                    onClick={handleLoadMoreStudents}
+                                                    disabled={studentsLoading}
                                                 >
-                                                    Trước
-                                                </button>
-                                                <span>
-                                                    Trang {studentsPagination.pageNumber + 1} / {studentsPagination.totalPages}
-                                                </span>
-                                                <button 
-                                                    disabled={studentsPagination.pageNumber >= studentsPagination.totalPages - 1}
-                                                    onClick={() => handleStudentsPageChange(studentsPagination.pageNumber + 1)}
-                                                >
-                                                    Sau
+                                                    {studentsLoading ? (
+                                                        <>
+                                                            <span className="spinner-border-sm"></span>
+                                                            Đang tải...
+                                                        </>
+                                                    ) : (
+                                                        'Tải thêm sinh viên'
+                                                    )}
                                                 </button>
                                             </div>
                                         )}
@@ -2369,7 +2654,7 @@ const TeacherGroupDetail = () => {
             if (response.data && response.data.code === 0) {
                 // Đóng modal và tải lại danh sách bài đăng
                 closeEditModal();
-                fetchPosts();
+                fetchPosts(false, 0);
                 showAlert('success', 'Thành công', 'Cập nhật bài đăng thành công');
             } else {
                 showAlert('error', 'Lỗi', response.data?.message || 'Cập nhật bài đăng thất bại');
@@ -2413,6 +2698,7 @@ const TeacherGroupDetail = () => {
         const [selectedFiles, setSelectedFiles] = useState([]);
         const [remainingFiles, setRemainingFiles] = useState([]);
         const [isInputFocused, setIsInputFocused] = useState(false);
+        const [validationError, setValidationError] = useState('');
         const [activeFormats, setActiveFormats] = useState({
             bold: false,
             italic: false,
@@ -2424,6 +2710,13 @@ const TeacherGroupDetail = () => {
         const editorRef = useRef(null);
         const hasInitialized = useRef(false);
         
+        // Kiểm tra nội dung có trống không
+        const isContentEmpty = () => {
+            // Loại bỏ HTML tags, khoảng trắng và kiểm tra có nội dung không
+            const content = text.replace(/<[^>]*>/g, '').trim();
+            return !content.length && !remainingFiles.length && !selectedFiles.length;
+        };
+        
         // Khởi tạo giá trị khi modal mở và chưa được khởi tạo
         useEffect(() => {
             if (isOpen && !hasInitialized.current) {
@@ -2431,6 +2724,7 @@ const TeacherGroupDetail = () => {
                 setText(initialText || '');
                 setRemainingFiles(existingFiles || []);
                 setSelectedFiles([]);
+                setValidationError('');
                 hasInitialized.current = true;
                 
                 // Reset formatting
@@ -2447,6 +2741,7 @@ const TeacherGroupDetail = () => {
         useEffect(() => {
             if (!isOpen) {
                 hasInitialized.current = false;
+                setValidationError('');
             }
         }, [isOpen]);
         
@@ -2487,6 +2782,13 @@ const TeacherGroupDetail = () => {
             }
         }, [isOpen, text, isInputFocused]);
         
+        // Xóa thông báo lỗi khi người dùng bắt đầu nhập
+        useEffect(() => {
+            if (validationError && (!isContentEmpty())) {
+                setValidationError('');
+            }
+        }, [text, selectedFiles, remainingFiles, validationError]);
+        
         // Không render khi không mở
         if (!isOpen) return null;
         
@@ -2526,6 +2828,8 @@ const TeacherGroupDetail = () => {
             const files = Array.from(event.target.files);
             if (files.length > 0) {
                 setSelectedFiles(prev => [...prev, ...files]);
+                // Xóa thông báo lỗi nếu có
+                setValidationError('');
             }
         };
         
@@ -2541,6 +2845,10 @@ const TeacherGroupDetail = () => {
         
         // Xử lý lưu
         const handleSave = () => {
+            if (isContentEmpty()) {
+                setValidationError('Nội dung không được để trống');
+                return;
+            }
             onSave({
                 text,
                 newFiles: selectedFiles,
@@ -2687,6 +2995,14 @@ const TeacherGroupDetail = () => {
                             </div>
                         )}
                         
+                        {/* Hiển thị thông báo lỗi validation */}
+                        {validationError && (
+                            <div className="validation-error-message">
+                                <AlertCircle size={16} />
+                                <span>{validationError}</span>
+                            </div>
+                        )}
+                        
                         <div className="group-editor-actions">
                             <button 
                                 className="post-cancel-button" 
@@ -2747,6 +3063,178 @@ const TeacherGroupDetail = () => {
                             disabled={bulkDeleteLoading}
                         >
                             {bulkDeleteLoading ? 'Đang xóa...' : 'Xóa'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Hàm xử lý khi bấm nút "Xem thêm bài đăng"
+    const handleLoadMorePosts = () => {
+        // Kiểm tra xem còn trang nào để tải tiếp không
+        if (pagination.pageNumber >= pagination.totalPages - 1) {
+            console.log("No more pages to load");
+            return;
+        }
+        
+        // Tăng pageNumber lên 1
+        const nextPage = pagination.pageNumber + 1;
+        
+        console.log("Loading more posts, current page:", pagination.pageNumber, "next page:", nextPage);
+        console.log("Pagination info:", pagination);
+        
+        // Cập nhật state pagination với pageNumber mới
+        setPagination(prev => ({
+            ...prev,
+            pageNumber: nextPage
+        }));
+        
+        // Gọi fetchPosts với tham số isLoadMore = true và truyền trực tiếp nextPage
+        // để đảm bảo sử dụng đúng trang cần tải, không phụ thuộc vào việc state đã cập nhật hay chưa
+        fetchPosts(true, nextPage);
+    };
+
+    // Thêm hàm để tải thêm sinh viên
+    const handleLoadMoreStudents = () => {
+        // Kiểm tra xem còn trang nào để tải tiếp không
+        if (studentsPagination.pageNumber >= studentsPagination.totalPages - 1) {
+            console.log("No more students pages to load");
+            return;
+        }
+        
+        // Tăng pageNumber lên 1
+        const nextPage = studentsPagination.pageNumber + 1;
+        
+        console.log("Loading more students, current page:", studentsPagination.pageNumber, "next page:", nextPage);
+        console.log("Students pagination info:", studentsPagination);
+        
+        // Cập nhật state pagination với pageNumber mới
+        setStudentsPagination(prev => ({
+            ...prev,
+            pageNumber: nextPage
+        }));
+        
+        // Gọi fetchStudents với tham số isLoadMore = true và truyền trực tiếp nextPage
+        // để đảm bảo sử dụng đúng trang cần tải, không phụ thuộc vào việc state đã cập nhật hay chưa
+        fetchStudents(true, nextPage);
+    };
+
+    // Thêm hàm để tải thêm bài kiểm tra
+    const handleLoadMoreTests = () => {
+        // Kiểm tra xem còn trang nào để tải tiếp không
+        if (testsPagination.pageNumber >= testsPagination.totalPages - 1) {
+            console.log("No more tests pages to load");
+            return;
+        }
+        
+        // Tăng pageNumber lên 1
+        const nextPage = testsPagination.pageNumber + 1;
+        
+        console.log("Loading more tests, current page:", testsPagination.pageNumber, "next page:", nextPage);
+        console.log("Tests pagination info:", testsPagination);
+        
+        // Cập nhật state pagination với pageNumber mới
+        setTestsPagination(prev => ({
+            ...prev,
+            pageNumber: nextPage
+        }));
+        
+        // Gọi fetchTests với tham số isLoadMore = true và truyền trực tiếp nextPage
+        // để đảm bảo sử dụng đúng trang cần tải, không phụ thuộc vào việc state đã cập nhật hay chưa
+        fetchTests(true, nextPage);
+    };
+
+    // Add this function after other menu toggle functions
+    const toggleTestMenu = (testId) => {
+        if (activeTestMenu === testId) {
+            setClosingTestMenu(testId);
+            setTimeout(() => {
+                setActiveTestMenu(null);
+                setClosingTestMenu(null);
+            }, 150);
+        } else {
+            if (closingTestMenu) {
+                setClosingTestMenu(null);
+            }
+            setActiveTestMenu(testId);
+        }
+    };
+
+    // Add this function after other delete handlers
+    const handleDeleteTest = async () => {
+        if (!testToDelete || testDeleteLoading) return;
+        
+        try {
+            setTestDeleteLoading(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Create FormData to send testId
+            const formData = new FormData();
+            formData.append('testId', testToDelete);
+            
+            // Call API to delete test
+            const response = await axios.delete(
+                DELETE_TEST_API,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    data: formData
+                }
+            );
+            
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Xóa bài kiểm tra thành công');
+                // Refresh test list
+                fetchTests(false, 0);
+            } else {
+                throw new Error(response.data?.message || 'Failed to delete test');
+            }
+        } catch (error) {
+            console.error('Error deleting test:', error);
+            showAlert('error', 'Lỗi', 'Không thể xóa bài kiểm tra. Vui lòng thử lại sau.');
+        } finally {
+            setTestDeleteLoading(false);
+            setShowDeleteTestConfirm(false);
+            setTestToDelete(null);
+        }
+    };
+
+    // Add this component before the return statement
+    const DeleteTestConfirmationDialog = () => {
+        if (!showDeleteTestConfirm) return null;
+        
+        return (
+            <div className="confirmation-dialog-overlay">
+                <div className="confirmation-dialog">
+                    <div className="confirmation-dialog-header">
+                        <h3>Xác nhận xóa bài kiểm tra</h3>
+                    </div>
+                    <div className="confirmation-dialog-content">
+                        <p>Bạn có chắc chắn muốn xóa bài kiểm tra này?</p>
+                        <p className="warning-text">Lưu ý: Hành động này không thể hoàn tác.</p>
+                    </div>
+                    <div className="confirmation-dialog-footer">
+                        <button 
+                            className="cancel-button" 
+                            onClick={() => {
+                                setShowDeleteTestConfirm(false);
+                                setTestToDelete(null);
+                            }}
+                            disabled={testDeleteLoading}
+                        >
+                            Hủy
+                        </button>
+                        <button 
+                            className="confirm-button" 
+                            onClick={handleDeleteTest}
+                            disabled={testDeleteLoading}
+                        >
+                            {testDeleteLoading ? 'Đang xóa...' : 'Xóa'}
                         </button>
                     </div>
                 </div>
@@ -2821,6 +3309,9 @@ const TeacherGroupDetail = () => {
 
             {/* Thêm hộp thoại xác nhận xóa */}
             <ConfirmationDialog />
+            
+            {/* Add DeleteTestConfirmationDialog */}
+            <DeleteTestConfirmationDialog />
         </div>
     );
 }

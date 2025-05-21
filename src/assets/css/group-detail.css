@@ -309,12 +309,15 @@
 
 .task-actions {
   margin-left: 16px;
+  padding: 20px;
   width: 30px;
   height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  position: relative;
+  transition: all 0.3s ease;
 }
 
 .task-actions:hover {
@@ -325,9 +328,9 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 18px;
   font-weight: bold;
   color: #616161;
+  transition: all 0.3s ease;
 }
 
 /* People tab styling */

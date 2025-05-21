@@ -401,13 +401,18 @@ const CreateTask = () => {
             const token = localStorage.getItem('authToken');
             if (!token) throw new Error('No authentication token found');
             
-            // Gọi API xóa bài kiểm tra với tham số testInGroupId
+            // Tạo FormData để gửi testId
+            const formData = new FormData();
+            formData.append('testId', testInGroupId);
+            
+            // Gọi API xóa bài kiểm tra với form-data
             const response = await axios.delete(
-                `${DELETE_TEST_API}?testInGroupId=${testInGroupId}`,
+                DELETE_TEST_API,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    }
+                    },
+                    data: formData // Truyền formData trong data khi sử dụng method DELETE
                 }
             );
             

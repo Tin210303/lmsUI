@@ -1989,7 +1989,7 @@ const ManageDocument = () => {
                 </div>
                 
                 {loading && (
-                    <div className="loading-overlay">
+                    <div className="major-loading-overlay">
                         <div className="loading-spinner"></div>
                     </div>
                 )}
@@ -2074,7 +2074,7 @@ const ManageDocument = () => {
             </div>
             
             <div className="document-pagination">
-                <div className="pagination-info">Tổng số: {totalElements} files</div>
+                <div className="document-pagination-info">Tổng số: {totalElements} files</div>
                 {totalPages > 1 && (
                     <div className="pagination-controls">
                         <button 

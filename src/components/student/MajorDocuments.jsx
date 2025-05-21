@@ -762,9 +762,10 @@ const MajorDocuments = () => {
             <div className="document-header">
                 <div className="header-title">
                     <button onClick={handleBackClick} className="document-back-button">
-                        <ArrowLeft size={20} />
+                        Kho tài liệu
                     </button>
-                    <h1>Tài liệu: {major.name}</h1>
+                    &gt;
+                    <span>{major.name}</span>
                 </div>
                 <div className="header-actions">
                     <div className="student-document-search-container">

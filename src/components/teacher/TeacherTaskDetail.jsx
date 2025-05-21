@@ -18,8 +18,6 @@ const TaskDetail = () => {
     // Submission states
     const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
     const [submissions, setSubmissions] = useState([]);
-    console.log(submissions);
-    
     const [submissionsLoading, setSubmissionsLoading] = useState(false);
     const [submissionsError, setSubmissionsError] = useState(null);
     const [submissionsPagination, setSubmissionsPagination] = useState({
@@ -198,7 +196,7 @@ const TaskDetail = () => {
     // Chuyển đến trang chỉnh sửa bài kiểm tra
     const handleEditTest = () => {
         // Sử dụng id là testInGroupId theo chuẩn API
-        navigate(`/teacher/groups/${test.groupId}/edit-test/${id}`);
+        navigate(`/teacher/groups/${id}/edit-test/${id}`);
     };
     
     // Go back to group page
