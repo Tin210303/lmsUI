@@ -8,6 +8,7 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     overflow: hidden;
     margin: 1rem 0.5rem;
+    border-radius: 8px;
 }
 
 /* Sidebar Styles */
@@ -52,16 +53,7 @@
     list-style: none;
     padding: 0;
     margin: 0;
-}
-
-.channel-item, .dm-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 16px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s ease;
-    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .channel-item:hover, .dm-item:hover {
@@ -71,10 +63,11 @@
 .channel-item.active, .dm-item.active {
     background-color: #e0e0e0;
     font-weight: 500;
+    color: #333;
 }
 
 .channel-icon, .dm-icon {
-    color: #666;
+    color: #333;
     margin-right: 8px;
 }
 
@@ -92,16 +85,22 @@
     gap: 8px;
     background: none;
     border: none;
-    color: #666;
+    color: #333;
     cursor: pointer;
-    padding: 8px 16px;
+    padding: 12px 16px;
     font-size: 14px;
-    width: 100%;
-    text-align: left;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    margin: auto;
+    border-radius: 8px;
+    justify-content: center;
+    transition: all 0.2s ease;
 }
 
 .add-new-button:hover {
     background-color: #f5f5f5;
+    transform: translateY(-2px);
 }
 
 /* Chat Area Styles */
@@ -110,14 +109,6 @@
     display: flex;
     flex-direction: column;
     background-color: #fff;
-}
-
-.chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    border-bottom: 1px solid #e8e8e8;
 }
 
 .chat-header-left {
@@ -139,15 +130,6 @@
 .chat-header-actions {
     color: #999;
     cursor: pointer;
-}
-
-.chat-messages {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
 }
 
 .message-date-divider {
@@ -191,18 +173,6 @@
     display: flex;
 }
 
-.message-bubble {
-    max-width: 70%;
-    padding: 10px 16px;
-    border-radius: 12px;
-    background-color: #f1f0f0;
-    position: relative;
-}
-
-.message-bubble.current-user {
-    background-color: #d1ecf7;
-}
-
 .message-content {
     font-size: 14px;
     color: #333;
@@ -217,15 +187,7 @@
     margin-top: 4px;
 }
 
-.message-input-container {
-    display: flex;
-    align-items: center;
-    padding: 16px;
-    border-top: 1px solid #e8e8e8;
-    background-color: #fff;
-}
-
-.attach-button, .emoji-button, .send-button {
+.attach-button, .emoji-button, .chatbox-send-button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -239,18 +201,22 @@
     transition: background-color 0.2s ease;
 }
 
-.attach-button:hover, .emoji-button:hover, .send-button:hover {
+.attach-button:hover, .emoji-button:hover, .chatbox-send-button:hover {
     background-color: #f0f0f0;
 }
 
 .message-input {
     flex: 1;
+    max-height: 200px;
     padding: 10px 16px;
     border: 1px solid #e0e0e0;
     border-radius: 24px;
     font-size: 14px;
-    margin: 0 8px;
     outline: none;
+    resize: none;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .message-input:focus {

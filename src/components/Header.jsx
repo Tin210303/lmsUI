@@ -199,7 +199,7 @@ function Header() {
                 closeAllModals(); // Đóng modal đăng nhập và reset form
             } else {
                 // Hiển thị lỗi từ API hoặc lỗi kiểm tra role
-                setError(result.error);
+                setError('Sai thông tin đăng nhập.');
             }
         } catch (err) {
             console.error('Lỗi đăng nhập:', err);

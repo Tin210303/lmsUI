@@ -81,3 +81,7 @@ export const UPLOAD_DOCUMENT = `${API_BASE_URL}/lms/document/create`; // Upload 
 export const DELETE_DOCUMENT = `${API_BASE_URL}/lms/document/delete`; // Xoá tài liệu
 export const UPDATE_DOCUMENT_STATUS = `${API_BASE_URL}/lms/document/updatestatus`; // Cập nhật trạng thái hiển thị của tài liệu
 export const SEARCH_DOCUMENTS_API = `${API_BASE_URL}/lms/document/search`; // Tìm kiếm tài liệu theo từ khóa
+
+// Chat API Endpoints
+export const GET_ALL_CHATBOXES_API = `${API_BASE_URL}/lms/chatBox`; // Assuming /api is part of API_BASE_URL or you might need to adjust this
+export const SEND_MESSAGE_API = (chatBoxId) => `${API_BASE_URL}/lms/chatBox/${chatBoxId}/messages`; // POST request
