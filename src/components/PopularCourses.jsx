@@ -1,5 +1,9 @@
 import React from 'react';
 import '../assets/css/popular-courses.css';
+import jsimg from '../assets/imgs/js1.jpg';
+import htmlimg from '../assets/imgs/html.png';
+import reactimg from '../assets/imgs/reactjs.jpg';
+import { User, Users, Book } from 'lucide-react'; 
 
 function PopularCourses() {
     // Sample courses data
@@ -36,15 +40,12 @@ function PopularCourses() {
         }
     ];
 
-    // Function to render rating stars
-    const renderRatingStars = (rating) => {
-        const stars = [];
-        for (let i = 1; i <= 5; i++) {
-        stars.push(
-            <span key={i} className={i <= rating ? 'star filled' : 'star'}>★</span>
-        );
-        }
-        return stars;
+    const truncateTeacherName = (name, maxLength = 11) => {
+        if (!name) return 'Giảng viên';
+        // Đảm bảo name là chuỗi
+        const nameStr = String(name);
+        if (nameStr.length <= maxLength) return nameStr;
+        return nameStr.substring(0, maxLength) + '..';
     };
 
     return (
@@ -57,31 +58,105 @@ function PopularCourses() {
                 </p>
                 </div>
 
-                <div className="popular-courses-grid">
-                {courses.map((course) => (
-                    <div key={course.id} className="popular-course-card">
-                        <div className="popular-course-image">
-                            <img src={course.image} alt={course.title} />
+                <div className='popular-courses-grid'>
+                    <div className="course-card">
+                        <div className="course-image">
+                            <img src={jsimg} alt={jsimg} className="course-img" />
                         </div>
-                        <div className="popular-course-content">
-                            <h3>{course.title}</h3>
-                            <p className="instructor" style={{ color: course.id === 1 ? '#4CAF50' : course.id === 2 ? '#E91E63' : '#9C27B0' }}>
-                            {course.instructor}
+                        <div className="course-card-header">
+                            <h3 className="course-title">Lập trình JavaScript cơ bản</h3>
+                            <p className="course-dates">
+                                Thời hạn: Không giới hạn
                             </p>
-                            <p className="description">{course.description}</p>
-                            <div className="popular-course-meta">
-                                <div className="rating">
-                                    {renderRatingStars(course.rating)}
-                                    <span className="rating-value">{course.rating.toFixed(1)}</span>
-                                    <span className="review-count">({course.reviews.toLocaleString()})</span>
-                                </div>
-                                <div className={`price ${course.price === 'FREE' ? 'free' : ''}`}>
-                                    {course.price}
-                                </div>
+                            <p className="course-major">Chuyên ngành: Công nghệ thông tin</p>
+                            <div className="course-status">
+                                <span className={`status-badge public`}>
+                                    PUBLIC
+                                </span>
+                                <span className="status-badge free">Miễn phí</span>
+                            </div>
+                        </div>
+                        <div className="course-stats">
+                            <div className="stat-item">
+                                <User size={16} />
+                                <span>{truncateTeacherName('Lê Văn Tiến')}</span>
+                            </div>
+                            <div className="stat-item">
+                                <Users size={16} />
+                                <span>45</span>
+                            </div>
+                            <div className="stat-item">
+                                <Book size={16} />
+                                <span>50 bài học</span>
                             </div>
                         </div>
                     </div>
-                ))}
+
+                    <div className="course-card">
+                        <div className="course-image">
+                            <img src={htmlimg} alt={htmlimg} className="course-img" />
+                        </div>
+                        <div className="course-card-header">
+                            <h3 className="course-title">HTML & CSS cơ bản đến nâng cao</h3>
+                            <p className="course-dates">
+                                Thời hạn: Không giới hạn
+                            </p>
+                            <p className="course-major">Chuyên ngành: Công nghệ thông tin</p>
+                            <div className="course-status">
+                                <span className={`status-badge public`}>
+                                    PUBLIC
+                                </span>
+                                <span className="status-badge free">Miễn phí</span>
+                            </div>
+                        </div>
+                        <div className="course-stats">
+                            <div className="stat-item">
+                                <User size={16} />
+                                <span>{truncateTeacherName('Nguyễn Đình Tiến')}</span>
+                            </div>
+                            <div className="stat-item">
+                                <Users size={16} />
+                                <span>21</span>
+                            </div>
+                            <div className="stat-item">
+                                <Book size={16} />
+                                <span>117 bài học</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="course-card">
+                        <div className="course-image">
+                            <img src={reactimg} alt={reactimg} className="course-img" />
+                        </div>
+                        <div className="course-card-header">
+                            <h3 className="course-title">Xây dựng Website với ReactJS</h3>
+                            <p className="course-dates">
+                                Thời hạn: Không giới hạn
+                            </p>
+                            <p className="course-major">Chuyên ngành: Công nghệ thông tin</p>
+                            <div className="course-status">
+                                <span className={`status-badge public`}>
+                                    PUBLIC
+                                </span>
+                                <span className="status-badge free">Miễn phí</span>
+                            </div>
+                        </div>
+                        <div className="course-stats">
+                            <div className="stat-item">
+                                <User size={16} />
+                                <span>{truncateTeacherName('Lê Văn Tiến')}</span>
+                            </div>
+                            <div className="stat-item">
+                                <Users size={16} />
+                                <span>83</span>
+                            </div>
+                            <div className="stat-item">
+                                <Book size={16} />
+                                <span>122 bài học</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

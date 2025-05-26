@@ -71,7 +71,7 @@ const ManageDocument = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortOption, setSortOption] = useState('newest');
+    const [sortOption, setSortOption] = useState('NEWEST');
     const [documentFilter, setDocumentFilter] = useState('mine');
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
@@ -207,8 +207,55 @@ const ManageDocument = () => {
     };
     
     const handleSortOptionSelect = (option) => {
+        // Cập nhật state sortOption và đóng dropdown
         setSortOption(option);
         setShowSortOptions(false);
+
+        // Sử dụng giá trị option trực tiếp thay vì sortOption
+        const fetchData = () => {
+            if (searchTerm.trim() !== '') {
+                if (documentFilter === 'all') {
+                    // Truyền option trực tiếp vào params của API
+                    const params = {
+                        title: searchTerm.trim(),
+                        majorId: majorId,
+                        pageSize: pageSize,
+                        pageNumber: currentPage,
+                        sortBy: option
+                    };
+                    searchAllDocumentsWithTerm(searchTerm.trim(), params);
+                } else {
+                    const params = {
+                        keyword: searchTerm.trim(),
+                        pageSize: pageSize,
+                        pageNumber: currentPage,
+                        sortBy: option
+                    };
+                    searchMyDocumentsWithTerm(searchTerm.trim(), params);
+                }
+            } else {
+                if (documentFilter === 'all') {
+                    // Gọi fetchDocuments với option mới
+                    const params = {
+                        majorId: majorId,
+                        pageSize: pageSize,
+                        pageNumber: currentPage,
+                        sortBy: option
+                    };
+                    fetchDocuments(params);
+                } else {
+                    const params = {
+                        pageSize: 1000,
+                        pageNumber: 0,
+                        sortBy: option
+                    };
+                    fetchMyDocuments(params);
+                }
+            }
+        };
+
+        // Gọi hàm fetch data ngay lập tức
+        fetchData();
     };
     
     const handleDocumentFilterSelect = (filter) => {
@@ -249,7 +296,7 @@ const ManageDocument = () => {
         }
     };
     
-    const fetchDocuments = async () => {
+    const fetchDocuments = async (customParams = null) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('authToken');
@@ -257,16 +304,19 @@ const ManageDocument = () => {
                 throw new Error('No authentication token found');
             }
             
-            // Get documents for this major
+            // Sử dụng customParams nếu có, nếu không thì dùng params mặc định
+            const params = customParams || {
+                majorId: majorId,
+                pageSize: pageSize,
+                pageNumber: currentPage,
+                sortBy: sortOption
+            };
+
             const response = await axios.get(GET_MAJOR_DOCUMENTS, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
-                params: {
-                    majorId: majorId,
-                    pageSize: pageSize,
-                    pageNumber: currentPage
-                }
+                params: params
             });
             
             if (response.data && response.data.code === 0) {
@@ -275,7 +325,6 @@ const ManageDocument = () => {
                 setTotalPages(documentData.page.totalPages);
                 setTotalElements(documentData.page.totalElements);
                 
-                // Reset selection when changing page
                 setSelectedDocuments([]);
                 setSelectAll(false);
             } else {
@@ -289,7 +338,7 @@ const ManageDocument = () => {
         }
     };
     
-    const fetchMyDocuments = async () => {
+    const fetchMyDocuments = async (customParams = null) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('authToken');
@@ -297,32 +346,29 @@ const ManageDocument = () => {
                 throw new Error('No authentication token found');
             }
             
-            // Get all my documents first to calculate total for pagination
+            // Sử dụng customParams nếu có, nếu không thì dùng params mặc định
+            const params = customParams || {
+                pageSize: 1000,
+                pageNumber: 0,
+                sortBy: sortOption
+            };
+
             const response = await axios.get(GET_MY_DOCUMENTS, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
-                params: {
-                    pageSize: 1000, // Get a large number to find total count
-                    pageNumber: 0
-                }
+                params: params
             });
             
             if (response.data && response.data.code === 0) {
                 const allDocuments = response.data.result.content || [];
                 
-                // Filter documents by majorId for this specific major
                 const filteredDocs = allDocuments.filter(doc => 
                     doc.major && doc.major.id.toString() === majorId.toString()
                 );
                 
-                // Store total count of filtered documents
                 setMyDocsTotal(filteredDocs.length);
-                
-                // Store all documents for pagination calculation
                 setMyDocumentsCache(filteredDocs);
-                
-                // Reset selection when changing data
                 setSelectedDocuments([]);
                 setSelectAll(false);
             } else {
@@ -660,29 +706,7 @@ const ManageDocument = () => {
     
     // Sort and filter documents
     const getSortedDocuments = () => {
-        const docs = [...documents];
-        if (sortOption === 'newest') {
-            // Sort by creation date if available, newest first
-            return docs.sort((a, b) => {
-                if (a.createdAt && b.createdAt) {
-                    return new Date(b.createdAt) - new Date(a.createdAt);
-                }
-                return 0;
-            });
-        } else if (sortOption === 'oldest') {
-            // Sort by creation date if available, oldest first
-            return docs.sort((a, b) => {
-                if (a.createdAt && b.createdAt) {
-                    return new Date(a.createdAt) - new Date(b.createdAt);
-                }
-                return 0;
-            });
-        } else if (sortOption === 'name') {
-            return docs.sort((a, b) => a.title.localeCompare(b.title));
-        } else if (sortOption === 'status') {
-            return docs.sort((a, b) => a.status.localeCompare(b.status));
-        }
-        return docs;
+        return documents;
     };
     
     const filteredDocuments = getSortedDocuments();
@@ -1346,7 +1370,7 @@ const ManageDocument = () => {
     }, [showPreviewModal, previewLoading]);
     
     // Tạo hàm mới để tìm kiếm với từ khóa cụ thể thay vì sử dụng state
-    const searchAllDocumentsWithTerm = async (term) => {
+    const searchAllDocumentsWithTerm = async (term, params) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('authToken');
@@ -1361,12 +1385,7 @@ const ManageDocument = () => {
                 headers: { 
                     'Authorization': `Bearer ${token}`
                 },
-                params: {
-                    title: term,
-                    majorId: majorId,
-                    pageSize: pageSize,
-                    pageNumber: currentPage
-                }
+                params: params
             });
             
             if (response.data && response.data.code === 0) {
@@ -1401,7 +1420,7 @@ const ManageDocument = () => {
     };
     
     // Tạo hàm mới để tìm kiếm tài liệu của tôi với từ khóa cụ thể
-    const searchMyDocumentsWithTerm = async (term) => {
+    const searchMyDocumentsWithTerm = async (term, params) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('authToken');
@@ -1416,11 +1435,7 @@ const ManageDocument = () => {
                 headers: { 
                     'Authorization': `Bearer ${token}`
                 },
-                params: {
-                    keyword: term,
-                    pageSize: pageSize,
-                    pageNumber: currentPage
-                }
+                params: params
             });
             
             if (response.data && response.data.code === 0) {
@@ -1873,29 +1888,22 @@ const ManageDocument = () => {
                     <span className="filter-label">Sắp xếp:</span>
                     <div className="filter-dropdown date-filter" ref={sortDropdownRef}>
                         <button className="filter-button" onClick={toggleSortOptions}>
-                            {sortOption === 'newest' ? 'Ngày đăng mới nhất' : 
-                             sortOption === 'oldest' ? 'Ngày đăng muộn nhất' : 
-                             sortOption === 'name' ? 'Tên tài liệu' : 'Trạng thái'}
+                            {sortOption === 'NEWEST' ? 'Ngày đăng mới nhất' : 
+                             sortOption === 'OLDEST' ? 'Ngày đăng muộn nhất' : 'Trạng thái'}
                             <ChevronDown size={16} />
                         </button>
                         <div className={`filter-options ${showSortOptions ? 'show' : ''}`}>
                             <div 
-                                className={`filter-option ${sortOption === 'newest' ? 'active' : ''}`}
-                                onClick={() => handleSortOptionSelect('newest')}
+                                className={`filter-option ${sortOption === 'NEWEST' ? 'active' : ''}`}
+                                onClick={() => handleSortOptionSelect('NEWEST')}
                             >
                                 Ngày đăng mới nhất
                             </div>
                             <div 
-                                className={`filter-option ${sortOption === 'oldest' ? 'active' : ''}`}
-                                onClick={() => handleSortOptionSelect('oldest')}
+                                className={`filter-option ${sortOption === 'OLDEST' ? 'active' : ''}`}
+                                onClick={() => handleSortOptionSelect('OLDEST')}
                             >
                                 Ngày đăng muộn nhất
-                            </div>
-                            <div 
-                                className={`filter-option ${sortOption === 'name' ? 'active' : ''}`}
-                                onClick={() => handleSortOptionSelect('name')}
-                            >
-                                Tên tài liệu
                             </div>
                         </div>
                     </div>
@@ -1950,20 +1958,6 @@ const ManageDocument = () => {
                                 >
                                     <Trash2 size={16} style={{ marginRight: '8px' }} />
                                     Xóa file đã chọn
-                                </div>
-                                <div 
-                                    className="filter-option"
-                                    onClick={() => handleBulkActionSelect('hide')}
-                                >
-                                    <EyeOff size={16} style={{ marginRight: '8px' }} />
-                                    Ẩn file đã chọn
-                                </div>
-                                <div 
-                                    className="filter-option"
-                                    onClick={() => handleBulkActionSelect('show')}
-                                >
-                                    <Eye size={16} style={{ marginRight: '8px' }} />
-                                    Hiển thị file đã chọn
                                 </div>
                             </div>
                         </div>

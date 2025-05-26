@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import axios from 'axios';
 import { HiOutlineUserGroup, HiPlusCircle, HiRefresh } from 'react-icons/hi';
-import { BiChevronDown, BiPlus, BiMessageDetail, BiSearch, BiX } from 'react-icons/bi';
+import { BiChevronDown, BiPlus, BiMessageDetail, BiSearch, BiX, BiPencil } from 'react-icons/bi';
 import { FiSend, FiPaperclip, FiMoreVertical } from 'react-icons/fi';
 import { FaUserCircle } from 'react-icons/fa';
 import { BsThreeDotsVertical } from 'react-icons/bs';
@@ -9,9 +9,10 @@ import '../../assets/css/chatbox.css';
 import { SEND_MESSAGE_API, API_BASE_URL, GET_STUDENT_INFO, GET_TEACHER_INFO } from '../../services/apiService'; // Assuming API_BASE_URL is for WebSocket too
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-import { UserPlus, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import TextareaAutosize from 'react-textarea-autosize';
-import './ChatboxStyles.css'; // Add additional styles
+import '../../assets/css/chatbox-styles.css'; // Add additional styles
+import { AuthContext } from '../../context/AuthContext';
 
 // Thêm biến debug để kiểm soát việc hiển thị log
 const DEBUG_MODE = true;
@@ -21,10 +22,161 @@ const debugLog = (message, ...args) => {
     }
 };
 
+// Tạo component riêng để hiển thị avatar từ cache
+const CachedAvatar = React.memo(({ avatarUrl, sender }) => {
+    const [imgError, setImgError] = useState(false);
+    
+    if (imgError) {
+        const initial = (sender.name || sender.accountFullname || sender.accountUsername || '?').charAt(0).toUpperCase();
+        return (
+            <div className="avatar-fallback">
+                {initial}
+            </div>
+        );
+    }
+    
+    return (
+        <img 
+            src={avatarUrl}
+            alt={sender.name || sender.accountFullname || 'avatar'} 
+            className="avatar-image loaded"
+            onError={() => {
+                console.log('Lỗi tải avatar từ cache:', avatarUrl);
+                setImgError(true);
+            }} 
+        />
+    );
+});
+
+// Component hiển thị avatar nhóm trong header
+const GroupHeaderAvatar = React.memo(({ avatar, name, fetchAvatar }) => {
+    const [imgError, setImgError] = useState(false);
+    const [avatarBlobUrl, setAvatarBlobUrl] = useState(null);
+    
+    // Sử dụng useEffect để tải avatar với bearer token
+    useEffect(() => {
+        const loadAvatar = async () => {
+            if (avatar) {
+                try {
+                    // Sử dụng hàm fetchAvatar đã có sẵn để tải avatar với token
+                    const blobUrl = await fetchAvatar(avatar);
+                    if (blobUrl) {
+                        setAvatarBlobUrl(blobUrl);
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi tải avatar header với token:', error);
+                    setImgError(true);
+                }
+            }
+        };
+        
+        loadAvatar();
+        
+        // Cleanup function để revoke blob URL khi unmount
+        return () => {
+            if (avatarBlobUrl && avatarBlobUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(avatarBlobUrl);
+            }
+        };
+    }, [avatar, fetchAvatar]);
+    
+    if (!avatar) {
+        return <HiOutlineUserGroup className="chat-header-icon" />;
+    }
+    
+    if (imgError || !avatarBlobUrl) {
+        return <HiOutlineUserGroup className="chat-header-icon" size={24} />;
+    }
+    
+    return (
+        <img 
+            src={avatarBlobUrl}
+            alt={name} 
+            className="chat-header-avatar"
+            onError={() => {
+                console.error('Lỗi hiển thị avatar nhóm trong header:', avatar);
+                setImgError(true);
+            }}
+        />
+    );
+});
+
+// Component hiển thị avatar nhóm trong panel thông tin
+const GroupInfoAvatar = React.memo(({ chatbox, onOpenUploadModal, fetchAvatar }) => {
+    const [imgError, setImgError] = useState(false);
+    const [avatarBlobUrl, setAvatarBlobUrl] = useState(null);
+    
+    // Sử dụng useEffect để tải avatar với bearer token
+    useEffect(() => {
+        const loadAvatar = async () => {
+            if (chatbox && chatbox.avatar) {
+                try {
+                    // Sử dụng hàm fetchAvatar đã có sẵn để tải avatar với token
+                    const blobUrl = await fetchAvatar(chatbox.avatar);
+                    if (blobUrl) {
+                        setAvatarBlobUrl(blobUrl);
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi tải avatar với token:', error);
+                    setImgError(true);
+                }
+            }
+        };
+        
+        loadAvatar();
+        
+        // Cleanup function để revoke blob URL khi unmount
+        return () => {
+            if (avatarBlobUrl && avatarBlobUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(avatarBlobUrl);
+            }
+        };
+    }, [chatbox?.avatar, fetchAvatar]);
+    
+    // Nếu không có chatbox hoặc avatar
+    if (!chatbox || !chatbox.avatar) {
+        return (
+            <div className="group-avatar" onClick={chatbox?.group ? onOpenUploadModal : undefined} title={chatbox?.group ? "Nhấp để thay đổi ảnh đại diện" : ""}>
+                <HiOutlineUserGroup size={40} />
+                {chatbox?.group && <div className="avatar-upload-overlay">Thay đổi ảnh</div>}
+            </div>
+        );
+    }
+    
+    if (imgError || !avatarBlobUrl) {
+        return (
+            <div className="group-avatar-fallback" onClick={chatbox?.group ? onOpenUploadModal : undefined} title={chatbox?.group ? "Nhấp để thay đổi ảnh đại diện" : ""}>
+                <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="40" width="40" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="none" d="M0 0h24v24H0z"></path>
+                    <path d="M9 13.75c-2.34 0-7 1.17-7 3.5V19h14v-1.75c0-2.33-4.66-3.5-7-3.5zM4.34 17c.84-.58 2.87-1.25 4.66-1.25s3.82.67 4.66 1.25H4.34zM9 12c1.93 0 3.5-1.57 3.5-3.5S10.93 5 9 5 5.5 6.57 5.5 8.5 7.07 12 9 12zm0-5c.83 0 1.5.67 1.5 1.5S9.83 10 9 10s-1.5-.67-1.5-1.5S8.17 7 9 7zm7.04 6.81c1.16.84 1.96 1.96 1.96 3.44V19h4v-1.75c0-2.02-3.5-3.17-5.96-3.44zM15 12c1.93 0 3.5-1.57 3.5-3.5S16.93 5 15 5c-.54 0-1.04.13-1.5.35.63.89 1 1.98 1 3.15s-.37 2.26-1 3.15c.46.22.96.35 1.5.35z"></path>
+                </svg>
+                {chatbox?.group && <div className="avatar-upload-overlay">Thay đổi ảnh</div>}
+            </div>
+        );
+    }
+    
+    return (
+        <div className="group-avatar" onClick={chatbox?.group ? onOpenUploadModal : undefined} title={chatbox?.group ? "Nhấp để thay đổi ảnh đại diện" : ""}>
+            <img 
+                src={avatarBlobUrl}
+                alt={chatbox.name || "Avatar nhóm"} 
+                className="group-avatar-image"
+                onError={() => {
+                    console.error('Lỗi hiển thị avatar nhóm:', chatbox.avatar);
+                    setImgError(true);
+                }}
+            />
+            {chatbox?.group && <div className="avatar-upload-overlay">Thay đổi ảnh</div>}
+        </div>
+    );
+});
+
 const ChatboxPage = () => {
     const [allChatboxes, setAllChatboxes] = useState([]); // Stores all fetched chatboxes
     const [displayedChatboxes, setDisplayedChatboxes] = useState([]); // For UI rendering, can be filtered/typed later
     const [selectedChatbox, setSelectedChatbox] = useState(null);
+    console.log('aaaaaaaaaaaaaaaa', selectedChatbox);
+    
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
 
@@ -86,6 +238,168 @@ const ChatboxPage = () => {
 
     // Thêm state để quản lý việc hiển thị menu thông tin
     const [showChatInfo, setShowChatInfo] = useState(false);
+
+    // Thêm state để lưu cache của avatar dưới dạng blob URL
+    const [avatarCache, setAvatarCache] = useState({});
+
+    // Thêm state cho chức năng upload avatar nhóm
+    const [showAvatarUploadModal, setShowAvatarUploadModal] = useState(false);
+    const [selectedGroupAvatar, setSelectedGroupAvatar] = useState(null);
+    const [groupAvatarPreview, setGroupAvatarPreview] = useState(null);
+    const [uploadingGroupAvatar, setUploadingGroupAvatar] = useState(false);
+    const [uploadAvatarError, setUploadAvatarError] = useState(null);
+    const avatarInputRef = useRef(null);
+
+    // Thêm state cho chức năng đổi tên nhóm chat
+    const [isEditingGroupName, setIsEditingGroupName] = useState(false);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [renamingError, setRenamingError] = useState(null);
+    const groupNameInputRef = useRef(null);
+
+    // Thêm state để theo dõi trạng thái mở/đóng của các section
+    const [groupSectionExpanded, setGroupSectionExpanded] = useState(true);
+    const [directMessageSectionExpanded, setDirectMessageSectionExpanded] = useState(true);
+
+    // Thêm state để quản lý modal thêm thành viên
+    const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+    const [addMemberError, setAddMemberError] = useState(null);
+    const [searchMemberQuery, setSearchMemberQuery] = useState('');
+    const [searchMemberResults, setSearchMemberResults] = useState([]);
+    const [selectedNewMembers, setSelectedNewMembers] = useState([]);
+    const [isSearchingMembers, setIsSearchingMembers] = useState(false);
+
+    // Thêm state để quản lý menu xóa thành viên
+    const [activeMemberMenu, setActiveMemberMenu] = useState(null);
+    const [showRemoveMemberModal, setShowRemoveMemberModal] = useState(false);
+    const [memberToRemove, setMemberToRemove] = useState(null);
+    const [removingMember, setRemovingMember] = useState(false);
+    const [removeMemberError, setRemoveMemberError] = useState(null);
+
+    // Hàm tải avatar sử dụng axios với Bearer token
+    const fetchAvatar = async (avatarUrl) => {
+        if (!avatarUrl) return null;
+        
+        // Thêm logs để debug
+        console.log('Đang cố gắng tải avatar từ:', avatarUrl);
+        
+        // Nếu đã có trong cache, trả về URL blob đó
+        if (avatarCache[avatarUrl]) {
+            console.log('Đã tìm thấy avatar trong cache');
+            return avatarCache[avatarUrl];
+        }
+        
+        try {
+            // Lấy token xác thực
+            const token = getToken();
+            if (!token) {
+                console.error("Không tìm thấy token xác thực.");
+                return null;
+            }
+            
+            // Xác định đường dẫn đầy đủ cho avatar
+            let fullUrl;
+            
+            // Nếu đã là URL đầy đủ
+            if (avatarUrl.startsWith('http')) {
+                fullUrl = avatarUrl;
+            } 
+            // Nếu đường dẫn bắt đầu bằng /lms - sử dụng localhost:8080
+            else if (avatarUrl.startsWith('/lms')) {
+                fullUrl = `http://localhost:8080${avatarUrl}`;
+            }
+            // Các đường dẫn tương đối khác
+            else {
+                fullUrl = `http://localhost:8080/${avatarUrl.startsWith('/') ? avatarUrl.substring(1) : avatarUrl}`;
+            }
+            
+            console.log('Tải avatar từ URL:', fullUrl);
+            console.log('Sử dụng token:', token.substring(0, 10) + '...');
+            
+            // Gọi API để lấy dữ liệu avatar
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Lỗi khi tải avatar: ${response.status} ${response.statusText}`);
+            }
+            
+            // Chuyển response thành blob
+            const imageBlob = await response.blob();
+            console.log('Kích thước blob:', imageBlob.size, 'bytes');
+            
+            if (imageBlob.size === 0) {
+                console.error('Nhận được blob rỗng!');
+                return null;
+            }
+            
+            // Tạo URL object từ blob response
+            const blobUrl = URL.createObjectURL(imageBlob);
+            console.log('Đã tạo blob URL:', blobUrl);
+            
+            // Lưu vào state cache
+            setAvatarCache(prev => ({
+                ...prev,
+                [avatarUrl]: blobUrl
+            }));
+            
+            return blobUrl;
+        } catch (error) {
+            console.error('Lỗi chi tiết khi tải avatar:', error);
+            return null;
+        }
+    };
+    
+    // Sử dụng useEffect để tải avatar khi component mount và khi selectedChatbox thay đổi
+    useEffect(() => {
+        // Tải avatar cho tất cả thành viên trong chatbox được chọn
+        const loadAvatars = async () => {
+            if (selectedChatbox && selectedChatbox.memberAccountUsernames) {
+                for (const member of selectedChatbox.memberAccountUsernames) {
+                    if (member.avatar) {
+                        await fetchAvatar(member.avatar);
+                    }
+                }
+            }
+        };
+        
+        loadAvatars();
+    }, [selectedChatbox]);
+    
+    // Thêm useEffect để tải avatar khi tìm kiếm người dùng
+    useEffect(() => {
+        // Tải avatar cho kết quả tìm kiếm
+        const loadSearchResultAvatars = async () => {
+            if (searchResults && searchResults.length > 0) {
+                for (const user of searchResults) {
+                    if (user.avatar) {
+                        await fetchAvatar(user.avatar);
+                    }
+                }
+            }
+        };
+        
+        loadSearchResultAvatars();
+    }, [searchResults]);
+    
+    // Thêm useEffect để tải avatar cho người dùng đã chọn
+    useEffect(() => {
+        // Tải avatar cho người dùng đã chọn
+        const loadSelectedUserAvatars = async () => {
+            if (selectedUsers && selectedUsers.length > 0) {
+                for (const user of selectedUsers) {
+                    if (user.avatar) {
+                        await fetchAvatar(user.avatar);
+                    }
+                }
+            }
+        };
+        
+        loadSelectedUserAvatars();
+    }, [selectedUsers]);
 
     // Thêm hàm để hiển thị/ẩn menu thông tin
     const toggleChatInfo = () => {
@@ -225,6 +539,15 @@ const ChatboxPage = () => {
             disconnectWebSocket();
             // Xóa dữ liệu trạng thái
             processedMessageIds.current.clear();
+            
+            // Giải phóng bộ nhớ từ avatar blob URLs
+            Object.values(avatarCache).forEach(blobUrl => {
+                try {
+                    URL.revokeObjectURL(blobUrl);
+                } catch (error) {
+                    console.error("Lỗi khi giải phóng bộ nhớ blob URL:", error);
+                }
+            });
         };
     }, []);
 
@@ -316,6 +639,29 @@ const ChatboxPage = () => {
                             console.error('❌ Lỗi khi xử lý cập nhật chatbox:', error);
                         }
                     });
+                    
+                    // Đăng ký kênh thông báo cá nhân dựa trên email của người dùng
+                    if (currentUserInfo && currentUserInfo.email) {
+                        const notificationChannel = `/topic/notifications/${currentUserInfo.email}`;
+                        console.log('🔔 Đăng ký kênh thông báo cá nhân:', notificationChannel);
+                        
+                        client.subscribe(notificationChannel, (message) => {
+                            try {
+                                debugLog('🔔 Thông báo từ kênh cá nhân:', message.body);
+                                const notificationData = JSON.parse(message.body);
+                                
+                                // TODO: Xử lý thông báo ở đây
+                                console.log('📣 Đã nhận thông báo mới:', notificationData);
+                                
+                                // Hiển thị thông báo cho người dùng
+                                showTemporaryNotification(`Thông báo mới: ${notificationData.content || 'Bạn có thông báo mới'}`);
+                            } catch (error) {
+                                console.error('❌ Lỗi khi xử lý thông báo cá nhân:', error);
+                            }
+                        });
+                    } else {
+                        console.warn('⚠️ Không thể đăng ký kênh thông báo: Thiếu thông tin email người dùng');
+                    }
                     
                     // Đăng ký tất cả các kênh chatbox nếu đã có danh sách
                     debugLog('Kiểm tra danh sách chatbox có sẵn để đăng ký:', allChatboxes.length);
@@ -1550,6 +1896,19 @@ const ChatboxPage = () => {
         }
     };
     
+    // Thêm useEffect để tự động ẩn thông báo lỗi sau 4 giây
+    useEffect(() => {
+        let timer;
+        if (sendMessageError) {
+            timer = setTimeout(() => {
+                setSendMessageError(null);
+            }, 4000);
+        }
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [sendMessageError]);
+
     // Helper to get avatar, trying to use API_BASE_URL for relative paths
     const getSenderAvatar = (sender) => {
         if (!sender) {
@@ -1560,51 +1919,25 @@ const ChatboxPage = () => {
             const avatarUrl = sender.avatarUrl || sender.avatar;
             if (!avatarUrl) return <FaUserCircle size={32} />;
             
-            // Xác định đường dẫn đầy đủ cho avatar
-            let avatarPath;
+            // Kiểm tra xem avatarUrl đã được cache chưa
+            const cachedUrl = avatarCache[avatarUrl];
             
-            // Nếu đã là URL đầy đủ
-            if (avatarUrl.startsWith('http')) {
-                avatarPath = avatarUrl;
-            } 
-            // Nếu đường dẫn bắt đầu bằng /lms, nó đã là đường dẫn tương đối từ API_BASE_URL
-            else if (avatarUrl.startsWith('/lms')) {
-                // Xác định API_BASE_URL chuẩn mà không có /lms ở cuối
-                const baseUrl = API_BASE_URL.endsWith('/lms') 
-                    ? API_BASE_URL.substring(0, API_BASE_URL.length - 4) 
-                    : API_BASE_URL;
-                avatarPath = `${baseUrl}${avatarUrl}`;
-            }
-            // Đường dẫn tương đối khác
-            else {
-                avatarPath = `${API_BASE_URL}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`;
+            // Nếu đã có trong cache, sử dụng URL blob từ cache
+            if (cachedUrl) {
+                return <CachedAvatar avatarUrl={cachedUrl} sender={sender} />;
             }
             
-            // Sử dụng state và refs thay vì thay đổi DOM trực tiếp
+            // Nếu chưa cache, tải avatar và hiển thị placeholder trước
+            // Gọi fetchAvatar để tải avatar (kết quả sẽ được lưu vào cache)
+            fetchAvatar(avatarUrl);
+            
+            // Hiển thị hình đại diện bằng chữ cái đầu tiên trong khi đợi tải
+            const initial = (sender.name || sender.accountFullname || sender.accountUsername || '?').charAt(0).toUpperCase();
+            
             return (
-                <img 
-                    src={avatarPath} 
-                    alt={sender.name || sender.accountFullname || 'avatar'} 
-                    className="avatar-image"
-                    onError={(e) => {
-                        console.log('Lỗi tải avatar:', e);
-                        e.currentTarget.style.display = 'none';
-                        
-                        // Tạo element mới bằng JSX để thay thế
-                        const initial = (sender.name || sender.accountFullname || sender.accountUsername || '?').charAt(0).toUpperCase();
-                        
-                        // Append div mới bên cạnh ảnh lỗi thay vì thay thế bằng innerHTML
-                        const parent = e.currentTarget.parentNode;
-                        const div = document.createElement('div');
-                        div.className = 'avatar-fallback';
-                        div.textContent = initial;
-                        
-                        // Chỉ thêm div nếu chưa có avatar-fallback
-                        if (!parent.querySelector('.avatar-fallback')) {
-                            parent.appendChild(div);
-                        }
-                    }} 
-                />
+                <div className="avatar-fallback">
+                    {initial}
+                </div>
             );
         } 
         
@@ -2043,18 +2376,695 @@ const ChatboxPage = () => {
         };
     }, [showChatInfo]);
 
-    // Thêm useEffect để tự động ẩn thông báo lỗi sau 4 giây
-    useEffect(() => {
-        let timer;
-        if (sendMessageError) {
-            timer = setTimeout(() => {
-                setSendMessageError(null);
-            }, 4000);
+    // Hàm để mở modal upload avatar nhóm
+    const handleOpenAvatarUploadModal = () => {
+        if (!selectedChatbox || !selectedChatbox.group) {
+            console.log('Không thể thay đổi avatar: Chatbox không phải là nhóm hoặc chưa được chọn');
+            return;
         }
-        return () => {
-            if (timer) clearTimeout(timer);
+        
+        setShowAvatarUploadModal(true);
+        setUploadAvatarError(null);
+        setGroupAvatarPreview(null);
+        setSelectedGroupAvatar(null);
+        
+        console.log('Mở modal upload avatar cho nhóm:', selectedChatbox.name);
+    };
+
+    // Hàm đóng modal upload avatar và reset các state
+    const handleCloseAvatarUploadModal = () => {
+        setShowAvatarUploadModal(false);
+        setUploadAvatarError(null);
+        setGroupAvatarPreview(null);
+        setSelectedGroupAvatar(null);
+    };
+
+    // Hàm xử lý khi người dùng chọn file avatar
+    const handleGroupAvatarChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            
+            // Kiểm tra kích thước file (tối đa 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                setUploadAvatarError('Kích thước ảnh không được vượt quá 5MB');
+                return;
+            }
+            
+            // Kiểm tra loại file
+            const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+            if (!validImageTypes.includes(file.type)) {
+                setUploadAvatarError('Chỉ chấp nhận các file hình ảnh (JPG, PNG, GIF)');
+                return;
+            }
+            
+            // Cập nhật state file đã chọn
+            setSelectedGroupAvatar(file);
+            
+            // Tạo preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setGroupAvatarPreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
+            
+            // Xóa thông báo lỗi nếu có
+            setUploadAvatarError(null);
+        }
+    };
+
+    // Hàm upload avatar nhóm lên server
+    const handleGroupAvatarUpload = async () => {
+        if (!selectedGroupAvatar || !selectedChatbox || !selectedChatbox.id) {
+            setUploadAvatarError('Vui lòng chọn hình ảnh trước khi tải lên');
+            return;
+        }
+        
+        try {
+            setUploadingGroupAvatar(true);
+            setUploadAvatarError(null);
+            
+            // Lấy token xác thực
+            const token = getToken();
+            if (!token) {
+                throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+            }
+            
+            // Tạo form data
+            const formData = new FormData();
+            formData.append('file', selectedGroupAvatar);
+            
+            console.log('Bắt đầu upload avatar nhóm...');
+            
+            // Gọi API để upload avatar
+            const response = await axios.post(
+                `${API_BASE_URL}/lms/chatBox/${selectedChatbox.id}/upload-avatar`, 
+                formData, 
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
+            
+            console.log('Kết quả upload avatar:', response.data);
+            
+            // Kiểm tra kết quả từ API
+            if (response.data && (response.data.code === 0 || response.status === 200)) {
+                // Lấy đường dẫn avatar mới từ phản hồi API
+                const newAvatarPath = response.data.result;
+                console.log('Đường dẫn avatar mới:', newAvatarPath);
+                
+                // Cập nhật avatar cho chatbox trong state
+                if (newAvatarPath) {
+                    // Tạo URL preview trước bằng Blob URL từ file đã chọn
+                    const tempUrl = URL.createObjectURL(selectedGroupAvatar);
+                    
+                    // Cập nhật cache trước
+                    setAvatarCache(prev => ({
+                        ...prev,
+                        [newAvatarPath]: tempUrl
+                    }));
+                    
+                    // Cập nhật chatbox được chọn
+                    setSelectedChatbox(prev => ({
+                        ...prev,
+                        avatar: newAvatarPath
+                    }));
+                    
+                    // Cập nhật danh sách chatbox
+                    setAllChatboxes(prev => 
+                        prev.map(cb => 
+                            cb.id === selectedChatbox.id 
+                            ? { ...cb, avatar: newAvatarPath } 
+                            : cb
+                        )
+                    );
+                    
+                    setDisplayedChatboxes(prev => 
+                        prev.map(cb => 
+                            cb.id === selectedChatbox.id 
+                            ? { ...cb, avatar: newAvatarPath } 
+                            : cb
+                        )
+                    );
+                    
+                    // Hiển thị thông báo thành công
+                    showTemporaryNotification('Đã cập nhật ảnh đại diện nhóm!');
+                    
+                    // Tải avatar thực từ server một cách không đồng bộ
+                    setTimeout(() => {
+                        fetchAvatar(newAvatarPath).catch(err => 
+                            console.error('Lỗi khi tải lại avatar mới:', err)
+                        );
+                    }, 1000);
+                }
+                
+                // Đóng modal
+                handleCloseAvatarUploadModal();
+            } else {
+                throw new Error('Không thể tải lên ảnh đại diện. Vui lòng thử lại.');
+            }
+        } catch (error) {
+            console.error('Lỗi khi upload avatar nhóm:', error);
+            setUploadAvatarError(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể tải lên ảnh đại diện'}`);
+        } finally {
+            setUploadingGroupAvatar(false);
+        }
+    };
+
+    // Thêm useEffect để tải avatar cho nhóm chat khi chọn chatbox
+    useEffect(() => {
+        // Tải avatar cho nhóm chat được chọn
+        const loadGroupAvatar = async () => {
+            if (selectedChatbox && selectedChatbox.group && selectedChatbox.avatar) {
+                console.log('Đang tải avatar cho nhóm:', selectedChatbox.name);
+                
+                // Kiểm tra nếu chưa có trong cache
+                if (!avatarCache[selectedChatbox.avatar]) {
+                    try {
+                        // Thử tải trực tiếp
+                        const token = getToken();
+                        if (!token) return;
+                        
+                        const fullUrl = `http://localhost:8080${selectedChatbox.avatar}`;
+                        console.log('Tải avatar nhóm từ:', fullUrl);
+                        
+                        const response = await fetch(fullUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const imageBlob = await response.blob();
+                        console.log('Kích thước blob avatar nhóm:', imageBlob.size, 'bytes');
+                        
+                        if (imageBlob.size > 0) {
+                            const imageUrl = URL.createObjectURL(imageBlob);
+                            console.log('Đã tạo blob URL cho avatar nhóm:', imageUrl);
+                            
+                            // Cập nhật cache
+                            setAvatarCache(prev => ({
+                                ...prev,
+                                [selectedChatbox.avatar]: imageUrl
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Lỗi khi tải avatar nhóm:', error);
+                    }
+                }
+            }
         };
-    }, [sendMessageError]);
+        
+        loadGroupAvatar();
+    }, [selectedChatbox, avatarCache]);
+
+    // Hàm bắt đầu chỉnh sửa tên nhóm
+    const handleStartEditingGroupName = () => {
+        // Chỉ cho phép đổi tên nhóm chat, không đổi tên chat cá nhân
+        if (!selectedChatbox || !selectedChatbox.group) return;
+        
+        setNewGroupName(selectedChatbox.name || '');
+        setIsEditingGroupName(true);
+        setRenamingError(null);
+        
+        // Focus vào input sau khi render
+        setTimeout(() => {
+            if (groupNameInputRef.current) {
+                groupNameInputRef.current.focus();
+            }
+        }, 100);
+    };
+
+    // Hàm hủy chỉnh sửa tên nhóm
+    const handleCancelEditingGroupName = () => {
+        setIsEditingGroupName(false);
+        setRenamingError(null);
+    };
+
+    // Hàm lưu tên nhóm mới
+    const handleSaveGroupName = async () => {
+        // Kiểm tra tên nhóm mới không được để trống
+        if (!newGroupName.trim()) {
+            setRenamingError('Tên nhóm không được để trống');
+            return;
+        }
+        
+        // Nếu tên không thay đổi, hủy chỉnh sửa
+        if (newGroupName.trim() === selectedChatbox.name) {
+            setIsEditingGroupName(false);
+            return;
+        }
+        
+        try {
+            // Lấy token xác thực
+            const token = getToken();
+            if (!token) {
+                throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+            }
+            
+            console.log(`Đang đổi tên nhóm ${selectedChatbox.id} từ "${selectedChatbox.name}" thành "${newGroupName}"`);
+            
+            // Gọi API để đổi tên nhóm
+            const response = await axios.put(
+                `${API_BASE_URL}/lms/chatBox/rename`, 
+                null, // không cần body vì dùng params
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    params: {
+                        chatBoxId: selectedChatbox.id,
+                        newName: newGroupName.trim()
+                    }
+                }
+            );
+            
+            console.log('Kết quả đổi tên nhóm:', response.data);
+            
+            // Kiểm tra kết quả từ API
+            if (response.data && (response.data.code === 0 || response.status === 200)) {
+                // Cập nhật tên nhóm trong state
+                const updatedChatBox = response.data.result;
+                
+                // Cập nhật selectedChatbox
+                setSelectedChatbox(prev => ({
+                    ...prev,
+                    name: updatedChatBox.name || newGroupName.trim()
+                }));
+                
+                // Cập nhật danh sách chatbox
+                setAllChatboxes(prev => 
+                    prev.map(cb => 
+                        cb.id === selectedChatbox.id 
+                        ? { ...cb, name: updatedChatBox.name || newGroupName.trim() } 
+                        : cb
+                    )
+                );
+                
+                setDisplayedChatboxes(prev => 
+                    prev.map(cb => 
+                        cb.id === selectedChatbox.id 
+                        ? { ...cb, name: updatedChatBox.name || newGroupName.trim() } 
+                        : cb
+                    )
+                );
+                
+                // Hiển thị thông báo thành công
+                showTemporaryNotification('Đã cập nhật tên nhóm!');
+                
+                // Kết thúc chỉnh sửa
+                setIsEditingGroupName(false);
+            } else {
+                throw new Error('Không thể đổi tên nhóm. Vui lòng thử lại.');
+            }
+        } catch (error) {
+            console.error('Lỗi khi đổi tên nhóm:', error);
+            setRenamingError(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể đổi tên nhóm'}`);
+        }
+    };
+
+    // Hàm xử lý khi nhấn phím trong input tên nhóm
+    const handleGroupNameKeyDown = (e) => {
+        if (e.key === 'Enter') {
+        e.preventDefault();
+            handleSaveGroupName();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            handleCancelEditingGroupName();
+        }
+    };
+
+    // Hàm lấy email của người dùng trong chat
+    const getSenderEmail = (memberAccounts) => {
+        if (!memberAccounts || !Array.isArray(memberAccounts) || memberAccounts.length === 0) {
+            return '';
+        }
+        
+        // Tìm người dùng khác (không phải người dùng hiện tại)
+        const otherPerson = findOtherPersonInChat({memberAccountUsernames: memberAccounts});
+        
+        // Trả về email của người đó (thường là accountUsername)
+        return otherPerson?.accountUsername || '';
+    };
+
+    // Hàm toggle section nhóm
+    const toggleGroupSection = (e) => {
+        e.stopPropagation(); // Ngăn sự kiện lan truyền lên các phần tử cha
+        setGroupSectionExpanded(!groupSectionExpanded);
+    };
+
+    // Hàm toggle section tin nhắn trực tiếp
+    const toggleDirectMessageSection = (e) => {
+        e.stopPropagation(); // Ngăn sự kiện lan truyền lên các phần tử cha
+        setDirectMessageSectionExpanded(!directMessageSectionExpanded);
+    };
+
+    // Thêm useEffect để mở rộng section khi có tin nhắn mới
+    useEffect(() => {
+        // Kiểm tra nếu có bất kỳ chatbox nhóm nào có tin nhắn mới
+        const hasNewGroupMessages = channelsToDisplay.some(chatbox => chatbox.hasNewMessages);
+        if (hasNewGroupMessages && !groupSectionExpanded) {
+            setGroupSectionExpanded(true);
+        }
+        
+        // Kiểm tra nếu có bất kỳ chatbox tin nhắn trực tiếp nào có tin nhắn mới
+        const hasNewDirectMessages = directMessagesToDisplay.some(chatbox => chatbox.hasNewMessages);
+        if (hasNewDirectMessages && !directMessageSectionExpanded) {
+            setDirectMessageSectionExpanded(true);
+        }
+    }, [channelsToDisplay, directMessagesToDisplay, groupSectionExpanded, directMessageSectionExpanded]);
+    
+    // Thêm useEffect để mở rộng section khi chatbox được chọn
+    useEffect(() => {
+        if (selectedChatbox) {
+            // Nếu chatbox được chọn là nhóm, mở rộng section nhóm
+            if (selectedChatbox.group && !groupSectionExpanded) {
+                setGroupSectionExpanded(true);
+            }
+            // Nếu chatbox được chọn là tin nhắn trực tiếp, mở rộng section tin nhắn
+            else if (!selectedChatbox.group && !directMessageSectionExpanded) {
+                setDirectMessageSectionExpanded(true);
+            }
+        }
+    }, [selectedChatbox, groupSectionExpanded, directMessageSectionExpanded]);
+
+    // Kiểm tra xem có tin nhắn mới nào trong section nhóm không
+    const hasNewGroupMessages = channelsToDisplay.some(chatbox => chatbox.hasNewMessages);
+    
+    // Kiểm tra xem có tin nhắn mới nào trong section tin nhắn trực tiếp không
+    const hasNewDirectMessages = directMessagesToDisplay.some(chatbox => chatbox.hasNewMessages);
+    
+    // Hàm toggle modal thêm thành viên
+    const toggleAddMemberModal = () => {
+        setShowAddMemberModal(!showAddMemberModal);
+        if (!showAddMemberModal) {
+            // Reset form khi mở modal
+            setSelectedNewMembers([]);
+            setSearchMemberQuery('');
+            setSearchMemberResults([]);
+            setAddMemberError(null);
+        }
+    };
+
+    // Tìm kiếm thành viên để thêm vào nhóm
+    const searchMembers = async (query) => {
+        if (!query.trim() || !selectedChatbox) {
+            setSearchMemberResults([]);
+            return;
+        }
+
+        const token = getToken();
+        if (!token) return;
+
+        setIsSearchingMembers(true);
+        try {
+            // Sử dụng endpoint tìm kiếm thành viên
+            const response = await axios.get(`${API_BASE_URL}/lms/chatmember/search`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+                params: { 
+                    chatBoxId: selectedChatbox.id, // Truyền ID của chatbox hiện tại
+                    searchString: query,
+                    pageNumber: 0,
+                    pageSize: 10
+                }
+            });
+
+            if (response.data && response.data.result && response.data.result.content) {
+                setSearchMemberResults(response.data.result.content);
+            } else {
+                setSearchMemberResults([]);
+            }
+        } catch (error) {
+            console.error('Lỗi khi tìm kiếm thành viên:', error);
+            setSearchMemberResults([]);
+        } finally {
+            setIsSearchingMembers(false);
+        }
+    };
+
+    // Xử lý khi chọn thành viên từ kết quả tìm kiếm
+    const handleSelectMember = (user) => {
+        // Kiểm tra xem người dùng đã được chọn chưa
+        if (!selectedNewMembers.some(selectedUser => selectedUser.accountId === user.accountId)) {
+            setSelectedNewMembers([...selectedNewMembers, user]);
+        }
+        setSearchMemberQuery('');
+        setSearchMemberResults([]);
+    };
+
+    // Xóa thành viên đã chọn
+    const handleRemoveMember = (userId) => {
+        setSelectedNewMembers(selectedNewMembers.filter(user => user.accountId !== userId));
+    };
+
+    // Thêm thành viên vào nhóm chat
+    const handleAddMembersToGroup = async () => {
+        if (selectedNewMembers.length === 0) {
+            setAddMemberError('Vui lòng chọn ít nhất một người dùng để thêm vào nhóm');
+            return;
+        }
+
+        const token = getToken();
+        if (!token) {
+            setAddMemberError('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+            return;
+        }
+
+        try {
+            // Kiểm tra kết nối WebSocket
+            if (!stompClientRef.current || !stompClientRef.current.connected) {
+                console.warn('⚠️ WebSocket không kết nối, đang thử kết nối lại...');
+                
+                try {
+                    await connectWebSocket();
+                } catch (error) {
+                    console.error('❌ Không thể kết nối WebSocket:', error);
+                    throw new Error('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+                }
+                
+                if (!stompClientRef.current || !stompClientRef.current.connected) {
+                    throw new Error('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+                }
+            }
+            
+            // Lấy thông tin người dùng hiện tại
+            let apiUserInfo = currentUserInfo;
+            if (!apiUserInfo) {
+                apiUserInfo = await getCurrentUserInfo();
+                if (!apiUserInfo) {
+                    throw new Error('Không thể lấy thông tin người dùng. Vui lòng thử lại.');
+                }
+            }
+            
+            // Lấy username của người dùng hiện tại
+            const currentUsername = apiUserInfo.email || JSON.parse(localStorage.getItem('userInfo'))?.email || '';
+            
+            if (!currentUsername) {
+                throw new Error('Không thể xác định thông tin người dùng. Vui lòng đăng nhập lại.');
+            }
+            
+            // Tạo danh sách thành viên theo định dạng yêu cầu
+            const chatMemberRequests = selectedNewMembers.map(user => ({
+                memberId: user.accountId.toString(),
+                memberAccount: user.accountUsername
+            }));
+            
+            console.log('Thêm thành viên mới vào nhóm:', chatMemberRequests);
+            
+            // Tạo đối tượng request theo đúng định dạng ChatBoxAddMemberRequest
+            const addMemberRequest = {
+                chatboxId: selectedChatbox.id.toString(),
+                chatBoxName: selectedChatbox.name || '',
+                chatMemberRequests: chatMemberRequests,
+                usernameOfRequestor: currentUsername
+            };
+            
+            console.log('Gửi request thêm thành viên qua WebSocket:', addMemberRequest);
+            
+            // Gửi request qua WebSocket
+            stompClientRef.current.publish({
+                destination: '/app/chat/addMembers',
+                body: JSON.stringify(addMemberRequest),
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            console.log('✅ Đã gửi yêu cầu thêm thành viên qua WebSocket');
+            
+            // Hiển thị thông báo thành công
+            showTemporaryNotification('Đã thêm thành viên vào nhóm!');
+            
+            // Thêm thành viên vào state mà không đợi phản hồi từ API (optimistic update)
+            // Cập nhật UI để hiển thị thành viên mới ngay lập tức
+            const updatedMembers = [
+                ...(selectedChatbox.memberAccountUsernames || []),
+                ...selectedNewMembers.map(user => ({
+                    accountId: user.accountId,
+                    accountUsername: user.accountUsername,
+                    accountFullname: user.accountFullname,
+                    avatar: user.avatar
+                }))
+            ];
+            
+            // Cập nhật chatbox được chọn
+            setSelectedChatbox(prev => ({
+                ...prev,
+                memberAccountUsernames: updatedMembers
+            }));
+            
+            // Đóng modal
+            setShowAddMemberModal(false);
+            
+            // Làm mới danh sách chatbox sau 2 giây
+            setTimeout(() => {
+                refreshChatboxList();
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Lỗi khi thêm thành viên:', error);
+            setAddMemberError(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể thêm thành viên'}`);
+        }
+    };
+
+    // Thêm useEffect để xử lý tìm kiếm thành viên với debounce
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchMemberQuery.trim()) {
+                searchMembers(searchMemberQuery);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchMemberQuery]);
+
+    // Hàm hiển thị menu thành viên
+    const toggleMemberMenu = (memberId, e) => {
+        e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+        
+        if (activeMemberMenu === memberId) {
+            setActiveMemberMenu(null);
+        } else {
+            setActiveMemberMenu(memberId);
+        }
+    };
+
+    // Hàm đóng tất cả các menu thành viên khi click ra ngoài
+    const closeMemberMenus = () => {
+        setActiveMemberMenu(null);
+    };
+
+    // Thêm useEffect để đóng menu khi click ra ngoài
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (activeMemberMenu && !event.target.closest('.member-menu-container')) {
+                setActiveMemberMenu(null);
+            }
+        };
+        
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [activeMemberMenu]);
+
+    // Hàm hiển thị modal xác nhận xóa thành viên
+    const showRemoveMemberConfirmation = (member, e) => {
+        e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+        
+        // Kiểm tra nếu nhóm chỉ còn 3 thành viên thì không cho phép xóa
+        if (selectedChatbox.memberAccountUsernames && selectedChatbox.memberAccountUsernames.length <= 3) {
+            showTemporaryNotification('Không thể xóa thành viên khi nhóm chỉ còn 3 người!');
+            setActiveMemberMenu(null); // Đóng menu
+            return;
+        }
+        
+        setMemberToRemove(member);
+        setShowRemoveMemberModal(true);
+        setActiveMemberMenu(null); // Đóng menu
+        setRemoveMemberError(null);
+    };
+
+    // Hàm đóng modal xác nhận xóa thành viên
+    const closeRemoveMemberModal = () => {
+        setShowRemoveMemberModal(false);
+        setMemberToRemove(null);
+        setRemoveMemberError(null);
+    };
+
+    // Hàm xóa thành viên khỏi nhóm chat
+    const handleRemoveMemberFromGroup = async () => {
+        if (!memberToRemove || !selectedChatbox) {
+            return;
+        }
+        
+        // Kiểm tra lại nếu nhóm chỉ còn 3 thành viên thì không cho phép xóa
+        if (selectedChatbox.memberAccountUsernames && selectedChatbox.memberAccountUsernames.length <= 3) {
+            setRemoveMemberError('Không thể xóa thành viên khi nhóm chỉ còn 3 người!');
+            return;
+        }
+        
+        setRemovingMember(true);
+        setRemoveMemberError(null);
+        
+        try {
+            const token = getToken();
+            if (!token) {
+                throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+            }
+            
+            const memberUsername = memberToRemove.accountUsername;
+            const chatBoxId = selectedChatbox.id;
+            
+            console.log(`Đang xóa thành viên ${memberUsername} khỏi nhóm ${chatBoxId}...`);
+            
+            // Gọi API xóa thành viên
+            const response = await axios.delete(
+                `http://localhost:8080/lms/chatBox/${chatBoxId}/members/${memberUsername}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            console.log('Kết quả xóa thành viên:', response.data);
+            
+            // Cập nhật UI sau khi xóa thành công
+            const updatedMembers = selectedChatbox.memberAccountUsernames.filter(
+                member => member.accountUsername !== memberUsername
+            );
+            
+            // Cập nhật chatbox được chọn
+            setSelectedChatbox(prev => ({
+                ...prev,
+                memberAccountUsernames: updatedMembers
+            }));
+            
+            // Hiển thị thông báo thành công
+            showTemporaryNotification('Đã xóa thành viên khỏi nhóm!');
+            
+            // Đóng modal
+            closeRemoveMemberModal();
+            
+            // Làm mới danh sách chatbox sau 1 giây
+            setTimeout(() => {
+                refreshChatboxList();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Lỗi khi xóa thành viên:', error);
+            setRemoveMemberError(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể xóa thành viên'}`);
+        } finally {
+            setRemovingMember(false);
+        }
+    };
 
     return (
         <div className="chatbox-container">
@@ -2069,72 +3079,92 @@ const ChatboxPage = () => {
                 
                 {/* Channels Section - Populated from API */} 
                 <div className="sidebar-section">
-                    <div className="chatbox-section-header">
+                    <div 
+                        className={`chatbox-section-header ${groupSectionExpanded ? 'active' : ''} ${hasNewGroupMessages && !groupSectionExpanded ? 'has-new-messages' : ''}`} 
+                        onClick={toggleGroupSection}
+                    >
                         <h3>Nhóm</h3>
-                        <BiChevronDown />
+                        <div className="section-header-right">
+                            {hasNewGroupMessages && !groupSectionExpanded && (
+                                <span className="section-new-indicator"></span>
+                            )}
+                            <BiChevronDown className={`toggle-icon ${!groupSectionExpanded ? 'collapsed' : ''}`} />
+                        </div>
                     </div>
-                    <ul className="channel-list">
-                        {channelsToDisplay.map(chatbox => (
-                            <li key={chatbox.id} 
-                                className={`channel-item ${selectedChatbox?.id === chatbox.id ? 'active' : ''} ${chatbox.hasNewMessages ? 'has-new-messages' : ''}`}
-                                onClick={() => handleSelectChatbox(chatbox)} >
-                                <div className="channel-item-header">
-                                <Users className="channel-icon" size={16} />
-                                    <span className="channel-name">{chatbox.name || 'Unnamed Group'}</span>
-                                </div>
-                                {chatbox.hasNewMessages && chatbox.newMessageCount > 0 && (
-                                    <span className={`new-message-badge ${chatbox.newMessageCount > 9 ? 'count' : ''}`}>
-                                        {chatbox.newMessageCount > 99 ? '99+' : chatbox.newMessageCount}
-                                    </span>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                    {/* Kept your original Add New Channel button structure */}
-                    <button className="add-new-button" onClick={toggleCreateChannelModal}>
-                        <BiPlus />
-                        <span>Nhóm Mới</span>
-                    </button>
-                </div>
-                
-                {/* Direct Messages Section - Populated from API */} 
-                <div className="sidebar-section">
-                    <div className="chatbox-section-header">
-                        <h3>Tin Nhắn</h3>
-                        <BiChevronDown />
-                    </div>
-                    <ul className="dm-list">
-                        {directMessagesToDisplay.map(chatbox => {
-                            // Sử dụng hàm tiện ích để tìm người dùng còn lại
-                            const otherPerson = findOtherPersonInChat(chatbox);
-                            const displayName = getChatDisplayName(chatbox);
-
-                            return (
+                    <div className={`sidebar-section-content ${groupSectionExpanded ? 'expanded' : 'collapsed'}`}>
+                        <ul className="channel-list">
+                            {channelsToDisplay.map(chatbox => (
                                 <li key={chatbox.id} 
-                                    className={`dm-item ${selectedChatbox?.id === chatbox.id ? 'active' : ''} ${chatbox.hasNewMessages ? 'has-new-messages' : ''}`}
+                                    className={`channel-item ${selectedChatbox?.id === chatbox.id ? 'active' : ''} ${chatbox.hasNewMessages ? 'has-new-messages' : ''}`}
                                     onClick={() => handleSelectChatbox(chatbox)} >
-                                    <div className="dm-item-header">
-                                        <div className="dm-icon-wrapper"> 
-                                            {getSenderAvatar(otherPerson)} 
-                                        </div>
-                                        <span className="dm-name">
-                                            {displayName}
-                                        </span>
+                                    <div className="channel-item-header">
+                                    <Users className="channel-icon" size={16} />
+                                        <span className="channel-name">{chatbox.name || 'Unnamed Group'}</span>
                                     </div>
                                     {chatbox.hasNewMessages && chatbox.newMessageCount > 0 && (
                                         <span className={`new-message-badge ${chatbox.newMessageCount > 9 ? 'count' : ''}`}>
                                             {chatbox.newMessageCount > 99 ? '99+' : chatbox.newMessageCount}
                                         </span>
                                     )}
-                            </li>
-                            );
-                        })}
-                    </ul>
-                    {/* Kept your original Add New Chat button structure */}
-                    <button className="add-new-button" onClick={toggleDirectChatModal}>
-                        <BiPlus />
-                        <span>Tin Nhắn Mới</span>
-                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                        {/* Kept your original Add New Channel button structure */}
+                        <button className="add-new-button" onClick={toggleCreateChannelModal}>
+                            <BiPlus />
+                            <span>Nhóm Mới</span>
+                        </button>
+                    </div>
+                </div>
+                
+                {/* Direct Messages Section - Populated from API */} 
+                <div className="sidebar-section">
+                    <div 
+                        className={`chatbox-section-header ${directMessageSectionExpanded ? 'active' : ''} ${hasNewDirectMessages && !directMessageSectionExpanded ? 'has-new-messages' : ''}`}
+                        onClick={toggleDirectMessageSection}
+                    >
+                        <h3>Tin Nhắn</h3>
+                        <div className="section-header-right">
+                            {hasNewDirectMessages && !directMessageSectionExpanded && (
+                                <span className="section-new-indicator"></span>
+                            )}
+                            <BiChevronDown className={`toggle-icon ${!directMessageSectionExpanded ? 'collapsed' : ''}`} />
+                        </div>
+                    </div>
+                    <div className={`sidebar-section-content ${directMessageSectionExpanded ? 'expanded' : 'collapsed'}`}>
+                        <ul className="dm-list">
+                            {directMessagesToDisplay.map(chatbox => {
+                                // Sử dụng hàm tiện ích để tìm người dùng còn lại
+                                const otherPerson = findOtherPersonInChat(chatbox);
+                                const displayName = getChatDisplayName(chatbox);
+
+                                return (
+                                    <li key={chatbox.id} 
+                                        className={`dm-item ${selectedChatbox?.id === chatbox.id ? 'active' : ''} ${chatbox.hasNewMessages ? 'has-new-messages' : ''}`}
+                                        onClick={() => handleSelectChatbox(chatbox)} >
+                                        <div className="dm-item-header">
+                                            <div className="dm-icon-wrapper"> 
+                                                {getSenderAvatar(otherPerson)} 
+                                            </div>
+                                            <span className="dm-name">
+                                                {displayName}
+                                            </span>
+                                        </div>
+                                        {chatbox.hasNewMessages && chatbox.newMessageCount > 0 && (
+                                            <span className={`new-message-badge ${chatbox.newMessageCount > 9 ? 'count' : ''}`}>
+                                                {chatbox.newMessageCount > 99 ? '99+' : chatbox.newMessageCount}
+                                            </span>
+                                        )}
+                                </li>
+                                );
+                            })}
+                        </ul>
+                        {/* Kept your original Add New Chat button structure */}
+                        <button className="add-new-button" onClick={toggleDirectChatModal}>
+                            <BiPlus />
+                            <span>Tin Nhắn Mới</span>
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -2151,8 +3181,14 @@ const ChatboxPage = () => {
                 <div className="chat-header">
                     <div className="chat-header-left">
                         {selectedChatbox.group ? (
-                            // Hiển thị biểu tượng nhóm cho trò chuyện nhóm
-                        <HiOutlineUserGroup className="chat-header-icon" />
+                            // Hiển thị biểu tượng nhóm hoặc avatar nhóm nếu có
+                            <div className="chat-header-icon">
+                                <GroupHeaderAvatar 
+                                    avatar={selectedChatbox.avatar} 
+                                    name={selectedChatbox.name} 
+                                    fetchAvatar={fetchAvatar}
+                                />
+                            </div>
                         ) : (
                             // Hiển thị avatar người dùng cho trò chuyện trực tiếp
                             <div className="chat-header-icon">
@@ -2170,9 +3206,6 @@ const ChatboxPage = () => {
                     </div>
                 </div>
                 
-                {/* Thông báo lỗi gửi tin nhắn */}
-                {sendMessageError && <div className="send-message-error">{sendMessageError}</div>}
-                
                 {/* Chat Info Panel */}
                 <div className={`chat-info-panel ${showChatInfo ? 'active' : ''}`}>
                     <div className="chat-info-header">
@@ -2185,56 +3218,132 @@ const ChatboxPage = () => {
                     <div className="chat-info-content">
                         {/* Avatar và Tên */}
                         <div className="chat-info-profile">
-                            <div className="chat-info-avatar">
-                                {selectedChatbox.group ? (
-                                    <div className="group-avatar">
-                                        <HiOutlineUserGroup size={40} />
+                            {selectedChatbox.group ? (
+                                /* Hiển thị avatar nhóm nếu là group chat */
+                                <GroupInfoAvatar 
+                                    chatbox={selectedChatbox} 
+                                    onOpenUploadModal={handleOpenAvatarUploadModal}
+                                    fetchAvatar={fetchAvatar}
+                                />
+                            ) : (
+                                /* Hiển thị avatar người dùng nếu là direct message */
+                                <div className="user-large-avatar">
+                                    {getSenderAvatar(findOtherPersonInChat(selectedChatbox))}
+                                </div>
+                            )}
+                            
+                            {selectedChatbox && selectedChatbox.group ? (
+                                /* Form chỉnh sửa tên nhóm */
+                                isEditingGroupName ? (
+                                    <div className="edit-group-name-container">
+                                        <input
+                                            type="text"
+                                            className="edit-group-name-input"
+                                            value={newGroupName}
+                                            onChange={(e) => setNewGroupName(e.target.value)}
+                                            onKeyDown={handleGroupNameKeyDown}
+                                            autoFocus
+                                            ref={groupNameInputRef}
+                                        />
+                                        {renamingError && <div className="rename-error">{renamingError}</div>}
+                                        <div className="edit-group-name-actions">
+                                            <button
+                                                className="cancel-group-name-btn"
+                                                onClick={handleCancelEditingGroupName}
+                                            >
+                                                Hủy
+                                            </button>
+                                            <button
+                                                className="save-group-name-btn"
+                                                onClick={handleSaveGroupName}
+                                                disabled={!newGroupName.trim() || newGroupName === selectedChatbox.name}
+                                            >
+                                                Lưu
+                                            </button>
+                                        </div>
                                     </div>
                                 ) : (
-                                    getSenderAvatar(findOtherPersonInChat(selectedChatbox))
-                                )}
-                            </div>
-                            <h3 className="chat-info-name">{getChatDisplayName(selectedChatbox)}</h3>
+                                    /* Hiển thị tên nhóm có thể chỉnh sửa */
+                                    <div 
+                                        className="chat-info-name editable" 
+                                        onClick={handleStartEditingGroupName}
+                                    >
+                                        <span>{selectedChatbox.name}</span>
+                                        <BiPencil className="edit-icon" />
+                                    </div>
+                                )
+                            ) : (
+                                /* Hiển thị tên người dùng nếu là direct message */
+                                <div className="chat-info-name">
+                                    {findOtherPersonInChat(selectedChatbox)?.accountFullname || getChatDisplayName(selectedChatbox)}
+                                </div>
+                            )}
+                            
+                            {/* Hiển thị username nếu là direct message */}
                             {!selectedChatbox.group && (
-                                <span className="chat-info-email">
+                                <div className="chat-info-email">
                                     {findOtherPersonInChat(selectedChatbox)?.accountUsername || ''}
-                                </span>
+                                </div>
                             )}
                         </div>
                         
                         {/* Hành động - Chỉ hiển thị nút thêm thành viên nếu là nhóm */}
                         {selectedChatbox.group && (
                             <div className="chat-info-actions">
-                                <button className="chat-add-member-btn">
-                                    <UserPlus size={18} />
+                                <button className="add-member-btn" onClick={toggleAddMemberModal}>
+                                    <BiPlus size={18} />
+                                    <span>Thêm thành viên</span>
                                 </button>
                             </div>
                         )}
                         
-                        {/* Danh sách thành viên */}
-                        <div className="chat-members-list">
-                            <h4>Thành viên ({selectedChatbox.memberAccountUsernames?.length || 0})</h4>
-                            {selectedChatbox.memberAccountUsernames && selectedChatbox.memberAccountUsernames.length > 0 ? (
-                                <ul>
-                                    {selectedChatbox.memberAccountUsernames.map(member => (
-                                        <li key={member.accountId} className="chat-member-item">
-                                            <div className="member-avatar">
-                                                {getSenderAvatar(member)}
-                                            </div>
-                                            <div className="member-info">
-                                                <span className="member-name">{member.accountFullname || member.accountUsername}</span>
-                                                <span className="member-email">{member.accountUsername}</span>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="no-members-message">Không có thành viên</p>
-                            )}
-                        </div>
+                        {/* Danh sách thành viên - Chỉ hiển thị nếu là nhóm */}
+                        {selectedChatbox.group && (
+                            <div className="chat-members-list">
+                                <h4>Thành viên ({selectedChatbox.memberAccountUsernames?.length || 0})</h4>
+                                {selectedChatbox.memberAccountUsernames && selectedChatbox.memberAccountUsernames.length > 0 ? (
+                                    <ul>
+                                        {selectedChatbox.memberAccountUsernames.map(member => (
+                                            <li key={member.accountId} className="chat-member-item">
+                                                <div className="member-avatar">
+                                                    {getSenderAvatar(member)}
+                                                </div>
+                                                <div className="member-info">
+                                                    <span className="member-name">{member.accountFullname || member.accountUsername}</span>
+                                                    <span className="member-email">{member.accountUsername}</span>
+                                                </div>
+                                                <div className="member-menu-container">
+                                                    <button 
+                                                        className="member-menu-button" 
+                                                        onClick={(e) => toggleMemberMenu(member.accountId, e)}
+                                                        aria-label="Member options"
+                                                    >
+                                                        <BsThreeDotsVertical size={16} />
+                                                    </button>
+                                                    {activeMemberMenu === member.accountId && (
+                                                        <div className="member-menu-dropdown">
+                                                            <button 
+                                                                className={`member-menu-item remove-member ${selectedChatbox.memberAccountUsernames.length <= 3 ? 'disabled' : ''}`}
+                                                                onClick={(e) => showRemoveMemberConfirmation(member, e)}
+                                                                disabled={selectedChatbox.memberAccountUsernames.length <= 3}
+                                                            >
+                                                                <BiX size={18} />
+                                                                <span>Xóa thành viên</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="no-members-message">Không có thành viên</p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
-
+                
                 {/* Chat Messages */}
                 <div className="chat-messages" ref={chatMessagesContainerRef}>
                     {isLoadingMessages && messages.length === 0 && 
@@ -2251,8 +3360,8 @@ const ChatboxPage = () => {
                             <button onClick={() => fetchMessages(selectedChatbox.id, currentPage + 1)} className="load-more-messages-btn">
                                 Tải thêm tin nhắn cũ
                             </button>
-                        </div>
-                    )}
+                                </div>
+                            )}
 
                     {messages.length === 0 && !isLoadingMessages && (
                         <div className="no-messages">
@@ -2321,10 +3430,10 @@ const ChatboxPage = () => {
                                 )}
                                 <div className={`message-container ${isMe ? 'current-user' : ''} ${isNewMessage ? 'new-message' : ''}`}>
                                     {!isMe && (
-                                        <div className="message-avatar">
+                                <div className="message-avatar">
                                             {getSenderAvatar(sender)}
-                                        </div>
-                                    )}
+                                </div>
+                            )}
                                     {isMe && (
                                         <div className="message-avatar current-user-avatar">
                                             {getSenderAvatar(sender)} 
@@ -2337,9 +3446,9 @@ const ChatboxPage = () => {
                                             {formatDisplayTime(msg.createdAt)}
                                             {msg.isOptimistic && <span className="message-sending"> (đang gửi...)</span>}
                                         </div>
-                                    </div>
-                                    
-                                </div>
+                            </div>
+                            
+                        </div>
                             </React.Fragment>
                         );
                     })}
@@ -2363,9 +3472,10 @@ const ChatboxPage = () => {
                         maxRows={6}
                     />
                     <button type="submit" className="chatbox-send-button" disabled={sendMessageLoading || newMessage.trim() === ''}>
-                        {sendMessageLoading ? <div className="typing-indicator"><span></span><span></span><span></span></div> : <FiSend size={16}/>}
+                        {sendMessageLoading ? <div className="typing-indicator"><span></span><span></span><span></span></div> : <FiSend />}
                     </button>
                 </form>
+                {sendMessageError && <p className="send-message-error">{sendMessageError}</p>}
                     </>
                 )}
             </div>
@@ -2375,7 +3485,7 @@ const ChatboxPage = () => {
                 <div className="modal-overlay">
                     <div className="modal-content create-channel-modal">
                         <div className="chat-modal-header">
-                            <h3>Tạo Nhóm Mới</h3>
+                            <h3>Nhóm mới</h3>
                             <button className="chat-close-modal-btn" onClick={toggleCreateChannelModal}>
                                 <BiX size={24} />
                             </button>
@@ -2397,7 +3507,7 @@ const ChatboxPage = () => {
                             </div>
                             
                             <div className="chat-form-group">
-                                <label htmlFor="searchUser">Thêm thành viên</label>
+                                <label htmlFor="searchUser">Tìm kiếm</label>
                                 <div className="search-input-container">
                                     <input
                                         type="text"
@@ -2423,8 +3533,8 @@ const ChatboxPage = () => {
                                                     {getSenderAvatar({id: user.accountId, name: user.accountFullname, avatarUrl: user.avatar})}
                                                 </div>
                                                 <div className='user-info'>
-                                                    <span className="user-name">{ user.accountFullname }</span>
-                                                    <span className="user-email">{ user.accountUsername }</span>
+                                                    <span className="user-name">{user.accountFullname}</span>
+                                                    <span className="user-email">{user.accountUsername}</span>
                                                 </div>
                                             </li>
                                         ))}
@@ -2434,7 +3544,7 @@ const ChatboxPage = () => {
                             
                             {selectedUsers.length > 0 && (
                                 <div className="selected-users">
-                                    <label>Đã chọn</label>
+                                    <label>Selected Users</label>
                                     <ul className="selected-users-list">
                                         {selectedUsers.map(user => (
                                             <li key={user.accountId} className="selected-user-item">
@@ -2472,7 +3582,7 @@ const ChatboxPage = () => {
                 <div className="modal-overlay">
                     <div className="modal-content create-channel-modal">
                         <div className="chat-modal-header">
-                            <h3>Tin Nhắn Mới</h3>
+                            <h3>Tin nhắn mới</h3>
                             <button className="chat-close-modal-btn" onClick={toggleDirectChatModal}>
                                 <BiX size={24} />
                             </button>
@@ -2483,7 +3593,7 @@ const ChatboxPage = () => {
                             )}
                             
                             <div className="chat-form-group">
-                                <label htmlFor="searchUserDirect">Tìm kiếm</label>
+                                <label htmlFor="searchUserDirect">Tìm kiếm người dùng</label>
                                 <input
                                     type="text"
                                     id="searchUserDirect"
@@ -2506,8 +3616,8 @@ const ChatboxPage = () => {
                                                     {getSenderAvatar({id: user.accountId, name: user.accountFullname, avatarUrl: user.avatar})}
                                                 </div>
                                                 <div className='user-info'>
-                                                    <span className="user-name">{ user.accountFullname }</span>
-                                                    <span className="user-email">{ user.accountUsername }</span>
+                                                    <span className="user-name">{user.accountFullname}</span>
+                                                    <span className="user-email">{user.accountUsername}</span>
                                                 </div>
                                             </li>
                                         ))}
@@ -2517,7 +3627,7 @@ const ChatboxPage = () => {
                             
                             {selectedUsers.length > 0 && (
                                 <div className="selected-users">
-                                    <label>Đã chọn</label>
+                                    <label>Selected User</label>
                                     <ul className="selected-users-list">
                                         {selectedUsers.map(user => (
                                             <li key={user.accountId} className="selected-user-item">
@@ -2567,6 +3677,192 @@ const ChatboxPage = () => {
                 <div className="created-notification" style={{ opacity: showNotification ? '1' : '0' }}>
                     <div className="created-notification-content">
                         <div>{notification}</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Upload Avatar Nhóm */}
+            {showAvatarUploadModal && (
+                <div className="modal-overlay">
+                    <div className="avatar-upload-modal">
+                        <div className="avatar-upload-modal-header">
+                            <h3>Thay đổi ảnh đại diện nhóm</h3>
+                            <button className="chat-close-modal-btn" onClick={handleCloseAvatarUploadModal}>
+                                <BiX size={24} />
+                            </button>
+                        </div>
+                        <div className="avatar-upload-modal-body">
+                            <div className="avatar-preview-container">
+                                <div className="avatar-preview">
+                                    {groupAvatarPreview ? (
+                                        <img src={groupAvatarPreview} alt="Preview" />
+                                    ) : (
+                                        <HiOutlineUserGroup size={60} color="#999" />
+                                    )}
+                                </div>
+                            </div>
+                            <div className="avatar-input-container">
+                                <input
+                                    type="file"
+                                    id="group-avatar-input"
+                                    onChange={handleGroupAvatarChange}
+                                    accept="image/jpeg,image/png,image/gif,image/jpg"
+                                    style={{ display: 'none' }}
+                                    ref={avatarInputRef}
+                                />
+                                <label htmlFor="group-avatar-input" className="avatar-input-label">
+                                    <BiPlus size={18} style={{ marginRight: '8px' }} />
+                                    Chọn ảnh
+                                </label>
+                                <button
+                                    className="avatar-upload-btn"
+                                    onClick={handleGroupAvatarUpload}
+                                    disabled={!selectedGroupAvatar || uploadingGroupAvatar}
+                                >
+                                    {uploadingGroupAvatar ? 'Đang tải lên...' : 'Xác nhận'}
+                                </button>
+                                {uploadAvatarError && (
+                                    <div className="avatar-upload-error">
+                                        {uploadAvatarError}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Thêm thành viên */}
+            {showAddMemberModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content create-channel-modal">
+                        <div className="chat-modal-header">
+                            <h3>Thêm thành viên vào nhóm</h3>
+                            <button className="chat-close-modal-btn" onClick={toggleAddMemberModal}>
+                                <BiX size={24} />
+                            </button>
+                        </div>
+                        <div className="chat-modal-body">
+                            {addMemberError && (
+                                <div className="error-message">{addMemberError}</div>
+                            )}
+                            
+                            <div className="chat-form-group">
+                                <label htmlFor="searchMember">Tìm kiếm người dùng</label>
+                                <div className="search-input-container">
+                                    <input
+                                        type="text"
+                                        id="searchMember"
+                                        placeholder="Tìm kiếm người dùng để thêm vào nhóm"
+                                        value={searchMemberQuery}
+                                        onChange={(e) => setSearchMemberQuery(e.target.value)}
+                                    />
+                                    <BiSearch className="search-icon" />
+                                </div>
+                                
+                                {isSearchingMembers && <div className="loading-spinner"></div>}
+                                
+                                {searchMemberResults.length > 0 && (
+                                    <ul className="search-results">
+                                        {searchMemberResults.map(user => (
+                                            <li 
+                                                key={user.accountId} 
+                                                className="chat-search-result-item"
+                                                onClick={() => handleSelectMember(user)}
+                                            >
+                                                <div className="user-avatar">
+                                                    {getSenderAvatar({id: user.accountId, name: user.accountFullname, avatarUrl: user.avatar})}
+                                                </div>
+                                                <div className='user-info'>
+                                                    <span className="user-name">{user.accountFullname}</span>
+                                                    <span className="user-email">{user.accountUsername}</span>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            
+                            {selectedNewMembers.length > 0 && (
+                                <div className="selected-users">
+                                    <label>Người dùng đã chọn</label>
+                                    <ul className="selected-users-list">
+                                        {selectedNewMembers.map(user => (
+                                            <li key={user.accountId} className="selected-user-item">
+                                                <div className='d-flex align-center' style={{gap: '12px'}}>
+                                                    <div className="user-avatar">
+                                                        {getSenderAvatar({id: user.accountId, name: user.accountFullname, avatarUrl: user.avatar})}
+                                                    </div>
+                                                    <div className='user-info'>
+                                                        <span className="user-name">{user.accountFullname}</span>
+                                                        <span className="user-email">{user.accountUsername}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    className="remove-user-btn"
+                                                    onClick={() => handleRemoveMember(user.accountId)}
+                                                >
+                                                    <BiX />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                        <div className="chat-modal-footer">
+                            <button className="chat-cancel-btn" onClick={toggleAddMemberModal}>Hủy</button>
+                            <button 
+                                className="chat-create-btn" 
+                                onClick={handleAddMembersToGroup}
+                                disabled={selectedNewMembers.length === 0}
+                            >
+                                Thêm thành viên
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal xác nhận xóa thành viên */}
+            {showRemoveMemberModal && memberToRemove && (
+                <div className="modal-overlay">
+                    <div className="modal-content remove-member-modal">
+                        <div className="chat-modal-header">
+                            <h3>Xác nhận xóa thành viên</h3>
+                            <button className="chat-close-modal-btn" onClick={closeRemoveMemberModal}>
+                                <BiX size={24} />
+                            </button>
+                        </div>
+                        <div className="chat-modal-body">
+                            {removeMemberError && (
+                                <div className="error-message">{removeMemberError}</div>
+                            )}
+                            
+                            <p className="confirm-message">
+                                Bạn có chắc chắn muốn xóa <strong>{memberToRemove.accountFullname || memberToRemove.accountUsername}</strong> khỏi nhóm?
+                            </p>
+                            
+                            <div className="member-preview">
+                                <div className="member-avatar">
+                                    {getSenderAvatar(memberToRemove)}
+                                </div>
+                                <div className="member-info">
+                                    <span className="member-name">{memberToRemove.accountFullname || memberToRemove.accountUsername}</span>
+                                    <span className="member-email">{memberToRemove.accountUsername}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="chat-modal-footer">
+                            <button className="chat-cancel-btn" onClick={closeRemoveMemberModal} disabled={removingMember}>Hủy</button>
+                            <button 
+                                className="chat-delete-btn" 
+                                onClick={handleRemoveMemberFromGroup}
+                                disabled={removingMember}
+                            >
+                                {removingMember ? 'Đang xóa...' : 'Xóa thành viên'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

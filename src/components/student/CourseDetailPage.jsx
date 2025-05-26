@@ -237,49 +237,57 @@ const CourseDetailPage = () => {
     };
 
     const handleRegister = async () => {
-        // Nếu khóa học có phí
-        if (course.feeType === 'CHARGEABLE') {
+        // Nếu sinh viên đã đăng ký thành công (đã được phê duyệt), chuyển đến trang học
+        if (isEnrolled) {
+            navigate(`/learning/${course.id}`);
+            return;
+        }
+        
+        // Nếu đang chờ phê duyệt, thông báo cho sinh viên
+        if (isPending) {
+            showAlert('info', 'Đang chờ phê duyệt', 'Yêu cầu đăng ký khóa học của bạn đang chờ được phê duyệt.');
+            return;
+        }
+
+        // Nếu khóa học có phí và chưa đăng ký
+        if (course.feeType === 'CHARGEABLE' && !isEnrolled && !isPending) {
             handlePurchaseCourse();
             return;
         }
 
-        // Xử lý khóa học miễn phí
-        if (isEnrolled || isPending) {
-            navigate(`/learning/${course.id}`);
-        } else {
-            try {
-                setIsRegistering(true);
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
-
-                const formData = new FormData();
-                formData.append('courseId', course.id.toString());
-
-                // Gửi yêu cầu đăng ký (pending)
-                const response = await axios.post('http://localhost:8080/lms/joinclass/pending', formData, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-
-                if (response.data && response.data.code === 0) {
-                    // Kiểm tra lại trạng thái sau khi đăng ký
-                    await checkEnrollmentStatus(course.id);
-                    
-                    showAlert('success', 'Thành công', 'Đăng ký khóa học thành công! Vui lòng chờ giảng viên phê duyệt.');
-                } else {
-                    throw new Error(response.data?.message || 'Đăng ký khóa học thất bại');
-                }
-            } catch (error) {
-                console.error('Error registering for course:', error);
-                console.error('Error response:', error.response?.data);
-                showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi đăng ký khóa học. Vui lòng thử lại sau.');
-            } finally {
-                setIsRegistering(false);
+        // Xử lý khóa học miễn phí chưa đăng ký
+        try {
+            setIsRegistering(true);
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
             }
+
+            const formData = new FormData();
+            formData.append('courseId', course.id.toString());
+
+            // Gửi yêu cầu đăng ký (pending)
+            const response = await axios.post('http://localhost:8080/lms/joinclass/pending', formData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                // Kiểm tra lại trạng thái sau khi đăng ký
+                await checkEnrollmentStatus(course.id);
+                
+                showAlert('success', 'Thành công', 'Đăng ký khóa học thành công! Vui lòng chờ giảng viên phê duyệt.');
+            } else {
+                throw new Error(response.data?.message || 'Đăng ký khóa học thất bại');
+            }
+        } catch (error) {
+            console.error('Error registering for course:', error);
+            console.error('Error response:', error.response?.data);
+            showAlert('error', 'Lỗi', 'Có lỗi xảy ra khi đăng ký khóa học. Vui lòng thử lại sau.');
+        } finally {
+            setIsRegistering(false);
         }
     };
 

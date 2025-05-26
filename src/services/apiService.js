@@ -66,10 +66,15 @@ export const WS_COMMENT_ENDPOINT = '/app/comment';
 export const WS_REPLY_ENDPOINT = '/app/comment-reply';
 export const WS_COMMENTS_TOPIC = '/topic/comments';
 export const WS_REPLIES_TOPIC = '/topic/comment-replies';
+export const WS_POST_COMMENT_ENDPOINT = '/app/post-comment';
+export const WS_POST_COMMENTS_TOPIC = '/topic/post-comments';
 
 // Comment endpoints
-export const GET_COMMENTS_BY_CHAPTER = `${API_BASE_URL}/lms/comments/unreadCommentsOfChapter/details`;
-export const GET_COMMENT_REPLIES = `${API_BASE_URL}/lms/comments/unreadCommentsOfChapter/details/reply`;
+export const GET_COMMENTS_BY_CHAPTER = `${API_BASE_URL}/lms/comments/getCommentByChapter/details`;
+export const GET_COMMENT_REPLIES = `${API_BASE_URL}/lms/comments/getCommentReplyByComment/details`;
+
+// Comment post endpoints
+export const GET_COMMENTS_BY_POST = `${API_BASE_URL}/lms/comments/getCommentByPost/details`;
 
 // Group Student Management
 export const DELETE_MULTIPLE_STUDENTS_GROUP = `${API_BASE_URL}/lms/studentgroup/deleteall`;

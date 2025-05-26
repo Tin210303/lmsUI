@@ -16,9 +16,9 @@ const TaskDetail = () => {
     const [error, setError] = useState(null);
     const [startError, setStartError] = useState(null);
     const [test, setTest] = useState(null);
-    console.log(test);
-    
     const [testResult, setTestResult] = useState(null);
+    console.log(testResult);
+    
     const [resultLoading, setResultLoading] = useState(false);
     const [showQuestions, setShowQuestions] = useState(false);
     const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -461,7 +461,7 @@ const TaskDetail = () => {
                         </div>
                         <div className="test-result-score">
                             <div className="score-label">Kết quả</div>
-                            <div className="score-value">{testResult.score || 0}/{totalPoints}</div>
+                            <div className="correct-value"><span className='score-value'>{testResult.score || 0}</span>/{totalPoints}</div>
                         </div>
                         <div className="test-result-correct">
                             <div className="correct-label">Đúng</div>
@@ -586,33 +586,6 @@ const TaskDetail = () => {
                 
                 {/* Thêm phần tổng kết ở cuối bài kiểm tra */}
                 <div className="test-result-footer">
-                    <div className="test-result-summary-final">
-                        <h3>Tổng kết kết quả</h3>
-                        <div className="final-result-details">
-                            <div className="final-score-percentage">
-                                <div className="percentage-label">Phần trăm đạt được</div>
-                                <div className="percentage-value">{scorePercentage}%</div>
-                            </div>
-                            <div className="final-score-detail">
-                                <div className="detail-item">
-                                    <span className="detail-label">Tổng số câu đúng:</span>
-                                    <span className="detail-value">{testResult.totalCorrect || 0}/{test.questions?.length || 0} câu</span>
-                                </div>
-                                <div className="detail-item">
-                                    <span className="detail-label">Điểm đạt được:</span>
-                                    <span className="detail-value">{testResult.score || 0}/{totalPoints} điểm</span>
-                                </div>
-                                <div className="detail-item">
-                                    <span className="detail-label">Thời gian làm bài:</span>
-                                    <span className="detail-value">
-                                        {testResult.startedAt && testResult.submittedAt ? 
-                                            `${Math.round((new Date(testResult.submittedAt) - new Date(testResult.startedAt)) / 60000)} phút` 
-                                            : 'Không xác định'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div className="test-info">
                         <p><strong>Lưu ý:</strong> Kết quả đã được lưu lại và gửi cho giáo viên.</p>
                     </div>

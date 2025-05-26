@@ -72,75 +72,75 @@ function App() {
 
           {/* Các route dành cho sinh viên */}
           <Route path="/courses" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <CoursesPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/courses/:id" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <CourseDetailPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/courses/detail/:slug" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <CourseDetailPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/learning/:id" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
                 <LearningPage />
             </ProtectedRoute>
           } />
           <Route path="/chat" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <ChatboxPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <StudentInfo />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/groups" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <GroupPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/groups/:id" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <GroupDetailPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/groups/tests/:id" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <TaskDetail />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/documents" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <DocumentsPage />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/documents/:majorId" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <MajorDocuments />
               </StudentLayout>
@@ -149,14 +149,14 @@ function App() {
           
           {/* PayPal payment routes */}
           <Route path="/paypal/success" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <PaymentSuccess />
               </StudentLayout>
             </ProtectedRoute>
           } />
           <Route path="/paypal/cancel" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
               <StudentLayout>
                 <PaymentCancel />
               </StudentLayout>
@@ -165,138 +165,138 @@ function App() {
 
           {/* Các route dành riêng cho giảng viên */}
           <Route path="/teacher/dashboard" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherDashboard />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/add-course" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherAddCourse />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/course" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherCourseDetail />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/add-lesson" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherAddLesson />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/add-quiz" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherAddQuiz />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/add-material" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherAddMaterial />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/course-management/:courseId" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <CourseManagementPage />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/course-content/:courseId" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
                 <TeacherCourseContent />
             </ProtectedRoute>
           } />
           <Route path="/teacher/course/:courseId/add-students" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <AddStudentsPage />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/groups" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherGroup />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/groups/:id" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherGroupDetail />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/groups/:id/add-students" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <AddStudentsGroup />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/groups/:id/create-task" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <CreateTask />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/groups/:id/edit-test/:testId" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <CreateTask />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/tests/:id" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherTaskDetail />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/test-results/:id" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TestResultDetail />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/chat" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <ChatboxPage />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/profile" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherInfo />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/documents" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherDocuments />
               </TeacherLayout>
             </ProtectedRoute>
           } />
           <Route path="/teacher/documents/manage/:majorId" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <ManageDocument />
               </TeacherLayout>

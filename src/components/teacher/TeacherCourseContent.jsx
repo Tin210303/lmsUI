@@ -56,8 +56,7 @@ const TeacherCourseContent = () => {
     const [itemToDelete, setItemToDelete] = useState(null);
     const [editChapterData, setEditChapterData] = useState({
         idLesson: '',
-        description: '',
-        order: 1
+        description: ''
     });
     const [editLessonData, setEditLessonData] = useState({
         chapterId: '',
@@ -1060,12 +1059,12 @@ const handleBackToCourses = () => {
         const handleClickOutside = (event) => {
             // Handle course content menus
             if (menuOpen.type && menuOpen.id) {
-                const isMenuButton = event.target.closest('.menu-trigger-button');
+                const isMenuButton = event.target.closest('.content-menu-trigger-button');
                 if (isMenuButton) {
                     return;
                 }
                 
-                const isInsideMenu = event.target.closest('.item-menu');
+                const isInsideMenu = event.target.closest('.content-item-menu');
                 if (!isInsideMenu) {
                     setMenuOpen({ type: null, id: null });
                 }
@@ -1414,10 +1413,6 @@ const handleBackToCourses = () => {
                     </div>
                 </div>
                 <div className="header-right">
-                    <button className="header-button">
-                        <BookOpen size={16} />
-                        <span>Lịch sử hỏi đáp</span>
-                    </button>
                     <button className="header-button" onClick={handleQuestionClick}>
                         <HelpCircle size={16} />
                         <span>Hỏi Đáp</span>
@@ -1544,20 +1539,27 @@ const handleBackToCourses = () => {
                                         </div>
                                         <div className="teacher-content-lesson-actions">
                                             <button 
-                                                className="menu-trigger-button"
+                                                className="content-menu-trigger-button"
                                                 onClick={(e) => toggleMenu(e, 'chapter', chapter.id)}
                                             >
                                                 <MoreVertical size={16} />
                                             </button>
                                             
                                             {menuOpen.type === 'chapter' && menuOpen.id === chapter.id && (
-                                                <div className="item-menu">
+                                                <div className="content-item-menu">
                                                     <button 
-                                                        className="menu-item edit-item"
+                                                        className="content-menu-item content-edit-item"
                                                         onClick={(e) => handleEditChapter(e, chapter)}
                                                     >
                                                         <Edit size={16} />
                                                         <span>Chỉnh sửa</span>
+                                                    </button>
+                                                    <button 
+                                                        className="content-menu-item content-delete-item"
+                                                        onClick={(e) => handleDeleteChapterConfirm(e, chapter)}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                        <span>Xóa</span>
                                                     </button>
                                                 </div>
                                             )}
@@ -1605,23 +1607,23 @@ const handleBackToCourses = () => {
                                                                 )}
                                                                 <div className="teacher-content-lesson-actions">
                                                                     <button 
-                                                                        className="menu-trigger-button"
+                                                                        className="content-menu-trigger-button"
                                                                         onClick={(e) => toggleMenu(e, 'lesson', lesson.id)}
                                                                     >
                                                                         <MoreVertical size={16} />
                                                                     </button>
                                                                     
                                                                     {menuOpen.type === 'lesson' && menuOpen.id === lesson.id && (
-                                                                        <div className="item-menu">
+                                                                        <div className="content-item-menu">
                                                                             <button 
-                                                                                className="menu-item edit-item"
+                                                                                className="content-menu-item content-edit-item"
                                                                                 onClick={(e) => handleEditLesson(e, lesson)}
                                                                             >
                                                                                 <Edit size={16} />
                                                                                 <span>Chỉnh sửa</span>
                                                                             </button>
                                                                             <button 
-                                                                                className="menu-item delete-item"
+                                                                                className="content-menu-item content-delete-item"
                                                                                 onClick={(e) => handleDeleteLessonConfirm(e, lesson)}
                                                                             >
                                                                                 <Trash2 size={16} />
@@ -1674,16 +1676,16 @@ const handleBackToCourses = () => {
                                                                 </div>
                                                             <div className="teacher-content-lesson-actions">
                                                                 <button 
-                                                                    className="menu-trigger-button"
+                                                                    className="content-menu-trigger-button"
                                                                     onClick={(e) => toggleMenu(e, 'material', material.id)}
                                                                 >
                                                                     <MoreVertical size={16} />
                                                                 </button>
                                                                 
                                                                 {menuOpen.type === 'material' && menuOpen.id === material.id && (
-                                                                    <div className="item-menu">
+                                                                    <div className="content-item-menu">
                                                                         <button 
-                                                                            className="menu-item delete-item"
+                                                                            className="content-menu-item content-delete-item"
                                                                             onClick={(e) => handleDeleteMaterialConfirm(e, material)}
                                                                         >
                                                                             <Trash2 size={16} />
@@ -1746,16 +1748,16 @@ const handleBackToCourses = () => {
                                                                 )}
                                                                 <div className="teacher-content-lesson-actions">
                                                                     <button 
-                                                                        className="menu-trigger-button"
+                                                                        className="content-menu-trigger-button"
                                                                         onClick={(e) => toggleMenu(e, 'quiz', quiz.id)}
                                                                     >
                                                                         <MoreVertical size={16} />
                                                                     </button>
                                                                     
                                                                     {menuOpen.type === 'quiz' && menuOpen.id === quiz.id && (
-                                                                        <div className="item-menu">
+                                                                        <div className="content-item-menu">
                                                                             <button 
-                                                                                className="menu-item delete-item"
+                                                                                className="content-menu-item content-delete-item"
                                                                                 onClick={(e) => handleDeleteQuizConfirm(e, quiz)}
                                                                             >
                                                                                 <Trash2 size={16} />
@@ -1837,7 +1839,7 @@ const handleBackToCourses = () => {
 
             {/* Thêm CSS cho menu và buttons */}
             <style jsx="true">{`
-                .menu-trigger-button {
+                .content-menu-trigger-button {
                     background: none;
                     border: none;
                     color: #666;
@@ -1851,12 +1853,12 @@ const handleBackToCourses = () => {
                     transition: all 0.2s;
                 }
                 
-                .menu-trigger-button:hover {
+                .content-menu-trigger-button:hover {
                     background-color: rgba(0, 0, 0, 0.05);
                     color: #333;
                 }
                 
-                .item-menu {
+                .content-item-menu {
                     position: absolute;
                     right: 0;
                     top: 100%;
@@ -1865,14 +1867,13 @@ const handleBackToCourses = () => {
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                     z-index: 100;
                     min-width: 150px;
-                    padding: 8px 0;
                 }
                 
-                .menu-item {
+                .content-menu-item {
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                    padding: 8px 16px;
+                    padding: 16px 20px;
                     width: 100%;
                     border: none;
                     background: none;
@@ -1881,19 +1882,19 @@ const handleBackToCourses = () => {
                     transition: background-color 0.2s;
                 }
                 
-                .menu-item:hover {
+                .content-menu-item:hover {
                     background-color: rgba(0, 0, 0, 0.05);
                 }
                 
-                .edit-item {
-                    color: #4f46e5;
+                .content-edit-item {
+                    color: #333;
                 }
                 
-                .delete-item {
-                    color: #ef4444;
+                .content-delete-item {
+                    color: #333;
                 }
                 
-                .delete-modal-overlay {
+                .content-delete-modal-overlay {
                     position: fixed;
                     top: 0;
                     left: 0;
@@ -1904,9 +1905,10 @@ const handleBackToCourses = () => {
                     align-items: center;
                     justify-content: center;
                     z-index: 1000;
+                    animation: fadeIn 0.3s ease-in-out;
                 }
                 
-                .delete-modal-container, .edit-modal-container {
+                .content-delete-modal-container, .content-edit-modal-container {
                     background: white;
                     border-radius: 8px;
                     padding: 24px;
@@ -1915,10 +1917,16 @@ const handleBackToCourses = () => {
                     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
                 }
                 
-                .delete-modal-container h2, .edit-modal-container h2 {
+                .content-delete-modal-container h2, .content-edit-modal-container h2 {
                     font-size: 1.5rem;
                     margin-bottom: 16px;
                     color: #333;
+                }
+
+                .content-rollback {
+                    color: #ef4444;
+                    font-size: 14px;
+                    margin-top: 8px;
                 }
                 
                 .delete-modal-actions, .edit-modal-actions {
@@ -1928,22 +1936,22 @@ const handleBackToCourses = () => {
                     margin-top: 24px;
                 }
                 
-                .btn-cancel-delete, .btn-cancel-edit {
+                .btn-cancel-delete, .content-btn-cancel-edit {
                     padding: 8px 16px;
                     border: 1px solid #d1d5db;
                     background: white;
                     color: #4b5563;
-                    border-radius: 4px;
+                    border-radius: 999px;
                     cursor: pointer;
                     font-weight: 500;
                 }
                 
-                .btn-confirm-delete {
+                .content-btn-confirm-delete {
                     padding: 8px 16px;
                     border: none;
                     background: #ef4444;
                     color: white;
-                    border-radius: 4px;
+                    border-radius: 999px;
                     cursor: pointer;
                     font-weight: 500;
                     display: flex;
@@ -1951,12 +1959,12 @@ const handleBackToCourses = () => {
                     gap: 8px;
                 }
                 
-                .btn-confirm-edit {
+                .content-btn-confirm-edit {
                     padding: 8px 16px;
                     border: none;
                     background: #4f46e5;
                     color: white;
-                    border-radius: 4px;
+                    border-radius: 999px;
                     cursor: pointer;
                     font-weight: 500;
                     display: flex;
@@ -1964,22 +1972,22 @@ const handleBackToCourses = () => {
                     gap: 8px;
                 }
                 
-                .edit-form-group {
+                .content-edit-form-group {
                     margin-bottom: 16px;
                 }
                 
-                .edit-form-group label {
+                .content-edit-form-group label {
                     display: block;
                     margin-bottom: 8px;
                     font-weight: 500;
                     color: #4b5563;
                 }
                 
-                .edit-form-group input {
+                .content-edit-form-group input {
                     width: 100%;
                     padding: 8px 12px;
                     border: 1px solid #d1d5db;
-                    border-radius: 4px;
+                    border-radius: 999px;
                 }
                 
                 .teacher-content-lesson-actions {
@@ -2003,63 +2011,63 @@ const handleBackToCourses = () => {
                     z-index: 10;
                 }
                 
-                .menu-trigger-button {
+                .content-menu-trigger-button {
                     width: 24px;
                     height: 24px;
                     min-width: 24px;
                     opacity: 0.7;
-                    z-index: 2;
+                    border-radius: 50%
                 }
                 
-                .menu-trigger-button:hover {
+                .content-menu-trigger-button:hover {
                     opacity: 1;
                 }
                 
-                .item-menu {
+                .content-item-menu {
                     right: 0;
                     top: calc(100% + 5px);
                     z-index: 100;
                 }
                 
                 .lesson-item, .material-item, .quiz-item {
-                    padding-right: 8px;
+                    padding-right: 16px;
                 }
                 
-                .lesson-item .menu-trigger-button,
-                .material-item .menu-trigger-button,
-                .quiz-item .menu-trigger-button {
+                .lesson-item .content-menu-trigger-button,
+                .material-item .content-menu-trigger-button,
+                .quiz-item .content-menu-trigger-button {
                     opacity: 0;
                     transition: opacity 0.2s;
                 }
                 
-                .lesson-item:hover .menu-trigger-button,
-                .material-item:hover .menu-trigger-button,
-                .quiz-item:hover .menu-trigger-button,
-                .menu-trigger-button:focus {
+                .lesson-item:hover .content-menu-trigger-button,
+                .material-item:hover .content-menu-trigger-button,
+                .quiz-item:hover .content-menu-trigger-button,
+                .content-menu-trigger-button:focus {
                     opacity: 1;
                 }
                 
                 /* Thêm CSS cho các menu modal */
-                .edit-modal-container h2, .delete-modal-container h2 {
+                .content-edit-modal-container h2, .content-delete-modal-container h2 {
                     margin-top: 0;
                     color: #333;
                 }
                 
-                .edit-form-group input:focus {
+                .content-edit-form-group input:focus {
                     outline: none;
                     border-color: #4f46e5;
                     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
                 }
                 
-                .btn-cancel-delete:hover, .btn-cancel-edit:hover {
+                .btn-cancel-delete:hover, .content-btn-cancel-edit:hover {
                     background-color: #f3f4f6;
                 }
                 
-                .btn-confirm-delete:hover {
+                .content-btn-confirm-delete:hover {
                     background-color: #dc2626;
                 }
                 
-                .btn-confirm-edit:hover {
+                .content-btn-confirm-edit:hover {
                     background-color: #4338ca;
                 }
                 
@@ -2070,18 +2078,18 @@ const handleBackToCourses = () => {
                 }
                 
                 /* Điều chỉnh z-index để menu item hiển thị đúng */
-                .item-menu {
+                .content-item-menu {
                     z-index: 999;
                 }
             `}</style>
 
             {/* Thêm các modal xác nhận và chỉnh sửa */}
             {showEditChapterModal && (
-                <div className="delete-modal-overlay">
-                    <div className="edit-modal-container">
+                <div className="content-delete-modal-overlay">
+                    <div className="content-edit-modal-container">
                         <h2>Chỉnh sửa chương học</h2>
                         <form onSubmit={handleUpdateChapter}>
-                            <div className="edit-form-group">
+                            <div className="content-edit-form-group">
                                 <label htmlFor="description">Tên chương:</label>
                                 <input 
                                     type="text" 
@@ -2091,28 +2099,17 @@ const handleBackToCourses = () => {
                                     required 
                                 />
                             </div>
-                            <div className="edit-form-group">
-                                <label htmlFor="order">Thứ tự:</label>
-                                <input 
-                                    type="number" 
-                                    id="order" 
-                                    value={editChapterData.order} 
-                                    onChange={(e) => setEditChapterData({...editChapterData, order: parseInt(e.target.value) || 1})}
-                                    min="1" 
-                                    required 
-                                />
-                            </div>
                             <div className="edit-modal-actions">
                                 <button 
                                     type="button" 
-                                    className="btn-cancel-edit"
+                                    className="content-btn-cancel-edit"
                                     onClick={() => setShowEditChapterModal(false)}
                                 >
                                     Hủy
                                 </button>
                                 <button 
                                     type="submit" 
-                                    className="btn-confirm-edit"
+                                    className="content-btn-confirm-edit"
                                 >
                                     <Edit size={16} /> Lưu thay đổi
                                 </button>
@@ -2123,22 +2120,22 @@ const handleBackToCourses = () => {
             )}
 
             {showEditLessonModal && (
-                <div className="delete-modal-overlay">
-                    <div className="edit-modal-container">
+                <div className="content-delete-modal-overlay">
+                    <div className="content-edit-modal-container">
                         <h2>Chỉnh sửa bài học</h2>
-                        <div className="edit-form-group">
+                        <div className="content-edit-form-group">
                             <label>Tên bài học: {editLessonData.name}</label>
                         </div>
                         <p>Để chỉnh sửa bài học này, bạn sẽ cần chuyển đến trang chỉnh sửa chi tiết.</p>
                         <div className="edit-modal-actions">
                             <button 
-                                className="btn-cancel-edit"
+                                className="content-btn-cancel-edit"
                                 onClick={() => setShowEditLessonModal(false)}
                             >
                                 Hủy
                             </button>
                             <button 
-                                className="btn-confirm-edit"
+                                className="content-btn-confirm-edit"
                                 onClick={navigateToEditLesson}
                             >
                                 <Edit size={16} /> Chỉnh sửa bài học
@@ -2149,11 +2146,11 @@ const handleBackToCourses = () => {
             )}
 
             {showDeleteChapterConfirm && (
-                <div className="delete-modal-overlay">
-                    <div className="delete-modal-container">
+                <div className="content-delete-modal-overlay">
+                    <div className="content-delete-modal-container">
                         <h2>Xác nhận xóa chương</h2>
                         <p>Bạn có chắc chắn muốn xóa chương "{itemToDelete?.description}" không?</p>
-                        <p>Tất cả bài học, bài kiểm tra và tài liệu trong chương này cũng sẽ bị xóa. Hành động này không thể hoàn tác.</p>
+                        <p className='content-rollback'>Tất cả bài học, bài kiểm tra và tài liệu trong chương này cũng sẽ bị xóa. Hành động này không thể hoàn tác.</p>
                         <div className="delete-modal-actions">
                             <button 
                                 className="btn-cancel-delete"
@@ -2165,7 +2162,7 @@ const handleBackToCourses = () => {
                                 Hủy
                             </button>
                             <button 
-                                className="btn-confirm-delete"
+                                className="content-btn-confirm-delete"
                                 onClick={handleDeleteChapter}
                             >
                                 <Trash2 size={16} /> Xác nhận xóa
@@ -2176,11 +2173,11 @@ const handleBackToCourses = () => {
             )}
 
             {showDeleteLessonConfirm && (
-                <div className="delete-modal-overlay">
-                    <div className="delete-modal-container">
+                <div className="content-delete-modal-overlay">
+                    <div className="content-delete-modal-container">
                         <h2>Xác nhận xóa bài học</h2>
                         <p>Bạn có chắc chắn muốn xóa bài học "{itemToDelete?.name}" không?</p>
-                        <p>Hành động này không thể hoàn tác.</p>
+                        <p className="content-rollback">Hành động này không thể hoàn tác.</p>
                         <div className="delete-modal-actions">
                             <button 
                                 className="btn-cancel-delete"
@@ -2192,7 +2189,7 @@ const handleBackToCourses = () => {
                                 Hủy
                             </button>
                             <button 
-                                className="btn-confirm-delete"
+                                className="content-btn-confirm-delete"
                                 onClick={handleDeleteLesson}
                             >
                                 <Trash2 size={16} /> Xác nhận xóa
@@ -2203,11 +2200,11 @@ const handleBackToCourses = () => {
             )}
 
             {showDeleteQuizConfirm && (
-                <div className="delete-modal-overlay">
-                    <div className="delete-modal-container">
+                <div className="content-delete-modal-overlay">
+                    <div className="content-delete-modal-container">
                         <h2>Xác nhận xóa bài kiểm tra</h2>
                         <p>Bạn có chắc chắn muốn xóa bài kiểm tra "{itemToDelete?.question}" không?</p>
-                        <p>Hành động này không thể hoàn tác.</p>
+                        <p className="content-rollback">Hành động này không thể hoàn tác.</p>
                         <div className="delete-modal-actions">
                             <button 
                                 className="btn-cancel-delete"
@@ -2219,7 +2216,7 @@ const handleBackToCourses = () => {
                                 Hủy
                             </button>
                             <button 
-                                className="btn-confirm-delete"
+                                className="content-btn-confirm-delete"
                                 onClick={handleDeleteQuiz}
                             >
                                 <Trash2 size={16} /> Xác nhận xóa
@@ -2230,11 +2227,11 @@ const handleBackToCourses = () => {
             )}
 
             {showDeleteMaterialConfirm && (
-                <div className="delete-modal-overlay">
-                    <div className="delete-modal-container">
+                <div className="content-delete-modal-overlay">
+                    <div className="content-delete-modal-container">
                         <h2>Xác nhận xóa tài liệu học tập</h2>
                         <p>Bạn có chắc chắn muốn xóa tài liệu học tập "{itemToDelete?.fileName}" không?</p>
-                        <p>Hành động này không thể hoàn tác.</p>
+                        <p className="content-rollback">Hành động này không thể hoàn tác.</p>
                         <div className="delete-modal-actions">
                             <button 
                                 className="btn-cancel-delete"
@@ -2246,7 +2243,7 @@ const handleBackToCourses = () => {
                                 Hủy
                             </button>
                             <button 
-                                className="btn-confirm-delete"
+                                className="content-btn-confirm-delete"
                                 onClick={handleDeleteMaterial}
                             >
                                 <Trash2 size={16} /> Xác nhận xóa

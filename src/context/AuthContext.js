@@ -195,7 +195,8 @@ export const AuthProvider = ({ children }) => {
             const response = await axios.post('http://localhost:8080/lms/auth/token', 
                 {
                     username: email,
-                    password
+                    password,
+                    rolerequest: role
                 },
                 {
                     headers: {
@@ -236,8 +237,8 @@ export const AuthProvider = ({ children }) => {
                             const userRole = payload.scope;
                             
                             // Kiểm tra xem role có khớp với role đã chọn không
-                            const isTeacherWithStudentRole = role === 'teacher' && userRole !== 'ROLE_TEACHER';
-                            const isStudentWithTeacherRole = role === 'student' && userRole !== 'ROLE_STUDENT';
+                            const isTeacherWithStudentRole = role === 'TEACHER' && userRole !== 'ROLE_TEACHER';
+                            const isStudentWithTeacherRole = role === 'STUDENT' && userRole !== 'ROLE_STUDENT';
                             
                             if (isTeacherWithStudentRole || isStudentWithTeacherRole) {
                                 // Role không khớp, trả về lỗi mà không thực hiện đăng nhập
@@ -273,7 +274,7 @@ export const AuthProvider = ({ children }) => {
                         setIsAuthenticated(true);
 
                         // Navigate to appropriate page based on role
-                        if (role === 'teacher') {
+                        if (role === 'TEACHER') {
                             navigate('/teacher/dashboard');
                         } else {
                             navigate('/courses');

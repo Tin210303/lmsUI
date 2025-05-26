@@ -858,7 +858,7 @@ const CommentSection = ({ lessonId, courseId }) => {
         }, [avatar, avatarCache]);
         
         if (imgSrc) {
-            return <img src={imgSrc} alt="Avatar" className={className || "comment-avatar"} />;
+            return <img src={imgSrc} alt="Avatar" className={className || "comment-avatar-circle"} />;
         }
         
         // Fallback khi không có avatar
@@ -930,7 +930,7 @@ const CommentSection = ({ lessonId, courseId }) => {
                                 <UserAvatar 
                                     avatar={comment.avatar} 
                                     name={comment.fullname || comment.username}
-                                    className="comment-avatar"
+                                    className="comment-avatar-circle"
                                 />
                                 <div className="comment-header">
                                     <span className="username">{comment.fullname || comment.username}</span>
@@ -974,7 +974,6 @@ const CommentSection = ({ lessonId, courseId }) => {
                                                 placeholder="Phản hồi..."
                                                 onInput={handleEditorChange}
                                             >
-                                                <span className="mention">@{comment.username}</span>&nbsp;
                                             </div>
                                         </div>
                                         
@@ -1000,7 +999,7 @@ const CommentSection = ({ lessonId, courseId }) => {
                                             <UserAvatar 
                                                 avatar={reply.avatarReply} 
                                                 name={reply.fullnameReply || reply.usernameReply}
-                                                className="comment-avatar"
+                                                className="comment-avatar-circle"
                                             />
                                     <div className="comment-header">
                                                 <span className="username">{reply.fullnameReply || reply.usernameReply}</span>

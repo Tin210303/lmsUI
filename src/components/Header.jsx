@@ -16,7 +16,7 @@ function Header() {
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [selectedRole, setSelectedRole] = useState('student');
+    const [selectedRole, setSelectedRole] = useState('STUDENT');
     const [error, setError] = useState('');
     const [isFormValid, setIsFormValid] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -42,7 +42,7 @@ function Header() {
     const [selectedMajor, setSelectedMajor] = useState('');
     const [majors, setMajors] = useState([]);
     const [loadingMajors, setLoadingMajors] = useState(false);
-    const [registrationRole, setRegistrationRole] = useState('student'); // 'student' hoặc 'teacher'
+    const [registrationRole, setRegistrationRole] = useState('STUDENT'); // 'STUDENT' hoặc 'TEACHER'
 
     // Thêm state cho chức năng hiển thị/ẩn mật khẩu
     const [showPassword, setShowPassword] = useState(false);
@@ -96,7 +96,7 @@ function Header() {
             setIsRegFormValid(isCodeComplete);
         } else if (registrationStep === 3) {
             // Kiểm tra họ tên, mật khẩu, xác nhận mật khẩu, và chuyên ngành (nếu là sinh viên)
-            if (registrationRole === 'student') {
+            if (registrationRole === 'STUDENT') {
                 setIsRegFormValid(
                     regFullName.trim() !== '' && 
                     regPassword.trim() !== '' &&
@@ -124,7 +124,7 @@ function Header() {
         setRegConfirmPassword('');
         setRegFullName('');
         setError('');
-        setSelectedRole('student');
+        setSelectedRole('STUDENT');
         setRegistrationStep(1);
         setVerificationCode(['', '', '', '', '', '']);
         setSelectedMajor('');
@@ -143,7 +143,7 @@ function Header() {
         resetForm();
     }, [resetForm]);
 
-    const openLoginModal = useCallback((role = 'student') => {
+    const openLoginModal = useCallback((role = 'STUDENT') => {
         setShowRegisterModal(false);
         setShowForgotPasswordModal(false);
         setShowLoginModal(true);
@@ -162,7 +162,7 @@ function Header() {
 
     // Chuyển đổi vai trò đăng nhập
     const toggleLoginRole = useCallback(() => {
-        setSelectedRole(prevRole => prevRole === 'student' ? 'teacher' : 'student');
+        setSelectedRole(prevRole => prevRole === 'STUDENT' ? 'TEACHER' : 'STUDENT');
     }, []);
 
     const switchToRegister = useCallback(() => {
@@ -350,10 +350,10 @@ function Header() {
                 email: regEmail,
                 password: regPassword,
                 fullName: regFullName,
-                ...(registrationRole === 'student' ? { majorId: selectedMajor } : {})
+                ...(registrationRole === 'STUDENT' ? { majorId: selectedMajor } : {})
             };
 
-            const apiUrl = registrationRole === 'student'
+            const apiUrl = registrationRole === 'STUDENT'
                 ? CREATE_STUDENT_ACCOUNT
                 : CREATE_TEACHER_ACCOUNT;
 
@@ -512,7 +512,7 @@ function Header() {
             case 1:
                 return (
                     <form className="header-login-form" onSubmit={handleSendVerificationCode}>
-                        <h2 className="header-modal-title">Đăng Ký Tài Khoản {registrationRole === 'student' ? 'Sinh Viên' : 'Giảng Viên'}</h2>
+                        <h2 className="header-modal-title">Đăng Ký Tài Khoản {registrationRole === 'STUDENT' ? 'Sinh Viên' : 'Giảng Viên'}</h2>
                         {error && (
                             <div className="alert alert-danger" role="alert">
                                 {error}
@@ -521,15 +521,15 @@ function Header() {
                         <div className="header-role-selection-buttons mb-16">
                             <button
                                 type="button"
-                                className={`header-role-btn ${registrationRole === 'student' ? 'student active' : ''}`}
-                                onClick={() => setRegistrationRole('student')}
+                                className={`header-role-btn ${registrationRole === 'STUDENT' ? 'student active' : ''}`}
+                                onClick={() => setRegistrationRole('STUDENT')}
                             >
                                 Sinh viên
                             </button>
                             <button
                                 type="button"
-                                className={`header-role-btn ${registrationRole === 'teacher' ? 'teacher active' : ''}`}
-                                onClick={() => setRegistrationRole('teacher')}
+                                className={`header-role-btn ${registrationRole === 'TEACHER' ? 'teacher active' : ''}`}
+                                onClick={() => setRegistrationRole('TEACHER')}
                             >
                                 Giảng viên
                             </button>
@@ -604,7 +604,7 @@ function Header() {
             case 3:
                 return (
                     <form className="header-login-form" onSubmit={handleCompleteRegistration}>
-                        <h2 className="header-modal-title">Hoàn tất đăng ký {registrationRole === 'student' ? 'Sinh Viên' : 'Giảng Viên'}</h2>
+                        <h2 className="header-modal-title">Hoàn tất đăng ký {registrationRole === 'STUDENT' ? 'Sinh Viên' : 'Giảng Viên'}</h2>
                         {error && (
                             <div className="alert alert-danger" role="alert">
                                 {error}
@@ -664,7 +664,7 @@ function Header() {
                                 <span className="password-mismatch-error">Mật khẩu không khớp</span>
                             )}
                         </div>
-                        {registrationRole === 'student' && (
+                        {registrationRole === 'STUDENT' && (
                             <div className="header-form-group">
                                 {loadingMajors ? (
                                     <div className="select-loading">Đang tải danh sách chuyên ngành...</div>
@@ -689,7 +689,7 @@ function Header() {
                         <button
                             type="submit"
                             className={`header-login-submit-btn ${isRegFormValid ? 'active' : 'disabled'}`}
-                            disabled={!isRegFormValid || loading || (registrationRole === 'student' && loadingMajors)}
+                            disabled={!isRegFormValid || loading || (registrationRole === 'STUDENT' && loadingMajors)}
                         >
                             {loading ? 'Đang đăng ký...' : 'Đăng ký'}
                         </button>
@@ -705,20 +705,21 @@ function Header() {
             <header className="header">
                 <div className="logo"><img src={logo} alt="Logo"/></div>
                 <nav className="nav">
-                    <a href="#courses">Khóa học</a>
-                    <a href="#about">Giới thiệu</a>
+                    <a href="#courses">Trang chủ</a>
+                    <a href="#about">Khóa học</a>
+                    <a href="#contact">Về chúng tôi</a>
                     <a href="#contact">Liên hệ</a>
                 </nav>
                 {isAuthenticated ? (
                     <button className="login-btn" onClick={handleLogoutClick}>Đăng xuất</button>
                 ) : (
                     <div className="auth-buttons">
-                        <button className="login-btn" onClick={() => openLoginModal('student')}>Đăng nhập</button>
+                        <button className="login-btn" onClick={() => openLoginModal('STUDENT')}>Đăng nhập</button>
                         <button className="header-register-btn" onClick={() => {
                             setShowLoginModal(false);
                             setShowRegisterModal(true);
                             resetForm();
-                            setRegistrationRole('student');
+                            setRegistrationRole('STUDENT');
                         }}>Đăng ký</button>
                     </div>
                 )}
@@ -730,7 +731,7 @@ function Header() {
                     <div className="header-modal-container">
                         <div className="header-modal-header">
                             <button className="header-back-btn" onClick={toggleLoginRole}>
-                                Đăng nhập với tư cách {selectedRole === 'student' ? 'giảng viên' : 'sinh viên'}
+                                Đăng nhập với tư cách {selectedRole === 'STUDENT' ? 'giảng viên' : 'sinh viên'}
                             </button>
                             <button className="header-close-btn" onClick={closeAllModals}>×</button>
                         </div>
@@ -740,7 +741,7 @@ function Header() {
                                     <img src={logohusc} className="header-login-logo" alt="Logo HUSC" />
                                 </div>
                                 <h2 className="header-modal-title">
-                                    Dành Cho {selectedRole === 'student' ? 'Sinh Viên' : 'Giảng Viên'}
+                                    Dành Cho {selectedRole === 'STUDENT' ? 'Sinh Viên' : 'Giảng Viên'}
                                 </h2>
 
                                 <form className="header-login-form" onSubmit={handleLogin}>
@@ -824,7 +825,7 @@ function Header() {
                                         <p>Bạn chưa có tài khoản? <a href="#" className="header-register-link" onClick={(e) => { 
                                             e.preventDefault(); 
                                             switchToRegister();
-                                        }}>Đăng ký {selectedRole === 'student' ? 'Sinh viên' : 'Giảng viên'}</a></p>
+                                        }}>Đăng ký {selectedRole === 'STUDENT' ? 'Sinh viên' : 'Giảng viên'}</a></p>
                                     </div>
 
                                     <div className="terms">

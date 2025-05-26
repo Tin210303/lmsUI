@@ -1,55 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, LogOut, Bell, Check, KeySquare } from 'lucide-react';
+import { Search, User, LogOut, Bell, Check, KeySquare, MessageCircle, UserPlus, CheckCircle, XCircle, FileText, MessageSquare } from 'lucide-react';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 import logo from '../../assets/imgs/logo.png';
+import notificationSound from '../../assets/sounds/notification.mp3';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL, SEARCH_COURSE_API, GET_MY_COURSE, GET_PROGRESS_PERCENT, GET_STUDENT_INFO } from '../../services/apiService';
-import '../../assets/css/student-header.css'; // Use the shared header CSS
+import '../../assets/css/student-header.css';
 import axios from 'axios';
 
-// Dữ liệu mẫu cho thông báo
-const sampleNotifications = [
-    {
-        id: 1,
-        title: 'Khóa học mới',
-        message: 'Khóa học "React JS nâng cao" vừa được thêm vào danh sách khóa học của bạn.',
-        time: '2 giờ trước',
-        read: false,
-        type: 'course',
-    },
-    {
-        id: 2,
-        title: 'Nhắc nhở học tập',
-        message: 'Bạn có một bài học "JavaScript ES6" chưa hoàn thành. Hãy quay lại học ngay!',
-        time: '1 ngày trước',
-        read: false,
-        type: 'reminder',
-    },
-    {
-        id: 3,
-        title: 'Bài kiểm tra sắp đến hạn',
-        message: 'Bài kiểm tra "HTML & CSS cơ bản" sẽ kết thúc trong 2 ngày nữa. Hãy hoàn thành ngay.',
-        time: '2 ngày trước',
-        read: true,
-        type: 'exam',
-    },
-    {
-        id: 4,
-        title: 'Phản hồi từ giảng viên',
-        message: 'Giảng viên đã phản hồi câu hỏi của bạn trong khóa học "Node.js".',
-        time: '3 ngày trước',
-        read: true,
-        type: 'feedback',
-    },
-    {
-        id: 5,
-        title: 'Ưu đãi đặc biệt',
-        message: 'Giảm giá 50% cho khóa học "UI/UX Design" khi đăng ký trong tuần này!',
-        time: '1 tuần trước',
-        read: true,
-        type: 'promotion',
-    }
-];
+// Constants cho endpoint thông báo
+const NOTIFICATIONS_API = `${API_BASE_URL}/lms/notifications`;
 
 const StudentHeader = () => {
     const { user, logout } = useAuth();
@@ -57,9 +19,10 @@ const StudentHeader = () => {
     const [isDropdownOpen, setDropdownOpen] = useState(false);
     const [isNotificationOpen, setNotificationOpen] = useState(false);
     const [isCoursesOpen, setCoursesOpen] = useState(false);
-    const [notifications, setNotifications] = useState(sampleNotifications);
+    const [notifications, setNotifications] = useState([]);
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
     const notificationRef = useRef(null);
     const coursesRef = useRef(null);
     const [studentData, setStudentData] = useState({
@@ -72,6 +35,17 @@ const StudentHeader = () => {
     });
     const [avatarUrl, setAvatarUrl] = useState(null);
     const [error, setError] = useState(null);
+    
+    // Lấy state cho phân trang thông báo
+    const [notificationsPagination, setNotificationsPagination] = useState({
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0
+    });
+    const [loadingMoreNotifications, setLoadingMoreNotifications] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const notificationsListRef = useRef(null);
     
     // Thêm state cho chức năng tìm kiếm
     const [searchQueryCourse, setSearchQueryCourse] = useState('');
@@ -119,6 +93,47 @@ const StudentHeader = () => {
     // Thêm state để lưu ảnh đại diện khóa học
     const [courseImages, setCourseImages] = useState({});
 
+    // Thêm state cho WebSocket client
+    const [stompClient, setStompClient] = useState(null);
+    const [isConnected, setIsConnected] = useState(false);
+
+    // Thêm state cho hiệu ứng nháy thông báo mới
+    const [notificationHighlight, setNotificationHighlight] = useState(false);
+    const audioRef = useRef(null);
+
+    // Thêm state để theo dõi trạng thái kết nối và số lần thử lại
+    const [connectionAttempts, setConnectionAttempts] = useState(0);
+    const maxReconnectAttempts = 5;
+    const reconnectIntervalRef = useRef(null);
+
+    // Thêm state để theo dõi thông báo mới nhận về
+    const [newNotificationIds, setNewNotificationIds] = useState(new Set());
+
+    // Thêm state để biết còn thông báo để load không
+    const [hasMoreNotifications, setHasMoreNotifications] = useState(true);
+
+    // Thêm useEffect để xử lý việc loại bỏ đánh dấu là "mới" sau một khoảng thời gian
+    useEffect(() => {
+        const timerIds = [];
+        
+        newNotificationIds.forEach(id => {
+            const timerId = setTimeout(() => {
+                setNewNotificationIds(prev => {
+                    const updated = new Set(prev);
+                    updated.delete(id);
+                    return updated;
+                });
+            }, 5000); // Sau 5 giây, bỏ đánh dấu là thông báo mới
+            
+            timerIds.push(timerId);
+        });
+        
+        // Dọn dẹp khi component unmount hoặc danh sách thay đổi
+        return () => {
+            timerIds.forEach(id => clearTimeout(id));
+        };
+    }, [newNotificationIds]);
+
     // lắng nghe sự kiện để set avatar ngay khi avatar được cập nhật
     useEffect(() => {
         const handleAvatarUpdate = (event) => {
@@ -131,6 +146,322 @@ const StudentHeader = () => {
             window.removeEventListener('avatar_updated', handleAvatarUpdate);
         };
     }, []);
+
+    // Thiết lập kết nối WebSocket khi có email
+    useEffect(() => {
+        // Chỉ kết nối khi đã có email của sinh viên
+        if (studentData.email && !stompClient) {
+            const connectWebSocket = () => {
+                const socket = new SockJS(`${API_BASE_URL}/lms/ws`);
+                const client = new Client({
+                    webSocketFactory: () => socket,
+                    connectHeaders: {
+                        Authorization: `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    debug: function(str) {
+                        console.log('STOMP: ' + str);
+                    },
+                    reconnectDelay: 5000,
+                    heartbeatIncoming: 4000,
+                    heartbeatOutgoing: 4000
+                });
+
+                client.onConnect = function(frame) {
+                    console.log('Kết nối WebSocket thành công!', frame);
+                    setIsConnected(true);
+                    
+                    // Đăng ký kênh thông báo với userName là email
+                    const notificationTopic = `/topic/notifications/${studentData.email}`;
+                    console.log(`Đăng ký kênh thông báo: ${notificationTopic}`);
+                    
+                    client.subscribe(notificationTopic, function(message) {
+                        // Xử lý thông báo nhận được
+                        try {
+                            const receivedNotification = JSON.parse(message.body);
+                            console.log('Nhận thông báo mới từ WebSocket:', receivedNotification);
+                            
+                            // Kích hoạt hiệu ứng nháy cho bell icon
+                            setNotificationHighlight(true);
+                            
+                            // Phát âm thanh thông báo nếu có
+                            if (audioRef.current) {
+                                audioRef.current.currentTime = 0; // Reset âm thanh về đầu
+                                audioRef.current.play().catch(error => {
+                                    console.log('Không thể phát âm thanh thông báo:', error);
+                                });
+                            }
+                            
+                            // Tắt hiệu ứng sau 3 giây
+                            setTimeout(() => {
+                                setNotificationHighlight(false);
+                            }, 3000);
+                            
+                            // Xử lý dữ liệu thông báo dựa vào cấu trúc
+                            if (receivedNotification.notificationId) {
+                                // Trường hợp nhận trực tiếp một thông báo với định dạng giống API
+                                const formattedNotification = {
+                                    id: receivedNotification.notificationId,
+                                    title: getNotificationTitle(receivedNotification),
+                                    message: receivedNotification.description || receivedNotification.message || receivedNotification.content || 'Không có nội dung',
+                                    time: formatRelativeTime(receivedNotification.createdAt) || 'Vừa xong',
+                                    read: receivedNotification.isRead || false,
+                                    type: getNotificationType(receivedNotification),
+                                    rawType: receivedNotification.notificationType,
+                                    originalData: receivedNotification
+                                };
+                                
+                                // Thêm thông báo mới vào đầu danh sách
+                                setNotifications(prev => [formattedNotification, ...prev]);
+                                
+                                // Đánh dấu là thông báo mới để có hiệu ứng
+                                setNewNotificationIds(prev => new Set(prev).add(formattedNotification.id));
+                                
+                                // Cập nhật số lượng thông báo chưa đọc
+                                if (!formattedNotification.read) {
+                                    setUnreadCount(prevCount => prevCount + 1);
+                                }
+                                
+                                // Hiển thị notification trên trình duyệt nếu được hỗ trợ và thông báo chưa đọc
+                                if (!formattedNotification.read && Notification.permission === "granted") {
+                                    new Notification(formattedNotification.title, { 
+                                        body: formattedNotification.message,
+                                        icon: logo
+                                    });
+                                }
+                            } else if (receivedNotification.notificationDetails && Array.isArray(receivedNotification.notificationDetails)) {
+                                // Trường hợp nhận được danh sách thông báo (giống format API)
+                                const formattedNotifications = receivedNotification.notificationDetails.map(notif => ({
+                                    id: notif.notificationId,
+                                    title: getNotificationTitle(notif),
+                                    message: notif.description || notif.message || notif.content || 'Không có nội dung',
+                                    time: formatRelativeTime(notif.createdAt) || 'Vừa xong',
+                                    read: notif.isRead || false,
+                                    type: getNotificationType(notif),
+                                    rawType: notif.notificationType,
+                                    originalData: notif
+                                }));
+                                
+                                // Thêm các thông báo mới vào đầu danh sách, tránh trùng lặp
+                                setNotifications(prevNotifications => {
+                                    const existingIds = new Set(prevNotifications.map(n => n.id));
+                                    const newNotifications = formattedNotifications.filter(n => !existingIds.has(n.id));
+                                    
+                                    // Đánh dấu các thông báo mới để có hiệu ứng
+                                    if (newNotifications.length > 0) {
+                                        setNewNotificationIds(prev => {
+                                            const updated = new Set(prev);
+                                            newNotifications.forEach(n => updated.add(n.id));
+                                            return updated;
+                                        });
+                                    }
+                                    
+                                    return [...newNotifications, ...prevNotifications];
+                                });
+                                
+                                // Cập nhật số lượng thông báo chưa đọc
+                                if (receivedNotification.countUnreadNotification !== undefined) {
+                                    setUnreadCount(receivedNotification.countUnreadNotification);
+                                } else {
+                                    // Nếu không có sẵn số lượng chưa đọc, tính từ danh sách
+                                    const newUnread = formattedNotifications.filter(n => !n.read).length;
+                                    setUnreadCount(prevCount => prevCount + newUnread);
+                                }
+                                
+                                // Hiển thị thông báo trên trình duyệt cho thông báo mới nhất chưa đọc
+                                const unreadNotifications = formattedNotifications.filter(n => !n.read);
+                                if (unreadNotifications.length > 0 && Notification.permission === "granted") {
+                                    new Notification(unreadNotifications[0].title, {
+                                        body: unreadNotifications[0].message,
+                                        icon: logo
+                                    });
+                                }
+                            } else if (typeof receivedNotification === 'object') {
+                                // Trường hợp khác - thử chuyển đổi sang định dạng thông báo tiêu chuẩn
+                                try {
+                                    // Đoán định dạng dựa trên các trường có sẵn
+                                    const formattedNotification = {
+                                        id: receivedNotification.id || receivedNotification.notificationId || Date.now(),
+                                        title: receivedNotification.title || 'Thông báo mới',
+                                        message: receivedNotification.description || receivedNotification.message || receivedNotification.content || '',
+                                        time: 'Vừa xong',
+                                        read: false,
+                                        type: 'general',
+                                        rawType: receivedNotification.type || 'GENERAL',
+                                    };
+                                    
+                                    // Thêm thông báo mới vào đầu danh sách
+                                    setNotifications(prev => [formattedNotification, ...prev]);
+                                    
+                                    // Đánh dấu là thông báo mới để có hiệu ứng
+                                    setNewNotificationIds(prev => new Set(prev).add(formattedNotification.id));
+                                    
+                                    // Cập nhật số lượng thông báo chưa đọc
+                                    setUnreadCount(prevCount => prevCount + 1);
+                                    
+                                    // Hiển thị notification trên trình duyệt
+                                    if (Notification.permission === "granted") {
+                                        new Notification(formattedNotification.title, { 
+                                            body: formattedNotification.message,
+                                            icon: logo
+                                        });
+                                    }
+                                } catch (formatError) {
+                                    console.error('Lỗi khi chuyển đổi định dạng thông báo:', formatError);
+                                }
+                            }
+                            
+                            // Tự động mở dropdown thông báo khi nhận thông báo mới
+                            if (!isNotificationOpen) {
+                                setNotificationOpen(true);
+                            }
+                            
+                        } catch (error) {
+                            console.error('Lỗi xử lý thông báo từ WebSocket:', error);
+                        }
+                    });
+                    
+                    // Yêu cầu server gửi lại thông báo chưa đọc sau khi kết nối
+                    try {
+                        const token = localStorage.getItem('authToken');
+                        if (token) {
+                            // Gửi tin nhắn để yêu cầu server gửi thông báo chưa đọc
+                            client.publish({
+                                destination: '/app/notifications.request',
+                                headers: { 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({
+                                    email: studentData.email,
+                                    action: 'FETCH_UNREAD'
+                                })
+                            });
+                            console.log('Đã gửi yêu cầu lấy thông báo chưa đọc');
+                        }
+                    } catch (error) {
+                        console.error('Lỗi khi yêu cầu thông báo chưa đọc:', error);
+                    }
+                };
+
+                client.onStompError = function(frame) {
+                    console.error('Lỗi kết nối STOMP:', frame);
+                    setIsConnected(false);
+                    
+                    // Thử kết nối lại sau 5 giây
+                    setTimeout(() => {
+                        console.log('Đang thử kết nối lại WebSocket...');
+                        if (client) {
+                            client.activate();
+                        }
+                    }, 5000);
+                };
+                
+                client.onWebSocketClose = function() {
+                    console.log('Kết nối WebSocket đã đóng');
+                    setIsConnected(false);
+                    
+                    // Thử kết nối lại sau 3 giây nếu kết nối bị đóng bất ngờ
+                    setTimeout(() => {
+                        console.log('Đang thử kết nối lại WebSocket sau khi đóng...');
+                        if (client && !client.connected) {
+                            client.activate();
+                        }
+                    }, 3000);
+                };
+                
+                client.activate();
+                setStompClient(client);
+                
+                // Ping server định kỳ để giữ kết nối
+                const pingInterval = setInterval(() => {
+                    if (client && client.connected) {
+                        try {
+                            client.publish({
+                                destination: '/app/ping',
+                                body: JSON.stringify({ timestamp: new Date().getTime() })
+                            });
+                            console.log('Ping server để giữ kết nối');
+                        } catch (error) {
+                            console.error('Lỗi khi ping server:', error);
+                        }
+                    }
+                }, 30000); // ping mỗi 30 giây
+                
+                return () => clearInterval(pingInterval);
+            };
+
+            const wsConnection = connectWebSocket();
+            return wsConnection;
+        }
+        
+        // Dọn dẹp khi component unmount
+        return () => {
+            if (stompClient) {
+                console.log('Ngắt kết nối WebSocket khi component unmount');
+                stompClient.deactivate();
+                setStompClient(null);
+                setIsConnected(false);
+            }
+        };
+    }, [studentData.email]);
+
+    // Thêm useEffect để theo dõi và khôi phục kết nối WebSocket
+    useEffect(() => {
+        // Kiểm tra và khôi phục kết nối WebSocket nếu cần
+        if (!isConnected && studentData.email && connectionAttempts < maxReconnectAttempts) {
+            console.log(`Đang thử kết nối lại WebSocket (lần thử ${connectionAttempts + 1}/${maxReconnectAttempts})...`);
+            
+            // Xóa timeout hiện tại nếu có
+            if (reconnectIntervalRef.current) {
+                clearTimeout(reconnectIntervalRef.current);
+            }
+            
+            // Đặt timeout mới để thử kết nối lại
+            reconnectIntervalRef.current = setTimeout(() => {
+                // Tăng số lần thử kết nối
+                setConnectionAttempts(prev => prev + 1);
+                
+                // Tạo kết nối WebSocket mới
+                if (!stompClient) {
+                    const socket = new SockJS(`${API_BASE_URL}/ws`);
+                    const client = new Client({
+                        webSocketFactory: () => socket,
+                        connectHeaders: {
+                            Authorization: `Bearer ${localStorage.getItem('authToken')}`
+                        },
+                        debug: function(str) {
+                            console.log('STOMP Reconnect: ' + str);
+                        },
+                        reconnectDelay: 5000,
+                        heartbeatIncoming: 4000,
+                        heartbeatOutgoing: 4000
+                    });
+                    
+                    client.onConnect = function() {
+                        console.log('Kết nối WebSocket thành công khi thử lại!');
+                        setIsConnected(true);
+                        setConnectionAttempts(0); // Reset số lần thử kết nối
+                        
+                        // Đóng timeout nếu có
+                        if (reconnectIntervalRef.current) {
+                            clearTimeout(reconnectIntervalRef.current);
+                            reconnectIntervalRef.current = null;
+                        }
+                    };
+                    
+                    client.activate();
+                    setStompClient(client);
+                } else if (!stompClient.connected) {
+                    // Nếu đã có client nhưng không kết nối, thử kết nối lại
+                    stompClient.activate();
+                }
+            }, 3000 * (connectionAttempts + 1)); // Thời gian thử lại tăng dần
+        }
+        
+        // Dọn dẹp timeout khi component unmount hoặc dependencies thay đổi
+        return () => {
+            if (reconnectIntervalRef.current) {
+                clearTimeout(reconnectIntervalRef.current);
+            }
+        };
+    }, [isConnected, studentData.email, connectionAttempts, stompClient]);
 
     // Tạo màu nền dựa trên ID khóa học (để luôn cố định cho mỗi khóa học)
     const getConsistentColor = (id) => {
@@ -563,6 +894,11 @@ const StudentHeader = () => {
 
     const toggleNotification = () => {
         setNotificationOpen(!isNotificationOpen);
+        
+        // Nếu dropdown được mở và chưa có thông báo, lấy danh sách thông báo
+        if (!isNotificationOpen && notifications.length === 0) {
+            fetchNotifications(0, notificationsPagination.pageSize);
+        }
     };
 
     const toggleCourses = (e) => {
@@ -570,20 +906,224 @@ const StudentHeader = () => {
         setCoursesOpen(!isCoursesOpen);
     };
 
-    const markAsRead = (id) => {
-        setNotifications(notifications.map(notification => 
-            notification.id === id ? { ...notification, read: true } : notification
-        ));
+    // Hàm đánh dấu thông báo đã đọc
+    const markAsRead = async (id) => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('Không tìm thấy token xác thực');
+            
+            // Gọi API đánh dấu đã đọc
+            const response = await axios.put(`${API_BASE_URL}/lms/notifications/${id}/read`, {}, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                // Cập nhật state local
+                setNotifications(prevNotifications => 
+                    prevNotifications.map(notification => 
+                        notification.id === id ? { ...notification, read: true } : notification
+                    )
+                );
+                // Giảm số lượng chưa đọc
+                setUnreadCount(prevCount => Math.max(0, prevCount - 1));
+            }
+        } catch (error) {
+            console.error('Lỗi khi đánh dấu đã đọc thông báo:', error);
+        }
     };
 
-    const markAllAsRead = () => {
-        setNotifications(notifications.map(notification => ({ ...notification, read: true })));
+    // Hàm đánh dấu tất cả thông báo đã đọc
+    const markAllAsRead = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('Không tìm thấy token xác thực');
+            
+            // Cập nhật UI trước khi gọi API để tạo trải nghiệm mượt mà hơn
+            setNotifications(prevNotifications => 
+                prevNotifications.map(notification => ({
+                    ...notification,
+                    read: true
+                }))
+            );
+            setUnreadCount(0);
+            setNewNotificationIds(new Set());
+            setNotificationHighlight(false);
+            
+            // Gọi API đánh dấu tất cả đã đọc
+            const response = await axios.post(`${API_BASE_URL}/lms/notifications/readAll`, {}, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.data && response.data.code !== 0) {
+                // Nếu API thất bại, rollback lại trạng thái
+                console.error('Lỗi khi đánh dấu đã đọc:', response.data);
+                await fetchNotifications(0, notificationsPagination.pageSize);
+            }
+        } catch (error) {
+            console.error('Lỗi khi đánh dấu tất cả thông báo đã đọc:', error);
+            // Nếu có lỗi, fetch lại dữ liệu để đồng bộ với server
+            await fetchNotifications(0, notificationsPagination.pageSize);
+        }
     };
 
+    // Lấy số lượng thông báo chưa đọc
     const getUnreadCount = () => {
-        return notifications.filter(notification => !notification.read).length;
+        return unreadCount;
     };
-    
+
+    // Hàm để lấy danh sách thông báo từ API
+    const fetchNotifications = async (pageNumber = 0, pageSize = 10, appendResults = false) => {
+        if (!appendResults) {
+            setNotificationsLoading(true);
+        } else {
+            setLoadingMoreNotifications(true);
+        }
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('Không tìm thấy token xác thực');
+            
+            // Gọi API lấy thông báo
+            const response = await axios.get(NOTIFICATIONS_API, {
+                params: {
+                    pageNumber: pageNumber,
+                    pageSize: pageSize
+                },
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                console.log('API Notification Response:', response.data);
+                
+                const notificationsData = response.data.result;
+                
+                // Cập nhật số lượng thông báo chưa đọc
+                setUnreadCount(notificationsData.countUnreadNotification || 0);
+                
+                // Xử lý danh sách thông báo
+                const formattedNotifications = (notificationsData.notificationDetails || []).map(notification => {
+                    return {
+                        id: notification.notificationId,
+                        title: getNotificationTitle(notification),
+                        message: notification.description || notification.message || notification.content || 'Không có nội dung',
+                        time: formatRelativeTime(notification.createdAt),
+                        read: notification.isRead,
+                        type: getNotificationType(notification),
+                        rawType: notification.notificationType,
+                        originalData: notification
+                    };
+                });
+                
+                // Kiểm tra xem còn thông báo để load không dựa vào số lượng thông báo nhận được
+                const hasMore = formattedNotifications.length === pageSize;
+                setHasMoreNotifications(hasMore);
+                console.log(`Nhận được ${formattedNotifications.length} thông báo. Còn thông báo để load: ${hasMore}`);
+                
+                // Nếu là tải thêm, nối vào kết quả hiện tại và loại bỏ trùng lặp
+                if (appendResults) {
+                    setNotifications(prev => {
+                        // Tạo Map để kiểm tra trùng lặp nhanh hơn
+                        const existingIds = new Map(prev.map(n => [n.id, true]));
+                        
+                        // Chỉ thêm thông báo mới không trùng lặp
+                        const uniqueNewNotifications = formattedNotifications.filter(n => !existingIds.has(n.id));
+                        
+                        console.log(`Đã lọc ${formattedNotifications.length - uniqueNewNotifications.length} thông báo trùng lặp`);
+                        
+                        return [...prev, ...uniqueNewNotifications];
+                    });
+                } else {
+                    setNotifications(formattedNotifications);
+                }
+                
+                // Cập nhật thông tin phân trang - chỉ dùng pageNumber để biết vị trí tiếp theo để load
+                const nextStartPosition = pageNumber + pageSize;
+                setNotificationsPagination(prev => ({
+                    pageNumber: nextStartPosition,
+                    pageSize: pageSize,
+                    totalPages: 1, // Không còn quan trọng vì chúng ta không dựa vào totalPages nữa
+                    totalElements: 1 // Không còn quan trọng vì chúng ta không dựa vào totalElements nữa
+                }));
+            }
+        } catch (error) {
+            console.error('Lỗi khi gọi API thông báo:', error);
+            setHasMoreNotifications(false); // Nếu có lỗi, giả định không còn thông báo
+        } finally {
+            if (!appendResults) {
+                setNotificationsLoading(false);
+            } else {
+                setLoadingMoreNotifications(false);
+            }
+        }
+    };
+
+    // Theo dõi sự kiện cuộn để tải thêm thông báo
+    useEffect(() => {
+        // Chỉ thêm event listener khi dropdown thông báo đang mở
+        if (!isNotificationOpen) return;
+
+        const handleScroll = () => {
+            const element = notificationsListRef.current;
+            if (!element || loadingMoreNotifications || !hasMoreNotifications) return;
+
+            const isBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 20;
+            
+            if (isBottom) {
+                console.log('Đã cuộn đến cuối danh sách thông báo');
+                console.log('Vị trí tiếp theo để load:', notificationsPagination.pageNumber);
+                console.log('Còn thông báo để load:', hasMoreNotifications ? 'Có' : 'Không');
+                loadMoreNotifications();
+            }
+        };
+        
+        const notificationsElement = notificationsListRef.current;
+        if (notificationsElement) {
+            notificationsElement.addEventListener('scroll', handleScroll);
+        }
+        
+        return () => {
+            if (notificationsElement) {
+                notificationsElement.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [isNotificationOpen, loadingMoreNotifications, notificationsPagination, hasMoreNotifications]);
+
+    // Hàm để tải thêm thông báo khi cuộn xuống
+    const loadMoreNotifications = useCallback(() => {
+        if (loadingMoreNotifications) {
+            console.log('Đang tải thêm thông báo, bỏ qua yêu cầu mới');
+            return;
+        }
+        
+        if (!hasMoreNotifications) {
+            console.log('Đã tải hết tất cả thông báo, không còn thông báo để load');
+            return;
+        }
+        
+        const currentPosition = notificationsPagination.pageNumber;
+        console.log('Tải thêm thông báo từ vị trí:', currentPosition);
+        fetchNotifications(currentPosition, notificationsPagination.pageSize, true);
+    }, [loadingMoreNotifications, notificationsPagination, hasMoreNotifications, fetchNotifications]);
+
+    // Cập nhật để lấy thông báo khi dropdown mở
+    useEffect(() => {
+        if (isNotificationOpen) {
+            console.log('Dropdown thông báo được mở, tải thông báo ban đầu');
+            setHasMoreNotifications(true); // Reset lại trạng thái khi mở dropdown
+            setNotificationsPagination(prev => ({
+                ...prev,
+                pageNumber: 0
+            }));
+            fetchNotifications(0, 10, false);
+        }
+    }, [isNotificationOpen]);
+
     // Xử lý click vào kết quả tìm kiếm
     const handleSearchResultClick = async (course) => {
         setIsSearchOpen(false);
@@ -633,7 +1173,7 @@ const StudentHeader = () => {
             isEnrolled = false;
         }
         
-        // Lưu ID khóa học vào localStorage với slug làm khóa (giống với CourseCard.jsx)
+        // Lưu ID khóa học vào localStorage với slug làm khóa
         localStorage.setItem(`course_${slug}`, course.id);
         localStorage.setItem(`course_${slug}_enrolled`, isEnrolled); // Lưu trạng thái đăng ký thực tế
         
@@ -641,110 +1181,6 @@ const StudentHeader = () => {
         
         // Chuyển hướng đến trang chi tiết khóa học với slug
         navigate(`/courses/detail/${slug}`);
-    };
-    
-    // Render notification icon based on type
-    const renderNotificationIcon = (type) => {
-        switch(type) {
-            case 'course':
-                return <BookIcon size={16} />;
-            case 'reminder':
-                return <ClockIcon size={16} />;
-            case 'exam':
-                return <FileIcon size={16} />;
-            case 'feedback':
-                return <MessageIcon size={16} />;
-            case 'promotion':
-                return <GiftIcon size={16} />;
-            default:
-                return <Bell size={16} />;
-        }
-    };
-
-    // Dummy icons for notification types
-    const BookIcon = ({ size }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>;
-    const ClockIcon = ({ size }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
-    const FileIcon = ({ size }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>;
-    const MessageIcon = ({ size }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>;
-    const GiftIcon = ({ size }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>;
-
-    const renderCourseContent = () => {
-        if (loading && courses.length === 0) {
-            return (
-                <div className="header-courses-spinner">
-                    <div className="header-spinner"></div>
-                </div>
-            );
-        }
-
-        if (courses.length === 0) {
-            return (
-                <div className="header-courses-empty">
-                    <p>Bạn chưa đăng ký khóa học nào</p>
-                </div>
-            );
-        }
-
-        return (
-            <>
-                <div className="header-courses-list" ref={coursesListRef}>
-                    {courses.map(course => (
-                        <Link to={course.path} key={course.id} className="header-course-item">
-                            <div className="header-course-image">
-                                {courseImages[course.id] ? (
-                                    <img 
-                                        src={courseImages[course.id]} 
-                                        alt={course.title} 
-                                        className="search-result-img" 
-                                    />
-                                ) : (
-                                    <div className="search-result-placeholder" style={{ background: getConsistentColor(course.id) }}>
-                                        {course.title.charAt(0).toUpperCase()}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="header-course-content">
-                                <h4 className="header-course-title">{course.title}</h4>
-                                <div className="header-course-info">
-                                    {course.lastStudied}
-                                </div>
-                                
-                                {course.progress > 0 ? (
-                                    <div className="header-progress-container">
-                                        <div className="header-progress-bar">
-                                            <div 
-                                                className="header-progress-fill" 
-                                                style={{ width: `${course.progress}%` }}
-                                            ></div>
-                                        </div>
-                                        <div className="header-progress-tooltip">
-                                            Hoàn thành: {course.progress}%
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <Link to={course.path} className="header-start-button">
-                                        Bắt đầu học
-                                    </Link>
-                                )}
-                            </div>
-                        </Link>
-                    ))}
-                    
-                    {loadingMoreCourses && (
-                        <div className="header-courses-loading-more">
-                            <div className="header-spinner-small"></div>
-                            <span>Đang tải thêm...</span>
-                        </div>
-                    )}
-                </div>
-                
-                {courses.length > 0 && coursesPagination.totalElements > 0 && (
-                    <div className="header-courses-count">
-                        Hiển thị: {courses.length}/{coursesPagination.totalElements} khóa học
-                    </div>
-                )}
-            </>
-        );
     };
     
     // Hàm để fetch ảnh đại diện khóa học
@@ -856,8 +1292,8 @@ const StudentHeader = () => {
                                             {course.teacher ? `Giảng viên: ${course.teacher.fullName}` : 'Chưa có giảng viên'}
                                         </span>
                                     </div>
-                                    <span className={`search-result-status ${course.status.toLowerCase()}`}>
-                                        {course.status}
+                                    <span className={`search-result-status ${course.status?.toLowerCase() || 'unknown'}`}>
+                                        {course.status || 'Không xác định'}
                                     </span>
                                 </div>
                             </div>
@@ -875,6 +1311,85 @@ const StudentHeader = () => {
                 {searchResults.length > 0 && (
                     <div className="search-results-count">
                         Hiển thị: {searchResults.length}/{searchPagination.totalElements} kết quả
+                    </div>
+                )}
+            </>
+        );
+    };
+
+    const renderCourseContent = () => {
+        if (loading && courses.length === 0) {
+            return (
+                <div className="header-courses-spinner">
+                    <div className="header-spinner"></div>
+                </div>
+            );
+        }
+
+        if (courses.length === 0) {
+            return (
+                <div className="header-courses-empty">
+                    <p>Bạn chưa đăng ký khóa học nào</p>
+                </div>
+            );
+        }
+
+        return (
+            <>
+                <div className="header-courses-list" ref={coursesListRef}>
+                    {courses.map(course => (
+                        <Link to={course.path} key={course.id} className="header-course-item">
+                            <div className="header-course-image">
+                                {courseImages[course.id] ? (
+                                    <img 
+                                        src={courseImages[course.id]} 
+                                        alt={course.title} 
+                                        className="search-result-img" 
+                                    />
+                                ) : (
+                                    <div className="search-result-placeholder" style={{ background: getConsistentColor(course.id) }}>
+                                        {course.title.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="header-course-content">
+                                <h4 className="header-course-title">{course.title}</h4>
+                                <div className="header-course-info">
+                                    {course.lastStudied}
+                                </div>
+                                
+                                {course.progress > 0 ? (
+                                    <div className="header-progress-container">
+                                        <div className="header-progress-bar">
+                                            <div 
+                                                className="header-progress-fill" 
+                                                style={{ width: `${course.progress}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="header-progress-tooltip">
+                                            Hoàn thành: {course.progress}%
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Link to={course.path} className="header-start-button">
+                                        Bắt đầu học
+                                    </Link>
+                                )}
+                            </div>
+                        </Link>
+                    ))}
+                    
+                    {loadingMoreCourses && (
+                        <div className="header-courses-loading-more">
+                            <div className="header-spinner-small"></div>
+                            <span>Đang tải thêm...</span>
+                        </div>
+                    )}
+                </div>
+                
+                {courses.length > 0 && coursesPagination.totalElements > 0 && (
+                    <div className="header-courses-count">
+                        Hiển thị: {courses.length}/{coursesPagination.totalElements} khóa học
                     </div>
                 )}
             </>
@@ -930,12 +1445,136 @@ const StudentHeader = () => {
         }, 300); // thời gian phải khớp với thời gian animation
     };
 
+    // Hàm tiện ích để định dạng thời gian thông báo (thời gian tương đối)
+    const formatRelativeTime = (dateString) => {
+        if (!dateString) return 'Không xác định';
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) {
+            const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+            
+            if (diffHours === 0) {
+                const diffMinutes = Math.floor(diffTime / (1000 * 60));
+                
+                if (diffMinutes === 0) {
+                    return 'Vừa xong';
+                }
+                
+                return `${diffMinutes} phút trước`;
+            }
+            
+            return `${diffHours} giờ trước`;
+        } else if (diffDays === 1) {
+            return 'Hôm qua';
+        } else if (diffDays < 7) {
+            return `${diffDays} ngày trước`;
+        } else if (diffDays < 30) {
+            const weeks = Math.floor(diffDays / 7);
+            return `${weeks} tuần trước`;
+        } else if (diffDays < 365) {
+            const months = Math.floor(diffDays / 30);
+            return `${months} tháng trước`;
+        } else {
+            const years = Math.floor(diffDays / 365);
+            return `${years} năm trước`;
+        }
+    };
+
+    // Hàm để lấy tiêu đề thông báo dựa trên loại thông báo
+    const getNotificationTitle = (notification) => {
+        // Nếu thông báo đã có tiêu đề, ưu tiên sử dụng
+        if (notification.title && notification.title.trim() !== '') {
+            return notification.title;
+        }
+        
+        // Nếu không có tiêu đề, tạo tiêu đề dựa trên loại thông báo
+        switch (notification.notificationType) {
+            case 'COMMENT':
+                return `Bình luận mới ${notification.sender ? 'từ ' + notification.sender : ''}`;
+            case 'MESSAGE':
+                return `Tin nhắn mới ${notification.sender ? 'từ ' + notification.sender : ''}`;
+            case 'COMMENT_REPLY':
+                return `Phản hồi bình luận ${notification.sender ? 'từ ' + notification.sender : ''}`;
+            case 'CHAT_MESSAGE':
+                return `Tin nhắn trò chuyện ${notification.sender ? 'từ ' + notification.sender : ''}`;
+            case 'JOIN_CLASS_PENDING':
+                return `Yêu cầu tham gia lớp ${notification.className || ''}`;
+            case 'JOIN_CLASS_REJECTED':
+                return `Từ chối tham gia lớp ${notification.className || ''}`;
+            case 'JOIN_CLASS_APPROVED':
+                return `Chấp nhận tham gia lớp ${notification.className || ''}`;
+            case 'POST_CREATED':
+                return `Bài đăng mới ${notification.sender ? 'từ ' + notification.sender : ''}`;
+            case 'POST_COMMENT':
+                return `Bình luận bài đăng ${notification.sender ? 'từ ' + notification.sender : ''}`;
+            case 'POST_COMMENT_REPLY':
+                return `Phản hồi bình luận bài đăng ${notification.sender ? 'từ ' + notification.sender : ''}`;
+            default:
+                return notification.title || 'Thông báo mới';
+        }
+    };
+
+    // Hàm để lấy icon thông báo dựa trên loại thông báo
+    const getNotificationIcon = (type) => {
+        switch (type) {
+            case 'COMMENT':
+            case 'COMMENT_REPLY':
+            case 'POST_COMMENT':
+            case 'POST_COMMENT_REPLY':
+                return <MessageSquare size={16} />;
+            case 'MESSAGE':
+            case 'CHAT_MESSAGE':
+                return <MessageCircle size={16} />;
+            case 'JOIN_CLASS_PENDING':
+                return <UserPlus size={16} />;
+            case 'JOIN_CLASS_APPROVED':
+                return <CheckCircle size={16} />;
+            case 'JOIN_CLASS_REJECTED':
+                return <XCircle size={16} />;
+            case 'POST_CREATED':
+                return <FileText size={16} />;
+            default:
+                return <Bell size={16} />;
+        }
+    };
+
+    // Hàm để lấy loại thông báo cho CSS styling
+    const getNotificationType = (notification) => {
+        switch (notification.notificationType) {
+            case 'COMMENT':
+            case 'COMMENT_REPLY':
+            case 'POST_COMMENT':
+            case 'POST_COMMENT_REPLY':
+                return 'comment';
+            case 'MESSAGE':
+            case 'CHAT_MESSAGE':
+                return 'message';
+            case 'JOIN_CLASS_PENDING':
+            case 'JOIN_CLASS_APPROVED':
+            case 'JOIN_CLASS_REJECTED':
+                return 'enrollment';
+            case 'POST_CREATED':
+                return 'post';
+            default:
+                return 'general';
+        }
+    };
+
     if (error) {
         return <div className="error-container">{error}</div>;
     }
 
     return (
         <header className="student-header">
+            {/* Thêm audio cho thông báo */}
+            <audio ref={audioRef} preload="auto">
+                <source src={notificationSound} type="audio/mpeg" />
+            </audio>
+            
             <div className="left-section">
                 <Link to="/courses"><img src={logo} alt="LMS Logo" className="logo" /></Link>
                 <span className="title">Hệ Thống Học Tập Trực Tuyến</span>
@@ -998,6 +1637,7 @@ const StudentHeader = () => {
             </div>
 
             <div className="right-section">
+                
                 <div className="header-courses-dropdown-wrapper" ref={coursesRef}>
                     <a href="#" className="header-my-courses" onClick={toggleCourses}>Khóa học của tôi</a>
                     
@@ -1014,7 +1654,10 @@ const StudentHeader = () => {
                 </div>
                 
                 <div className="bell-icon" ref={notificationRef}>
-                    <div onClick={toggleNotification}>
+                    <div 
+                        onClick={toggleNotification}
+                        className={notificationHighlight ? 'notification-highlight' : ''}
+                    >
                         <Bell size={20} />
                         {getUnreadCount() > 0 && (
                             <span className="notification-badge">{getUnreadCount()}</span>
@@ -1033,24 +1676,54 @@ const StudentHeader = () => {
                                 </div>
                             </div>
                             
-                            {notifications.length > 0 ? (
-                                <ul className="notification-list">
-                                    {notifications.map(notification => (
-                                        <li 
-                                            key={notification.id} 
-                                            className={`notification-item ${!notification.read ? 'notification-unread' : ''}`}
-                                            onClick={() => markAsRead(notification.id)}
-                                        >
-                                            <div className="notification-icon">
-                                                {renderNotificationIcon(notification.type)}
-                                            </div>
-                                            <div className="notification-content">
-                                                <h4 className="notification-title">{notification.title}</h4>
-                                                <p className="notification-message">{notification.message}</p>
-                                                <div className="notification-time">{notification.time}</div>
-                                            </div>
+                            {notificationsLoading ? (
+                                <div className="notification-loading">
+                                    <div className="notification-spinner"></div>
+                                    <span>Đang tải thông báo...</span>
+                                </div>
+                            ) : notifications.length > 0 ? (
+                                <ul className="notification-list" 
+                                    ref={notificationsListRef} 
+                                    style={{ 
+                                        maxHeight: '400px',
+                                        overflowY: 'auto',
+                                        overflowX: 'hidden'
+                                    }}
+                                >
+                                    {notifications.map(notification => {
+                                        // Kiểm tra xem có phải là thông báo mới không
+                                        const isNew = newNotificationIds.has(notification.id);
+                                        // Thêm class cho các loại thông báo - Sửa logic class để đảm bảo cập nhật ngay lập tức
+                                        const itemClass = `notification-item ${notification.read === false ? 'notification-unread' : ''} notification-type-${notification.type} ${isNew ? 'notification-item-new' : ''}`;
+                                        
+                                        return (
+                                            <li 
+                                                key={notification.id} 
+                                                className={itemClass}
+                                                onClick={() => markAsRead(notification.id)}
+                                            >
+                                                <div className={`notification-icon notification-icon-${notification.type}`}>
+                                                    {getNotificationIcon(notification.rawType)}
+                                                </div>
+                                                <div className="notification-content">
+                                                    <h4 className="notification-title">
+                                                        {notification.title}
+                                                    </h4>
+                                                    {notification.message && notification.message.length > 0 && (
+                                                        <p className="notification-message">{notification.message}</p>
+                                                    )}
+                                                    <div className="notification-time">{notification.time}</div>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                    
+                                    {loadingMoreNotifications && (
+                                        <li className="notification-loading-more">
+                                            <div className="notification-spinner"></div>
+                                            <span>Đang tải thêm thông báo...</span>
                                         </li>
-                                    ))}
+                                    )}
                                 </ul>
                             ) : (
                                 <div className="notification-empty">

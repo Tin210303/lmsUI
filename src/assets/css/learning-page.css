@@ -82,11 +82,12 @@ body {
     gap: 6px;
     padding: 6px 12px;
     background: none;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
     color: white;
     cursor: pointer;
     font-size: 0.9rem;
+    transition: all 0.3s ease;
 }
 
 .header-button:hover {
@@ -823,7 +824,7 @@ body {
     color: #374151;
     padding: 8px 16px;
     background: #f3f4f6;
-    border-radius: 6px;
+    border-radius: 999px;
     max-width: 300px;
     white-space: nowrap;
     overflow: hidden;
@@ -1035,19 +1036,19 @@ body {
   padding: 0.8rem 2rem;
   font-size: 1rem;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: 999px;
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
 }
 
 .btn-primary {
-  background-color: #3f51b5;
+  background-color: var(--primary-color);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #303f9f;
+  background-color: var(--primary-hover-color);
 }
 
 .quiz-action-buttons {
@@ -1148,7 +1149,7 @@ body {
     position: fixed;
     top: 0;
     right: 0;
-    width: 50%;
+    width: 40%;
     height: 100%;
     background-color: white;
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);

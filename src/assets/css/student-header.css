@@ -81,6 +81,7 @@
 }
 
 .bell-icon {
+    position: relative;
     width: 32px;
     height: 32px;
     cursor: pointer;
@@ -88,6 +89,7 @@
     align-items: center;
     justify-content: center;
     color: #5b5b5b;
+    margin-right: 16px;
 }
 
 /* Responsive for mobile */
@@ -128,4 +130,420 @@
     .bell-icon {
     font-size: 18px;
     }
+}
+
+/* Thêm animation nhấp nháy cho thông báo */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.notification-badge {
+    position: absolute;
+    top: 4px;
+    right: 0px;
+    background-color: #ff4757;
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: pulse 1.5s infinite;
+}
+
+/* Thêm hiệu ứng cho thông báo mới */
+.notification-new-badge {
+    display: inline-block;
+    background-color: #ff4757;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 5px;
+    animation: pulse 1.5s infinite;
+}
+
+/* CSS cho chỉ báo kết nối WebSocket */
+.websocket-status {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+    font-size: 12px;
+}
+
+.websocket-status .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.websocket-status .connected {
+    background-color: #2ecc71;
+}
+
+.websocket-status .disconnected {
+    background-color: #e74c3c;
+}
+
+/* Styling cho các loại thông báo */
+.notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 320px;
+    background-color: #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    z-index: 100;
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.notification-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.notification-actions {
+    display: flex;
+}
+
+.notification-action {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: #5b5b5b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    border-radius: 4px;
+}
+
+.notification-action:hover {
+    background-color: #f5f5f5;
+}
+
+.notification-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+    max-height: 400px;
+}
+
+.notification-item {
+    display: flex;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f5f5f5;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+    background-color: #f9f9f9;
+}
+
+.notification-unread {
+    background-color: #f0f7ff;
+}
+
+.notification-unread:hover {
+    background-color: #e6f2ff;
+}
+
+.notification-icon {
+    margin-right: 10px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: white;
+}
+
+/* Màu sắc biểu tượng dựa trên loại thông báo */
+.notification-icon-message {
+    background-color: #4361ee;
+}
+
+.notification-icon-comment {
+    background-color: #3a86ff;
+}
+
+.notification-icon-enrollment {
+    background-color: #38b000;
+}
+
+.notification-icon-post {
+    background-color: #ff7b00;
+}
+
+.notification-icon-general {
+    background-color: #6c757d;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    margin: 0 0 3px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    color: #333;
+    line-height: 1.4;
+}
+
+.notification-message {
+    margin: 0;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+    margin-top: 3px;
+    max-height: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    word-break: break-word;
+}
+
+.notification-item:hover .notification-message {
+    color: #333;
+}
+
+.notification-time {
+    font-size: 11px;
+    color: #888;
+    margin-top: 5px;
+}
+
+.notification-empty {
+    padding: 20px 0;
+    text-align: center;
+    color: #888;
+}
+
+.notification-footer {
+    padding: 10px;
+    text-align: center;
+    border-top: 1px solid #eee;
+}
+
+.notification-footer a {
+    font-size: 13px;
+    color: #3a86ff;
+    text-decoration: none;
+}
+
+.notification-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Styling cho loading spinner trong thông báo */
+.notification-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 0;
+}
+
+.notification-spinner {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 3px solid #f0f0f0;
+    border-top-color: #3a86ff;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+.notification-loading-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    gap: 10px;
+}
+
+.notification-spinner-small {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #f0f0f0;
+    border-top-color: #3a86ff;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Thêm styling cho từng loại thông báo */
+.notification-type-message .notification-message {
+    color: #4361ee;
+    border-left: 2px solid #4361ee;
+    padding-left: 8px;
+    margin-left: 5px;
+}
+
+.notification-type-comment .notification-message {
+    color: #3a86ff;
+    border-left: 2px solid #3a86ff;
+    padding-left: 8px;
+    margin-left: 5px;
+}
+
+.notification-type-enrollment .notification-message {
+    color: #38b000;
+    border-left: 2px solid #38b000;
+    padding-left: 8px;
+    margin-left: 5px;
+}
+
+.notification-type-post .notification-message {
+    color: #ff7b00;
+    border-left: 2px solid #ff7b00;
+    padding-left: 8px;
+    margin-left: 5px;
+}
+
+.notification-type-general .notification-message {
+    border-left: 2px solid #6c757d;
+    padding-left: 8px;
+    margin-left: 5px;
+}
+
+/* Thêm hiệu ứng nhấp nháy khi có thông báo mới */
+@keyframes notification-highlight-animation {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+        color: #5b5b5b;
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 10px 5px rgba(255, 71, 87, 0.7);
+        color: #ff4757;
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+        color: #5b5b5b;
+    }
+}
+
+.notification-highlight {
+    animation: notification-highlight-animation 1s ease infinite;
+}
+
+/* Thêm hiệu ứng cho thông báo mới xuất hiện */
+@keyframes new-notification-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+        background-color: rgba(255, 247, 224, 0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        background-color: rgba(255, 247, 224, 0.3);
+    }
+}
+
+.notification-item-new {
+    animation: new-notification-appear 1s ease forwards;
+    border-left: 3px solid #ff7b00;
+}
+
+/* Thêm hiệu ứng mở dropdown thông báo */
+@keyframes dropdown-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 320px;
+    background-color: #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    z-index: 100;
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+    animation: dropdown-appear 0.3s ease forwards;
+}
+
+/* Cải thiện hiệu ứng khi có thông báo chưa đọc */
+.notification-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #ff4757;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 10px;
+    min-width: 16px;
+    height: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 5px rgba(255, 71, 87, 0.5);
+}
+
+/* Hiệu ứng nhấp nháy khi có thông báo chưa đọc */
+@keyframes pulse {
+    0% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+    }
+    70% { 
+        transform: scale(1.1);
+        box-shadow: 0 0 10px 3px rgba(255, 71, 87, 0);
+    }
+    100% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+    }
+}
+
+/* Hiệu ứng nổi bật cho thông báo mới */
+.notification-item-new .notification-message {
+    font-weight: 500;
+    color: #444;
 }

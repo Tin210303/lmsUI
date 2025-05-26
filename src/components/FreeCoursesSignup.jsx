@@ -1,67 +1,30 @@
 import React from 'react';
 import '../assets/css/free-courses.css';
+import { LayoutDashboard, MonitorSmartphone, BookOpenCheck, MessageSquareCode, ChartLine, ShieldCheck } from 'lucide-react';
 
 function FreeCoursesSignup() {
     return (
-        <section className="free-courses-section">
-            <div className="free-courses-container">
-                {/* Left Column - Signup Form */}
-                <div className="signup-column">
-                <div className="online-courses-banner">
-                    <p>Online Courses <em>for Free</em></p>
-                </div>
-
-                <div className="signup-content">
-                    <h2>START MY FREE MONTH</h2>
-                    <p>Stay Sharp. Get ahead with Learning Paths.</p>
-
-                    <form className="signup-form">
-                        <div className="form-group">
-                            <input type="text" placeholder="Your name" className="form-control" />
-                        </div>
-                        <div className="form-group">
-                            <input type="email" placeholder="Your email address" className="form-control" />
-                        </div>
-                        <div className="form-group">
-                            <input type="tel" placeholder="Your phone number" className="form-control" />
-                        </div>
-                        <button type="submit" className="apply-button">APPLY NOW</button>
-                    </form>
-                </div>
-                </div>
-
-                {/* Right Column - Info Tabs */}
-                <div className="info-column">
-                    <div className="tabs-container">
-                        <div className="tabs-header">
-                            <div className="tab active">FACILITY</div>
-                            <div className="tab">E-LEARNING</div>
-                            <div className="tab">VOYABULARY</div>
-                            <div className="tab">KID'S COURSES</div>
-                        </div>
-
-                        <div className="tab-content">
-                            <div className="content-section">
-                                <div className="text-content">
-                                    <h3>Limitless Learning Possibilities</h3>
-                                    <p>
-                                        Lorem Ipsn gravida nibh vel velit auctor aliquet. Aenean sollicitudin, lorem quis bibendum auci elit consequat ipsutis sem nibh id elit. Duis sed odio sit amet nibh vulputate cursus a sit amet mauris. Morbi accumsan ipsum velit. Nam nec tellus a odio tincidunt aucto.
-                                    </p>
-                                    <h4>Register Now!</h4>
-                                    <p>
-                                        Per inceptos himenaeos. Mauris in erat justo. Nullam ac urna eu felis dapibus condntum sit amet a augue. Sed non mauris vitae erat consequat auctor eu in elit. Class aptento taciti sociosqu ad litora torquent.
-                                    </p>
-                                </div>
-                                <div className="video-preview">
-                                    <div className="video-thumbnail">
-                                        <div className="play-button">
-                                            <i className="play-icon">▶</i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <section className="free-courses-section" >
+            <div className="why-triprex">
+                <h2 data-aos="fade-up" className="home-section-title">Tại Sao Nên Chọn Hệ Thống Của Chúng Tôi</h2>
+                <div data-aos="fade-up" className="features-grid">
+                    {[
+                        { icon: <LayoutDashboard size={60} />, title: 'Giao diện thân thiện, dễ sử dụng', description: 'Giao diện đơn giản, dễ thao tác giúp sinh viên tập trung vào việc học thay vì mất thời gian tìm hiểu cách dùng.' },
+                        { icon: <MonitorSmartphone size={60}/>, title: 'Truy cập nhanh và đa nền tảng', description: 'Sinh viên có thể học mọi lúc mọi nơi, không bị giới hạn bởi thiết bị.' },
+                        { icon: <BookOpenCheck size={60}/>, title: 'Nội dung học tập đầy đủ và cập nhật', description: 'Giúp sinh viên luôn được tiếp cận với kiến thức mới và theo sát chương trình học.' },
+                        { icon: <MessageSquareCode size={60}/>, title: 'Học tập tương tác và linh hoạt', description: 'Tăng tính tương tác, hỗ trợ giải đáp thắc mắc nhanh chóng, học tập hiệu quả hơn.' },
+                        { icon: <ChartLine size={60}/>, title: 'Theo dõi tiến độ học tập cá nhân', description: 'Sinh viên có thể tự đánh giá và điều chỉnh kế hoạch học tập phù hợp.' },
+                        { icon: <ShieldCheck size={60}/>, title: 'Bảo mật thông tin và dữ liệu cá nhân', description: 'Đảm bảo thông tin của sinh viên không bị rò rỉ hoặc sử dụng sai mục đích.' },
+                    ].map((feature, index) => (
+                    <div
+                        key={index}
+                        className="home-feature-item"
+                    >
+                        <div className="home-feature-icon">{feature.icon}</div>
+                        <h3>{feature.title}</h3>
+                        <p>{feature.description}</p>
                     </div>
+                    ))}
                 </div>
             </div>
         </section>

@@ -59,7 +59,7 @@ const MajorDocuments = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortOption, setSortOption] = useState('newest');
+    const [sortOption, setSortOption] = useState('NEWEST');
     const [searching, setSearching] = useState(false);
     
     // State for dropdown menus
@@ -138,8 +138,36 @@ const MajorDocuments = () => {
     };
     
     const handleSortOptionSelect = (option) => {
+        // Cập nhật state sortOption và đóng dropdown
         setSortOption(option);
         setShowSortOptions(false);
+
+        // Sử dụng giá trị option trực tiếp thay vì sortOption
+        const fetchData = () => {
+            if (searchTerm.trim() !== '') {
+                // Truyền option trực tiếp vào params của API
+                const params = {
+                    title: searchTerm.trim(),
+                    majorId: majorId,
+                    pageSize: pageSize,
+                    pageNumber: currentPage,
+                    sortBy: option
+                };
+                searchDocuments(searchTerm.trim(), params);
+            } else {
+                // Gọi fetchDocuments với option mới
+                const params = {
+                    majorId: majorId,
+                    pageSize: pageSize,
+                    pageNumber: currentPage,
+                    sortBy: option
+                };
+                fetchDocuments(params);
+            }
+        };
+
+        // Gọi hàm fetch data ngay lập tức
+        fetchData();
     };
     
     const fetchMajorData = async () => {
@@ -171,7 +199,7 @@ const MajorDocuments = () => {
         }
     };
     
-    const fetchDocuments = async () => {
+    const fetchDocuments = async (customParams = null) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('authToken');
@@ -179,16 +207,19 @@ const MajorDocuments = () => {
                 throw new Error('No authentication token found');
             }
             
-            // Get documents for this major
+            // Sử dụng customParams nếu có, nếu không thì dùng params mặc định
+            const params = customParams || {
+                majorId: majorId,
+                pageSize: pageSize,
+                pageNumber: currentPage,
+                sortBy: sortOption
+            };
+
             const response = await axios.get(GET_MAJOR_DOCUMENTS, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
-                params: {
-                    majorId: majorId,
-                    pageSize: pageSize,
-                    pageNumber: currentPage
-                }
+                params: params
             });
             
             if (response.data && response.data.code === 0) {
@@ -223,6 +254,22 @@ const MajorDocuments = () => {
                     behavior: 'smooth'
                 });
             }
+
+            // Tạo params với trang mới
+            const params = {
+                majorId: majorId,
+                pageSize: pageSize,
+                pageNumber: newPage,
+                sortBy: sortOption
+            };
+
+            // Nếu đang tìm kiếm, thêm từ khóa vào params
+            if (searchTerm.trim() !== '') {
+                params.title = searchTerm.trim();
+                searchDocuments(searchTerm.trim(), params);
+            } else {
+                fetchDocuments(params);
+            }
         }
     };
     
@@ -239,13 +286,6 @@ const MajorDocuments = () => {
         
         return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
     };
-    
-    // Sort and filter documents
-    const getSortedDocuments = () => {
-        return documents;
-    };
-    
-    const filteredDocuments = getSortedDocuments();
     
     // Format date function
     const formatDate = (dateString) => {
@@ -676,7 +716,7 @@ const MajorDocuments = () => {
     }, [showPreviewModal, previewLoading]);
     
     // Hàm tìm kiếm tài liệu thông qua API
-    const searchDocuments = async (keyword) => {
+    const searchDocuments = async (keyword, params) => {
         try {
             setSearching(true);
             setLoading(true);
@@ -685,17 +725,12 @@ const MajorDocuments = () => {
                 throw new Error('No authentication token found');
             }
 
-            // Gọi API tìm kiếm với các tham số yêu cầu
+            // Gọi API tìm kiếm với các tham số được truyền vào
             const response = await axios.get(SEARCH_DOCUMENTS_API, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
-                params: {
-                    title: keyword,
-                    majorId: majorId,
-                    pageSize: pageSize,
-                    pageNumber: currentPage
-                }
+                params: params
             });
 
             if (response.data && response.data.code === 0) {
@@ -788,29 +823,23 @@ const MajorDocuments = () => {
                     <span className="filter-label">Sắp xếp:</span>
                     <div className="filter-dropdown date-filter" ref={sortDropdownRef}>
                         <button className="filter-button" onClick={toggleSortOptions}>
-                            {sortOption === 'newest' ? 'Ngày đăng mới nhất' : 
-                             sortOption === 'oldest' ? 'Ngày đăng cũ nhất' : 
+                            {sortOption === 'NEWEST' ? 'Ngày đăng mới nhất' : 
+                             sortOption === 'OLDEST' ? 'Ngày đăng cũ nhất' : 
                              'Tên tài liệu'}
                             <ChevronDown size={16} />
                         </button>
                         <div className={`filter-options ${showSortOptions ? 'show' : ''}`}>
                             <div 
-                                className={`filter-option ${sortOption === 'newest' ? 'active' : ''}`}
-                                onClick={() => handleSortOptionSelect('newest')}
+                                className={`filter-option ${sortOption === 'NEWEST' ? 'active' : ''}`}
+                                onClick={() => handleSortOptionSelect('NEWEST')}
                             >
                                 Ngày đăng mới nhất
                             </div>
                             <div 
-                                className={`filter-option ${sortOption === 'oldest' ? 'active' : ''}`}
-                                onClick={() => handleSortOptionSelect('oldest')}
+                                className={`filter-option ${sortOption === 'OLDEST' ? 'active' : ''}`}
+                                onClick={() => handleSortOptionSelect('OLDEST')}
                             >
                                 Ngày đăng cũ nhất
-                            </div>
-                            <div 
-                                className={`filter-option ${sortOption === 'name' ? 'active' : ''}`}
-                                onClick={() => handleSortOptionSelect('name')}
-                            >
-                                Tên tài liệu
                             </div>
                         </div>
                     </div>
@@ -831,8 +860,8 @@ const MajorDocuments = () => {
                     </div>
                 )}
                 
-                {filteredDocuments.length > 0 ? (
-                    filteredDocuments.map(document => {
+                {documents.length > 0 ? (
+                    documents.map(document => {
                         return (
                             <div 
                                 key={document.id} 

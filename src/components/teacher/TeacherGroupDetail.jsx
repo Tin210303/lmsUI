@@ -4,6 +4,8 @@ import logo from '../../logo.svg';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X, Download, FileText, Video, Image, Upload, EllipsisVertical, UserPlus, NotepadText, Plus, Search, AlertCircle, HelpCircle, Trash2 } from 'lucide-react';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 import { 
     API_BASE_URL, 
     GET_POST_GROUP, 
@@ -15,7 +17,13 @@ import {
     GET_TESTS_IN_GROUP, 
     GET_STUDENT_TEST_RESULT, 
     UPDATE_POST_API,
-    DELETE_TEST_API
+    DELETE_TEST_API,
+    GET_COMMENTS_BY_POST,
+    GET_TEACHER_INFO,
+    WS_BASE_URL,
+    WS_POST_COMMENT_ENDPOINT,
+    WS_POST_COMMENTS_TOPIC,
+    GET_COMMENT_REPLIES
 } from '../../services/apiService';
 import { renderAsync } from 'docx-preview';
 import * as XLSX from 'xlsx';
@@ -29,7 +37,7 @@ const TeacherGroupDetail = () => {
     const [isInputFocused, setIsInputFocused] = useState(false);
     const [isActive, setisActive] = useState('wall');
     const [selectedGroup, setSelectedGroup] = useState({});
-    const [comments, setComments] = useState('');
+    const [commentText, setCommentText] = useState('');
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [announcementText, setAnnouncementText] = useState('');
     const [activeFormats, setActiveFormats] = useState({
@@ -39,6 +47,18 @@ const TeacherGroupDetail = () => {
         list: false
     });
     const [posts, setPosts] = useState([]);
+    
+    // WebSocket state
+    const [stompClient, setStompClient] = useState(null);
+    const [connected, setConnected] = useState(false);
+    
+    // Teacher info state
+    const [teacherInfo, setTeacherInfo] = useState({
+        id: null,
+        email: '',
+        fullName: '',
+        avatar: null
+    });
     
     const [postLoading, setPostLoading] = useState(false);
     const [postError, setPostError] = useState(null);
@@ -236,6 +256,43 @@ const TeacherGroupDetail = () => {
         fetchGroup();
     }, [id]);
 
+    // Fetch teacher info and set up WebSocket when component mounts
+    useEffect(() => {
+        fetchTeacherInfo();
+        
+        // Only set up WebSocket after teacher info is fetched
+        const setupWs = async () => {
+            await fetchTeacherInfo();
+            setupWebSocket();
+        };
+        
+        setupWs();
+        
+        // Clean up WebSocket connection when component unmounts
+        return () => {
+            if (stompClient) {
+                console.log('Deactivating WebSocket connection');
+                stompClient.deactivate();
+                setConnected(false);
+                setStompClient(null);
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    
+    // Reconnect WebSocket if connection is lost
+    useEffect(() => {
+        if (!connected && stompClient === null) {
+            const reconnectTimer = setTimeout(() => {
+                console.log('Attempting to reconnect WebSocket...');
+                setupWebSocket();
+            }, 5000); // Try to reconnect after 5 seconds
+            
+            return () => clearTimeout(reconnectTimer);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [connected, stompClient]);
+
     // Fetch posts for this group
     const fetchPosts = async (isLoadMore = false, pageNumberParam = null) => {
         setPostLoading(true);
@@ -352,6 +409,15 @@ const TeacherGroupDetail = () => {
                         if (post.teacher && post.teacher.avatar) {
                             fetchTeacherAvatar(post.teacher.avatar);
                         }
+                        
+                        // Automatically fetch comments for each post
+                        fetchComments(post.id);
+                        
+                        // Mark comments as shown for all posts
+                        setShowComments(prev => ({
+                            ...prev,
+                            [post.id]: false
+                        }));
                     });
                 } else {
                     // Xử lý trường hợp responseData không có content
@@ -403,17 +469,128 @@ const TeacherGroupDetail = () => {
     }
 
     // Handle comment change
-    const handleCommentChange = (e) => {
-        setComments(e.target.value);
-    }
+    const handleCommentChange = (postId, value) => {
+        setCommentInput(prev => ({
+            ...prev,
+            [postId]: value
+        }));
+    };
+
+    // Add a variable to track the last comment submission time
+    const [lastCommentTime, setLastCommentTime] = useState({});
 
     // Handle comment submit
-    const handleCommentSubmit = (e) => {
-        if (e.key === 'Enter') {
-        // Here you would usually send the comment to a server
-        setComments('');
+    const handleCommentSubmit = async (postId, e) => {
+        if (e.key === 'Enter' && commentInput[postId]?.trim()) {
+            try {
+                // Check if WebSocket is connected
+                if (!connected || !stompClient) {
+                    showAlert('error', 'Lỗi', 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+                    return;
+                }
+                
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    showAlert('error', 'Lỗi', 'Bạn cần đăng nhập để gửi bình luận.');
+                    return;
+                }
+                
+                // Prevent rapid submissions (debounce)
+                const now = Date.now();
+                const lastTime = lastCommentTime[postId] || 0;
+                if (now - lastTime < 2000) { // 2 seconds debounce
+                    console.log('Comment submission throttled, please wait');
+                    return;
+                }
+                
+                // Update last comment time
+                setLastCommentTime(prev => ({
+                    ...prev,
+                    [postId]: now
+                }));
+                
+                // Create comment message
+                const commentMessage = {
+                    postId: postId,
+                    username: teacherInfo.email,
+                    detail: commentInput[postId],
+                    createdDate: new Date().toISOString()
+                };
+                
+                console.log('Sending comment via WebSocket:', commentMessage);
+                
+                // Clear input immediately for better UX
+                const commentText = commentInput[postId];
+                setCommentInput(prev => ({
+                    ...prev,
+                    [postId]: ''
+                }));
+                
+                // Bỏ việc kiểm tra trùng lặp hoặc chỉ kiểm tra comment vừa gửi trong vài giây gần nhất
+                // để tránh gửi trùng do click nhiều lần, nhưng vẫn cho phép gửi nội dung trùng lặp sau đó
+                const recentDuplicateThreshold = 2000; // 5 seconds
+                const isDuplicate = postComments[postId]?.some(
+                    comment => comment.detail === commentText && 
+                               comment.username === teacherInfo.email && 
+                               comment.commentId.startsWith('temp-') && // Chỉ kiểm tra comment tạm thời (chưa được xác nhận từ server)
+                               (Date.now() - new Date(comment.createdDate).getTime()) < recentDuplicateThreshold
+                );
+
+                if (isDuplicate) {
+                    console.log('Recent duplicate comment detected, not sending to prevent rapid duplicate submissions');
+                    return;
+                }
+                
+                // Send comment via WebSocket with authentication header
+                stompClient.publish({
+                    destination: WS_POST_COMMENT_ENDPOINT,
+                    body: JSON.stringify(commentMessage),
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                // Add optimistic comment to the UI
+                const optimisticComment = {
+                    commentId: `temp-${Date.now()}`,
+                    postId: postId,
+                    username: teacherInfo.email,
+                    fullname: teacherInfo.fullName,
+                    detail: commentText,
+                    createdDate: new Date().toISOString(),
+                    avatar: teacherInfo.avatar,
+                    updateDate: null,
+                    countOfReply: 0
+                };
+                
+                // Thêm avatar URL cho comment tạm thời nếu có
+                if (teacherAvatarUrl && optimisticComment.commentId) {
+                    setCommentAvatarUrls(prev => ({
+                        ...prev,
+                        [optimisticComment.commentId]: teacherAvatarUrl
+                    }));
+                }
+                
+                setPostComments(prev => {
+                    const currentComments = prev[postId] || [];
+                    return {
+                        ...prev,
+                        [postId]: [optimisticComment, ...currentComments]
+                    };
+                });
+                
+                // Ensure comments are shown for this post
+                setShowComments(prev => ({
+                    ...prev,
+                    [postId]: true
+                }));
+                
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                showAlert('error', 'Lỗi', 'Không thể đăng bình luận. Vui lòng thử lại sau.');
+            }
         }
-    }
+    };
 
     // Thêm state quản lý lỗi validation cho editor
     const [editorValidationError, setEditorValidationError] = useState('');
@@ -1622,6 +1799,181 @@ const TeacherGroupDetail = () => {
         setSelectAll(false);
     }, [studentsPagination.pageNumber]);
 
+    // Add state for comments
+    const [postComments, setPostComments] = useState({});
+    const [commentInput, setCommentInput] = useState({});
+    const [commentLoading, setCommentLoading] = useState({});
+    const [commentPagination, setCommentPagination] = useState({});
+    const [showComments, setShowComments] = useState({});
+    
+    // Fetch comments for a post
+    const fetchComments = async (postId, pageNumber = 0) => {
+        try {
+            setCommentLoading(prev => ({
+                ...prev,
+                [postId]: true
+            }));
+            
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Set pageSize to 10 comments per page (matching API default)
+            const pageSize = 10;
+            
+            // Call API to fetch comments
+            const response = await axios.get(GET_COMMENTS_BY_POST, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'postId': postId,
+                    'pageNumber': pageNumber.toString(),
+                    'pageSize': pageSize.toString()
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                const result = response.data.result;
+                
+                // Fetch avatars for all comments
+                if (result.content && result.content.length > 0) {
+                    result.content.forEach(comment => {
+                        if (comment.avatar) {
+                            fetchCommentAvatar(comment.avatar, comment.commentId);
+                        }
+                    });
+                }
+                
+                // If loading more comments, append to existing list
+                if (pageNumber > 0 && postComments[postId]) {
+                    setPostComments(prev => ({
+                        ...prev,
+                        [postId]: [...prev[postId], ...result.content]
+                    }));
+                } else {
+                    // Otherwise replace the list
+                    setPostComments(prev => ({
+                        ...prev,
+                        [postId]: result.content || []
+                    }));
+                    
+                    // Automatically load replies for comments that have replies
+                    if (result.content && result.content.length > 0) {
+                        // Find comments that have replies (countOfReply > 0)
+                        const commentsWithReplies = result.content.filter(comment => comment.countOfReply > 0);
+                        
+                        // Fetch replies for those comments
+                        commentsWithReplies.forEach(comment => {
+                            // Set showReplies to true and fetch replies
+                            setPostComments(prevState => {
+                                const updatedComments = prevState[postId].map(c => {
+                                    if (c.commentId === comment.commentId) {
+                                        return { ...c, showReplies: true };
+                                    }
+                                    return c;
+                                });
+                                
+                                return {
+                                    ...prevState,
+                                    [postId]: updatedComments
+                                };
+                            });
+                            
+                            // Call fetchCommentReplies for this comment
+                            fetchCommentReplies(comment.commentId);
+                        });
+                    }
+                }
+                
+                // Update pagination info using the page object from response
+                setCommentPagination(prev => ({
+                    ...prev,
+                    [postId]: {
+                        pageNumber: result.page.number,
+                        pageSize: result.page.size,
+                        totalPages: result.page.totalPages,
+                        totalElements: result.page.totalElements
+                    }
+                }));
+            } else {
+                throw new Error(response.data?.message || 'Failed to fetch comments');
+            }
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+        } finally {
+            setCommentLoading(prev => ({
+                ...prev,
+                [postId]: false
+            }));
+        }
+    };
+
+    // Toggle showing comments for a post
+    const toggleComments = (postId) => {
+        const newState = !showComments[postId];
+        
+        setShowComments(prev => ({
+            ...prev,
+            [postId]: newState
+        }));
+        
+        // If showing comments and they haven't been loaded yet, fetch them
+        if (newState && (!postComments[postId] || postComments[postId].length === 0)) {
+            fetchComments(postId);
+        }
+    };
+
+    // Load more comments for a post
+    const loadMoreComments = (postId) => {
+        const currentPage = commentPagination[postId]?.pageNumber || 0;
+        const nextPage = currentPage + 1;
+        
+        if (nextPage < (commentPagination[postId]?.totalPages || 0)) {
+            fetchComments(postId, nextPage);
+        }
+    };
+
+    // Format comment time
+    const formatCommentTime = (dateTimeStr) => {
+        try {
+            const date = new Date(dateTimeStr);
+            const now = new Date();
+            const diffMs = now - date;
+            
+            // Less than a minute
+            if (diffMs < 60000) {
+                return 'Vừa xong';
+            }
+            
+            // Less than an hour
+            if (diffMs < 3600000) {
+                const minutes = Math.floor(diffMs / 60000);
+                return `${minutes} phút trước`;
+            }
+            
+            // Less than a day
+            if (diffMs < 86400000) {
+                const hours = Math.floor(diffMs / 3600000);
+                return `${hours} giờ trước`;
+            }
+            
+            // Less than a week
+            if (diffMs < 604800000) {
+                const days = Math.floor(diffMs / 86400000);
+                return `${days} ngày trước`;
+            }
+            
+            // Otherwise, return formatted date
+            return date.toLocaleString('vi-VN', {
+                day: 'numeric',
+                month: 'numeric',
+                year: 'numeric'
+            });
+        } catch (error) {
+            return dateTimeStr;
+        }
+    };
+    
     // Render tab content based on active tab
     const renderTabContent = () => {
         switch(isActive) {
@@ -1860,22 +2212,278 @@ const TeacherGroupDetail = () => {
                                                         )}
                                                     </div>
                                                     <div className='group-comment-divided'>
+                                                        {/* Comment count and toggle */}
+                                                        {commentPagination[post.id]?.totalElements > 0 && (
+                                                            <div className="group-comment-toggle" onClick={() => toggleComments(post.id)}>
+                                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 13.4876 3.36077 14.891 4 16.1272L3 21L7.8728 20C9.10904 20.6392 10.5124 21 12 21Z" stroke="#5F6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                                </svg>
+                                                                {showComments[post.id] ? 'Ẩn bình luận' : 
+                                                                    `${commentPagination[post.id]?.totalElements || 0} bình luận`}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Comments list */}
+                                                        {(showComments[post.id] && commentPagination[post.id]?.totalElements > 0) && (
+                                                            <div className="group-comments-list">
+                                                                {commentLoading[post.id] && (
+                                                                    <div className="comments-loading">
+                                                                        <div className="comments-loading-spinner"></div>
+                                                                        <p>Đang tải nhận xét...</p>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {!commentLoading[post.id] && postComments[post.id]?.length === 0 && (
+                                                                    <div className="no-comments">
+                                                                        <p>Chưa có nhận xét nào</p>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {!commentLoading[post.id] && postComments[post.id]?.map((comment) => (
+                                                                    <div key={comment.commentId} className="group-comment-item">
+                                                                        <div className="group-comment-avatar-container">
+                                                                            {commentAvatarUrls[comment.commentId] ? (
+                                                                                <img 
+                                                                                    src={commentAvatarUrls[comment.commentId]} 
+                                                                                    alt="Avatar" 
+                                                                                    className="group-comment-avatar-small"
+                                                                                />
+                                                                            ) : comment.avatar ? (
+                                                                                <img 
+                                                                                    src={`${API_BASE_URL}${comment.avatar}`} 
+                                                                                    alt="Avatar" 
+                                                                                    className="group-comment-avatar-small"
+                                                                                    onError={(e) => {
+                                                                                        e.target.onerror = null;
+                                                                                        e.target.src = 'https://randomuser.me/api/portraits/lego/1.jpg';
+                                                                                    }}
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="comment-avatar-circle" style={{marginRight: '0'}}>
+                                                                                    {comment.fullname?.charAt(0) || '?'}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="group-comment-content">
+                                                                            <div className="group-comment-header">
+                                                                                <span className="group-comment-author">{comment.fullname || 'Người dùng'}</span>
+                                                                                <span className="group-comment-time">{formatCommentTime(comment.createdDate)}</span>
+                                                                            </div>
+                                                                            <div className="group-comment-text">{comment.detail}</div>
+                                                                            <div className="group-comment-actions">
+                                                                                {comment.countOfReply > 0 && (
+                                                                                    <button 
+                                                                                        className="group-comment-show-replies-btn"
+                                                                                        onClick={() => toggleCommentReplies(comment.commentId)}
+                                                                                    >
+                                                                                        {comment.showReplies ? 'Ẩn trả lời' : `Xem ${comment.countOfReply} trả lời`}
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                            
+                                                                            {/* Display replies if available and showReplies is true */}
+                                                                            {comment.showReplies && (
+                                                                                <div className="group-comment-replies">
+                                                                                    {comment.loadingReplies ? (
+                                                                                        <div className="group-reply-loading">
+                                                                                            <div className="group-reply-loading-spinner"></div>
+                                                                                            <p>Đang tải trả lời...</p>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            {comment.replies && comment.replies.length > 0 ? (
+                                                                                                <>
+                                                                                                    {comment.replies.map(reply => (
+                                                                                                        <div key={reply.commentId} className="group-reply-item">
+                                                                                                            <div className="comment-avatar-container">
+                                                                                                                {commentAvatarUrls[reply.commentId] ? (
+                                                                                                                    <img 
+                                                                                                                        src={commentAvatarUrls[reply.commentId]} 
+                                                                                                                        alt="Avatar" 
+                                                                                                                        className="group-comment-avatar-small"
+                                                                                                                        onError={(e) => {
+                                                                                                                            e.target.onerror = null;
+                                                                                                                            e.target.src = 'https://randomuser.me/api/portraits/lego/1.jpg';
+                                                                                                                            console.error(`Failed to load avatar for reply ${reply.commentId} (${reply.username})`);
+                                                                                                                        }}
+                                                                                                                    />
+                                                                                                                ) : reply.avatar ? (
+                                                                                                                    <img 
+                                                                                                                        src={`${API_BASE_URL}${reply.avatar}`} 
+                                                                                                                        alt="Avatar" 
+                                                                                                                        className="group-comment-avatar-small"
+                                                                                                                        onLoad={() => {
+                                                                                                                            // Khi ảnh tải xong, lưu vào cache với username
+                                                                                                                            console.log(`Avatar loaded from API for ${reply.commentId} (${reply.username})`);
+                                                                                                                            setCommentAvatarUrls(prev => ({
+                                                                                                                                ...prev,
+                                                                                                                                [reply.commentId]: `${API_BASE_URL}${reply.avatar}`
+                                                                                                                            }));
+                                                                                                                        }}
+                                                                                                                        onError={(e) => {
+                                                                                                                            e.target.onerror = null;
+                                                                                                                            e.target.src = 'https://randomuser.me/api/portraits/lego/1.jpg';
+                                                                                                                            console.error(`Failed to load avatar for reply ${reply.commentId} (${reply.username})`);
+                                                                                                                        }}
+                                                                                                                    />
+                                                                                                                ) : reply.username === teacherInfo.email && teacherAvatarUrl ? (
+                                                                                                                    // Nếu là reply của giáo viên hiện tại
+                                                                                                                    <img 
+                                                                                                                        src={teacherAvatarUrl} 
+                                                                                                                        alt="Avatar" 
+                                                                                                                        className="group-comment-avatar-small"
+                                                                                                                        onError={(e) => {
+                                                                                                                            e.target.onerror = null;
+                                                                                                                            e.target.src = 'https://randomuser.me/api/portraits/lego/1.jpg';
+                                                                                                                        }}
+                                                                                                                    />
+                                                                                                                ) : (
+                                                                                                                    <div className="comment-avatar-circle" style={{marginRight: '0'}}>
+                                                                                                                        {reply.fullname?.charAt(0) || '?'}
+                                                                                                                    </div>
+                                                                                                                )}
+                                                                                                            </div>
+                                                                                                            <div className="group-reply-content">
+                                                                                                                <div className="group-comment-header">
+                                                                                                                    <span className="group-comment-author">{reply.fullname || reply.username || 'Người dùng'}</span>
+                                                                                                                    <span className="group-comment-time">{formatCommentTime(reply.createdDate)}</span>
+                                                                                                                </div>
+                                                                                                                <div className="group-comment-text">
+                                                                                                                    {reply.replyToUsername && (
+                                                                                                                        <span className="reply-mention">@{reply.replyToFullname || reply.replyToUsername}</span>
+                                                                                                                    )}
+                                                                                                                    {reply.detail}
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                    
+                                                                                                    {/* Nút tải thêm replies */}
+                                                                                                    {comment.replyPagination && 
+                                                                                                    comment.replyPagination.number < comment.replyPagination.totalPages - 1 && (
+                                                                                                        <button 
+                                                                                                            className="group-load-more-replies-btn"
+                                                                                                            onClick={() => loadMoreReplies(comment.commentId)}
+                                                                                                        >
+                                                                                                            Tải thêm trả lời
+                                                                                                        </button>
+                                                                                                    )}
+                                                                                                </>
+                                                                                            ) : (
+                                                                                                // Only show "No replies" if we've confirmed there are no replies
+                                                                                                // from the server (replies array exists but is empty)
+                                                                                                <div className="no-replies">
+                                                                                                    <p>{comment.replies && comment.countOfReply === 0 ? 'Chưa có trả lời nào' : 'Đang tải trả lời...'}</p>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="comment-menu-container">
+                                                                            <button 
+                                                                                className="comment-menu-btn" 
+                                                                                onClick={() => toggleCommentMenu(comment.commentId)}
+                                                                                aria-label="Menu bình luận"
+                                                                            >
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                    <circle cx="12" cy="12" r="1"></circle>
+                                                                                    <circle cx="12" cy="5" r="1"></circle>
+                                                                                    <circle cx="12" cy="19" r="1"></circle>
+                                                                                </svg>
+                                                                            </button>
+                                                                            {(activeCommentMenu === comment.commentId || closingCommentMenu === comment.commentId) && (
+                                                                                <div className={`comment-options-menu ${closingCommentMenu === comment.commentId ? 'comment-options-menu-exit' : ''}`}>
+                                                                                    <button 
+                                                                                        className="comment-option-item comment-reply-option"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleReplyToComment(comment, post.id);
+                                                                                            toggleCommentMenu(comment.commentId);
+                                                                                        }}
+                                                                                    >
+                                                                                        Trả lời
+                                                                                    </button>
+                                                                                    <button 
+                                                                                        className="comment-option-item comment-edit-option"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleEditComment(comment);
+                                                                                            toggleCommentMenu(comment.commentId);
+                                                                                        }}
+                                                                                    >
+                                                                                        Chỉnh sửa
+                                                                                    </button>
+                                                                                    <button 
+                                                                                        className="comment-option-item comment-delete-option"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleDeleteComment(comment);
+                                                                                            toggleCommentMenu(comment.commentId);
+                                                                                        }}
+                                                                                    >
+                                                                                        Xóa
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                                
+                                                                {/* Load more comments button */}
+                                                                {!commentLoading[post.id] && 
+                                                                postComments[post.id]?.length > 0 && 
+                                                                commentPagination[post.id]?.pageNumber < commentPagination[post.id]?.totalPages - 1 && (
+                                                                    <div className="load-more-comments">
+                                                                        <button onClick={() => loadMoreComments(post.id)}>
+                                                                            Xem thêm nhận xét
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                         <div className="group-comment-section">
                                                             {teacherAvatarUrl ? (
                                                                 <img src={teacherAvatarUrl} alt="Avatar" className='comment-avatar'/>
                                                             ) : (
                                                                 <img src='https://randomuser.me/api/portraits/men/1.jpg' className='comment-avatar'/>
                                                             )}
-                                                            <input
-                                                                type="text"
-                                                                className="group-comment-input"
-                                                                placeholder="Thêm nhận xét trong lớp học..."
-                                                                value={comments}
-                                                                onChange={handleCommentChange}
-                                                                onKeyPress={handleCommentSubmit}
-                                                            />
+                                                            <div className={`comment-input-container post-id-${post.id}`}>
+                                                                <input
+                                                                    type="text"
+                                                                    className="group-comment-input"
+                                                                    placeholder={replyToComment ? `Trả lời ${replyToComment.fullname || replyToComment.username}...` : "Thêm nhận xét trong lớp học..."}
+                                                                    value={commentInput[post.id] || ''}
+                                                                    onChange={(e) => handleCommentChange(post.id, e.target.value)}
+                                                                    onKeyPress={(e) => replyToComment ? 
+                                                                        handleCommentReply(post.id, replyToComment, e) : 
+                                                                        handleCommentSubmit(post.id, e)
+                                                                    }
+                                                                />
+                                                                <button 
+                                                                    className="comment-send-button"
+                                                                    onClick={(e) => {
+                                                                        if (commentInput[post.id]?.trim()) {
+                                                                            if (replyToComment) {
+                                                                                handleCommentReply(post.id, replyToComment, { key: 'Enter' });
+                                                                            } else {
+                                                                                handleCommentSubmit(post.id, { key: 'Enter' });
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    aria-label="Gửi nhận xét"
+                                                                    disabled={!commentInput[post.id]?.trim()}
+                                                                >
+                                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="#5F6368" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    
+                                                    
                                                 </>
                                             ))}
                                             
@@ -3242,6 +3850,900 @@ const TeacherGroupDetail = () => {
         );
     };
 
+    // Fetch teacher information
+    const fetchTeacherInfo = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            const response = await axios.get(GET_TEACHER_INFO, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.data && response.data.code === 0) {
+                const teacherData = response.data.result;
+                setTeacherInfo({
+                    id: teacherData.id,
+                    email: teacherData.email,
+                    fullName: teacherData.fullName,
+                    avatar: teacherData.avatar
+                });
+                
+                // Fetch avatar if available
+                if (teacherData.avatar) {
+                    fetchTeacherAvatar(teacherData.avatar);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching teacher info:', error);
+        }
+    };
+
+    // Set up WebSocket connection
+    const setupWebSocket = () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                console.error('No authentication token found for WebSocket');
+                return;
+            }
+
+            // Create a new SockJS socket
+            const socket = new SockJS(WS_BASE_URL);
+            
+            // Create a STOMP client over the socket
+            const client = new Client({
+                webSocketFactory: () => socket,
+                debug: function(str) {
+                    console.log('STOMP Debug: ' + str);
+                },
+                reconnectDelay: 2000,
+                heartbeatIncoming: 4000,
+                heartbeatOutgoing: 4000,
+                // Add connection headers with authentication token
+                connectHeaders: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            
+            // Set up connect callback
+            client.onConnect = (frame) => {
+                console.log('Connected to WebSocket: ' + frame);
+                setConnected(true);
+                
+                // Subscribe to post comments topic with authentication
+                client.subscribe(WS_POST_COMMENTS_TOPIC, (message) => {
+                    if (message.body) {
+                        try {
+                            const response = JSON.parse(message.body);
+                            console.log('Received WebSocket message:', response);
+                            if (response && response.result) {
+                                handleIncomingComment(response.result);
+                            }
+                        } catch (error) {
+                            console.error('Error parsing WebSocket message:', error);
+                        }
+                    }
+                }, {
+                    Authorization: `Bearer ${token}`
+                });
+            };
+            
+            // Set up error callback
+            client.onStompError = (frame) => {
+                console.error('STOMP Error: ' + frame.headers['message']);
+                console.error('Additional details: ' + frame.body);
+                setConnected(false);
+            };
+            
+            // Set up close callback
+            client.onWebSocketClose = () => {
+                console.log('WebSocket Connection Closed');
+                setConnected(false);
+            };
+            
+            // Activate the client
+            client.activate();
+            setStompClient(client);
+            
+        } catch (error) {
+            console.error('Error setting up WebSocket:', error);
+        }
+    };
+
+    // Handle incoming comment from WebSocket
+    const handleIncomingComment = (commentData) => {
+        console.log('Processing incoming comment:', commentData);
+        
+        // Check if this is a comment for a post we're currently displaying
+        if (commentData && commentData.postId) {
+            const postId = commentData.postId;
+            
+            // Fetch avatar for the incoming comment if available
+            if (commentData.avatar) {
+                fetchCommentAvatar(commentData.avatar, commentData.commentId);
+            }
+            
+            // Update comments for this post
+            setPostComments(prev => {
+                // If we already have comments for this post
+                const currentComments = prev[postId] || [];
+                
+                // Perform a more thorough check for duplicate comments
+                // Check for same ID or very similar content posted around the same time
+                const isDuplicate = currentComments.some(comment => {
+                    // Check for exact ID match
+                    if (comment.commentId === commentData.commentId) {
+                        return true;
+                    }
+                    
+                    // For "optimistic" comments with temp ID, check if content and author match
+                    // and if the time difference is small (within 5 seconds) 
+                    // ONLY check temporary comments to prevent duplicates due to network issues
+                    if (comment.detail === commentData.detail && 
+                        comment.username === commentData.username &&
+                        comment.commentId.startsWith('temp-')) {
+                        
+                        const commentDate = new Date(comment.createdDate);
+                        const newCommentDate = new Date(commentData.createdDate);
+                        const timeDiff = Math.abs(commentDate - newCommentDate);
+                        
+                        // If the content is the same and posted within 5 seconds, consider it a duplicate
+                        if (timeDiff < 5000) {
+                            console.log('Found duplicate comment based on content and time proximity');
+                            return true;
+                        }
+                    }
+                    
+                    return false;
+                });
+                
+                if (isDuplicate) {
+                    console.log(`Duplicate comment detected for post ${postId}, not adding`);
+                    return prev;
+                }
+                
+                console.log(`Adding new comment to post ${postId}`);
+                // Add new comment to the beginning of the array
+                return {
+                    ...prev,
+                    [postId]: [commentData, ...currentComments]
+                };
+            });
+            
+            // Update comment count in pagination
+            setCommentPagination(prev => {
+                const currentPagination = prev[postId] || {
+                    pageNumber: 0,
+                    pageSize: 10,
+                    totalPages: 1,
+                    totalElements: 0
+                };
+                
+                // Only increment if we're actually adding a comment (not a duplicate)
+                // We need to check this inside the setPostComments callback
+                // For now, we'll just avoid double counting
+                // A more robust solution would involve tracking if the comment was added
+                
+                // Increment total elements count only if not a duplicate
+                // This will be slightly inaccurate but prevents overcounting
+                const newTotalElements = currentPagination.totalElements + 1;
+                
+                // Calculate new total pages based on page size
+                const pageSize = currentPagination.pageSize || 10;
+                const newTotalPages = Math.ceil(newTotalElements / pageSize);
+                
+                console.log(`Updating pagination for post ${postId}: ${newTotalElements} comments, ${newTotalPages} pages`);
+                
+                return {
+                    ...prev,
+                    [postId]: {
+                        ...currentPagination,
+                        totalElements: newTotalElements,
+                        totalPages: newTotalPages
+                    }
+                };
+            });
+            
+            // Always ensure comments are shown for this post - comments are now always visible
+            setShowComments(prev => ({
+                ...prev,
+                [postId]: true
+            }));
+        } else {
+            console.warn('Received invalid comment data:', commentData);
+        }
+    };
+
+    // Add states to manage comment menu, reply and edit states
+    const [activeCommentMenu, setActiveCommentMenu] = useState(null);
+    const [closingCommentMenu, setClosingCommentMenu] = useState(null);
+    const [replyToComment, setReplyToComment] = useState(null);
+    const [editingComment, setEditingComment] = useState(null);
+
+    // Toggle comment menu
+    const toggleCommentMenu = (commentId) => {
+        if (activeCommentMenu === commentId) {
+            // Add closing animation
+            setClosingCommentMenu(commentId);
+            setTimeout(() => {
+                setActiveCommentMenu(null);
+                setClosingCommentMenu(null);
+            }, 150);
+        } else {
+            if (closingCommentMenu) {
+                setClosingCommentMenu(null);
+            }
+            setActiveCommentMenu(commentId);
+        }
+    };
+
+    // Handle reply to comment
+    const handleReplyToComment = (comment, postId) => {
+        setReplyToComment(comment);
+        setEditingComment(comment);
+        setActiveCommentMenu(comment.commentId);
+        
+        // Set the comment input to "@username " and focus on the input field
+        const replyPrefix = `@${comment.fullname || comment.username} `;
+        setCommentInput(prev => ({
+            ...prev,
+            [postId]: replyPrefix
+        }));
+        
+        // Focus the input field and set cursor after the @mention
+        setTimeout(() => {
+            const inputField = document.querySelector(`.post-id-${postId} .group-comment-input`);
+            if (inputField) {
+                inputField.focus();
+                inputField.setSelectionRange(replyPrefix.length, replyPrefix.length);
+            }
+        }, 50);
+    };
+
+    // Handle edit comment
+    const handleEditComment = (comment) => {
+        setEditingComment(comment);
+        setActiveCommentMenu(comment.commentId);
+    };
+
+    // Handle delete comment
+    const handleDeleteComment = (comment) => {
+        setPostComments(prev => {
+            const postId = comment.postId;
+            const updatedComments = prev[postId].filter(c => c.commentId !== comment.commentId);
+            return {
+                ...prev,
+                [postId]: updatedComments
+            };
+        });
+        setEditingComment(null);
+        setActiveCommentMenu(null);
+    };
+
+    // WebSocket setup for comment replies
+    useEffect(() => {
+        // Only set up subscription when stompClient is ready and connected
+        if (stompClient && connected) {
+            console.log('Setting up WebSocket subscription for comment replies');
+            
+            // Subscribe to comment replies topic
+            const replySubscription = stompClient.subscribe(
+                '/topic/comment-replies', 
+                (message) => {
+                    if (message.body) {
+                        try {
+                            const response = JSON.parse(message.body);
+                            console.log('Received comment reply WebSocket message:', response);
+                            if (response && response.result) {
+                                handleIncomingReply(response.result);
+                            }
+                        } catch (error) {
+                            console.error('Error parsing comment reply WebSocket message:', error);
+                        }
+                    }
+                },
+                {
+                    Authorization: `Bearer ${localStorage.getItem('authToken')}`
+                }
+            );
+            
+            // Clean up subscription when component unmounts
+            return () => {
+                if (replySubscription) {
+                    console.log('Unsubscribing from comment replies topic');
+                    replySubscription.unsubscribe();
+                }
+            };
+        }
+    }, [stompClient, connected]);
+
+    // Handle comment reply
+    const handleCommentReply = async (postId, parentComment, e) => {
+        if (e.key === 'Enter' && commentInput[postId]?.trim()) {
+            try {
+                // Check if WebSocket is connected
+                if (!connected || !stompClient) {
+                    showAlert('error', 'Lỗi', 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+                    return;
+                }
+                
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    showAlert('error', 'Lỗi', 'Bạn cần đăng nhập để gửi bình luận.');
+                    return;
+                }
+                
+                // Prevent rapid submissions (debounce)
+                const now = Date.now();
+                const lastTime = lastCommentTime[postId] || 0;
+                if (now - lastTime < 2000) { // 2 seconds debounce
+                    console.log('Comment reply submission throttled, please wait');
+                    return;
+                }
+                
+                // Update last comment time
+                setLastCommentTime(prev => ({
+                    ...prev,
+                    [postId]: now
+                }));
+                
+                // Extract actual reply text by removing the @username prefix
+                let replyText = commentInput[postId];
+                const mentionPrefix = `@${parentComment.fullname || parentComment.username} `;
+                if (replyText.startsWith(mentionPrefix)) {
+                    replyText = replyText.substring(mentionPrefix.length);
+                }
+                
+                // Clear input
+                setCommentInput(prev => ({
+                    ...prev,
+                    [postId]: ''
+                }));
+                
+                // Clear the reply-to state
+                setReplyToComment(null);
+                
+                // Create comment reply message according to the API structure
+                const replyMessage = {
+                    ownerUsername: parentComment.username, // Username of the comment being replied to
+                    replyUsername: teacherInfo.email, // Current user's username
+                    parentCommentId: parentComment.commentId, // ID of the comment being replied to
+                    detail: replyText // Reply content
+                };
+                
+                console.log('Sending comment reply via WebSocket:', replyMessage);
+                
+                // Send via WebSocket
+                stompClient.publish({
+                    destination: '/app/comment-reply', // Map to @MessageMapping("/comment-reply")
+                    body: JSON.stringify(replyMessage),
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                // Generate a unique temporary ID for the optimistic reply
+                const tempReplyId = `temp-reply-${Date.now()}`;
+                
+                // Add optimistic reply to UI - using the same format as the mapped API response
+                const optimisticReply = {
+                    commentId: `temp-reply-${Date.now()}`, // Temporary ID for the reply
+                    parentCommentId: parentComment.commentId, // ID of the parent comment
+                    username: teacherInfo.email,
+                    fullname: teacherInfo.fullName,
+                    avatar: teacherInfo.avatar,
+                    detail: replyText,
+                    createdDate: new Date().toISOString(),
+                    updateDate: null,
+                    countOfReply: 0,
+                    isReply: true,
+                    replyToUsername: parentComment.username,
+                    replyToFullname: parentComment.fullname
+                };
+                
+                // Store teacher's avatar URL for this temporary reply if available
+                if (teacherAvatarUrl && optimisticReply.commentId) {
+                    setCommentAvatarUrls(prev => ({
+                        ...prev,
+                        [optimisticReply.commentId]: teacherAvatarUrl
+                    }));
+                }
+                
+                // Add the reply to the comment's replies array or create it if it doesn't exist
+                setPostComments(prev => {
+                    const currentComments = prev[postId] || [];
+                    
+                    // Find the parent comment
+                    const updatedComments = currentComments.map(comment => {
+                        if (comment.commentId === parentComment.commentId) {
+                            // Create or update replies array
+                            const replies = comment.replies || [];
+                            
+                            // Ensure comment shows replies after adding a new one
+                            return {
+                                ...comment,
+                                replies: [optimisticReply, ...replies],
+                                countOfReply: (comment.countOfReply || 0) + 1,
+                                showReplies: true,
+                                reloadReplies: false
+                            };
+                        }
+                        return comment;
+                    });
+                    
+                    return {
+                        ...prev,
+                        [postId]: updatedComments
+                    };
+                });
+                
+            } catch (error) {
+                console.error('Error submitting comment reply:', error);
+                showAlert('error', 'Lỗi', 'Không thể trả lời bình luận. Vui lòng thử lại sau.');
+            }
+        }
+    };
+
+    // Handle incoming reply from WebSocket
+    const handleIncomingReply = (replyData) => {
+        console.log('Processing incoming reply:', replyData);
+        
+        if (!replyData || !replyData.commentId) {
+            console.warn('Invalid reply data received:', replyData);
+            return;
+        }
+        
+        // Transform WebSocket reply data to match our expected format
+        // Check if we're receiving data in the API format or the internal format
+        const formattedReply = replyData.commentReplyId ? {
+            commentId: replyData.commentReplyId, // Use the reply's ID as the commentId
+            parentCommentId: replyData.commentId, // Parent comment ID
+            username: replyData.usernameReply,
+            fullname: replyData.fullnameReply,
+            avatar: replyData.avatarReply,
+            detail: replyData.detail,
+            createdDate: replyData.createdDate,
+            updateDate: replyData.updateDate,
+            isReply: true,
+            replyToUsername: replyData.usernameOwner,
+            replyToFullname: replyData.fullnameOwner
+        } : replyData; // If it's already in our format, use it as is
+        
+        console.log('Formatted reply data:', formattedReply);
+        console.log('Reply username:', formattedReply.username);
+        console.log('Reply fullname:', formattedReply.fullname);
+        console.log('Reply avatar path:', formattedReply.avatar);
+        console.log('Current teacher email:', teacherInfo?.email);
+        console.log('Is reply from current teacher?', formattedReply.username === teacherInfo?.email);
+        
+        // Lưu thông tin người gửi reply để sử dụng sau này
+        const replySender = {
+            username: formattedReply.username,
+            fullname: formattedReply.fullname,
+            avatar: formattedReply.avatar
+        };
+        console.log('Reply sender info:', replySender);
+        
+        // Fetch avatar for the incoming reply if it has one
+        if (formattedReply.avatar) {
+            console.log('Fetching avatar for reply:', formattedReply.commentId);
+            fetchCommentAvatar(formattedReply.avatar, formattedReply.commentId, formattedReply.username);
+        } else {
+            console.warn('No avatar path found for reply:', formattedReply.commentId);
+            
+            // Nếu không có avatar từ server, kiểm tra xem reply có phải của giáo viên hiện tại không
+            if (formattedReply.username === teacherInfo.email) {
+                // Nếu là reply của giáo viên hiện tại, sử dụng avatar hiện tại
+                if (teacherAvatarUrl) {
+                    console.log('Using teacher avatar for reply:', formattedReply.commentId);
+                    setCommentAvatarUrls(prev => ({
+                        ...prev,
+                        [formattedReply.commentId]: teacherAvatarUrl
+                    }));
+                }
+            }
+        }
+        
+        // Find the post that contains the parent comment
+        setPostComments(prev => {
+            // Search through all posts
+            let postIdWithParent = null;
+            let parentComment = null;
+            
+            // Find which post contains the parent comment
+            Object.entries(prev).forEach(([postId, comments]) => {
+                const foundParent = comments.find(comment => 
+                    comment.commentId === formattedReply.parentCommentId
+                );
+                if (foundParent) {
+                    postIdWithParent = postId;
+                    parentComment = foundParent;
+                }
+            });
+            
+            if (!postIdWithParent || !parentComment) {
+                console.warn('Parent comment not found for reply:', formattedReply);
+                return prev;
+            }
+            
+            // Add parent comment info to reply if not already present
+            if (!formattedReply.replyToUsername) {
+                formattedReply.replyToUsername = parentComment.username;
+                formattedReply.replyToFullname = parentComment.fullname;
+            }
+            
+            // Check if this is a duplicate reply
+            const isDuplicate = parentComment.replies?.some(reply => {
+                // Kiểm tra trùng lặp ID chính xác
+                if (reply.commentId === formattedReply.commentId) {
+                    return true;
+                }
+                
+                // Chỉ kiểm tra trùng lặp cho reply tạm thời để tránh duplicate do trễ mạng
+                if (reply.commentId.startsWith('temp-') && 
+                    reply.detail === formattedReply.detail && 
+                    reply.username === formattedReply.username) {
+                    
+                    // Kiểm tra nếu thời gian tạo gần nhau
+                    const replyDate = new Date(reply.createdDate);
+                    const newReplyDate = new Date(formattedReply.createdDate);
+                    const timeDiff = Math.abs(replyDate - newReplyDate);
+                    
+                    // Nếu thời gian tạo gần nhau trong vòng 5 giây, coi là trùng lặp
+                    if (timeDiff < 5000) {
+                        console.log('Found duplicate reply based on content and time proximity');
+                        return true;
+                    }
+                }
+                
+                return false;
+            });
+            
+            if (isDuplicate) {
+                console.log('Duplicate reply detected, not adding');
+                return prev;
+            }
+            
+            // If replies haven't been loaded yet but there are replies available, load them
+            if ((!parentComment.replies || parentComment.replies.length === 0) && 
+                (parentComment.countOfReply > 0 || !parentComment.showReplies)) {
+                // Do not return here, continue with the update below
+                // Also trigger loading all replies for this comment
+                setTimeout(() => fetchCommentReplies(formattedReply.parentCommentId), 0);
+            }
+            
+            // Update the parent comment with the new reply
+            const updatedComments = prev[postIdWithParent].map(comment => {
+                if (comment.commentId === formattedReply.parentCommentId) {
+                    const replies = comment.replies || [];
+                    
+                    // Kiểm tra xem reply đã tồn tại chưa
+                    const existingReplyIndex = replies.findIndex(r => r.commentId === formattedReply.commentId);
+                    
+                    if (existingReplyIndex >= 0) {
+                        // Nếu reply đã tồn tại, cập nhật thông tin
+                        const updatedReplies = [...replies];
+                        updatedReplies[existingReplyIndex] = {
+                            ...updatedReplies[existingReplyIndex],
+                            ...formattedReply
+                        };
+                        
+                        return {
+                            ...comment,
+                            replies: updatedReplies
+                        };
+                    } else {
+                        // Nếu là reply mới, thêm vào đầu danh sách
+                        return {
+                            ...comment,
+                            replies: [formattedReply, ...replies],
+                            countOfReply: (comment.countOfReply || 0) + 1,
+                            showReplies: true,
+                            reloadReplies: false
+                        };
+                    }
+                }
+                return comment;
+            });
+            
+            return {
+                ...prev,
+                [postIdWithParent]: updatedComments
+            };
+        });
+    };
+
+    // Toggle showing replies for a comment
+    const toggleCommentReplies = (commentId) => {
+        setPostComments(prev => {
+            // Find which post has this comment
+            let targetPostId = null;
+            let targetComment = null;
+            
+            // Search through all posts
+            Object.entries(prev).forEach(([postId, comments]) => {
+                comments.forEach(comment => {
+                    if (comment.commentId === commentId) {
+                        targetPostId = postId;
+                        targetComment = comment;
+                    }
+                });
+            });
+            
+            if (!targetPostId || !targetComment) {
+                return prev;
+            }
+            
+            // Toggle the showReplies property
+            const updatedComments = prev[targetPostId].map(comment => {
+                if (comment.commentId === commentId) {
+                    const willShowReplies = !comment.showReplies;
+                    
+                    // Nếu đang toggle từ ẩn sang hiển thị và chưa có replies hoặc cần tải lại
+                    if (willShowReplies && (!comment.replies || comment.replies.length === 0 || comment.reloadReplies)) {
+                        // Gọi hàm để fetch replies
+                        fetchCommentReplies(commentId);
+                    }
+                    
+                    return {
+                        ...comment,
+                        showReplies: willShowReplies,
+                        // Chỉ đánh dấu là cần tải lại khi comment có countOfReply > 0 nhưng chưa có replies
+                        reloadReplies: willShowReplies ? false : (comment.countOfReply > 0)
+                    };
+                }
+                return comment;
+            });
+            
+            return {
+                ...prev,
+                [targetPostId]: updatedComments
+            };
+        });
+    };
+
+    // Hàm fetch reply comments từ API
+    const fetchCommentReplies = async (commentId, pageNumber = 0) => {
+        try {
+            // Thiết lập loading state cho comment này
+            setPostComments(prev => {
+                // Tìm post và comment
+                let targetPostId = null;
+                let targetComment = null;
+                
+                Object.entries(prev).forEach(([postId, comments]) => {
+                    comments.forEach(comment => {
+                        if (comment.commentId === commentId) {
+                            targetPostId = postId;
+                            targetComment = comment;
+                        }
+                    });
+                });
+                
+                if (!targetPostId) return prev;
+                
+                const updatedComments = prev[targetPostId].map(comment => {
+                    if (comment.commentId === commentId) {
+                        return { ...comment, loadingReplies: true };
+                    }
+                    return comment;
+                });
+                
+                return {
+                    ...prev,
+                    [targetPostId]: updatedComments
+                };
+            });
+            
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('Bạn cần đăng nhập để xem trả lời bình luận');
+            }
+            
+            // Use the GET_COMMENT_REPLIES constant from apiService.js
+            // This ensures we're using the correct and consistent endpoint URL
+            const response = await axios.get(GET_COMMENT_REPLIES, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'commentId': commentId,
+                    'pageSize': '10',
+                    'pageNumber': pageNumber.toString()
+                }
+            });
+            
+            // Change how we process the response since we're using axios now
+            if (response.data && response.data.code === 0 && response.data.result) {
+                const { content, page } = response.data.result;
+                
+                // Map API response format to the format expected by our component
+                const mappedReplies = content.map(reply => ({
+                    commentId: reply.commentReplyId, // Use the reply's ID as the commentId
+                    parentCommentId: reply.commentId, // Store the parent comment ID
+                    username: reply.usernameReply,
+                    fullname: reply.fullnameReply,
+                    avatar: reply.avatarReply,
+                    detail: reply.detail,
+                    createdDate: reply.createdDate,
+                    updateDate: reply.updateDate,
+                    isReply: true,
+                    replyToUsername: reply.usernameOwner,
+                    replyToFullname: reply.fullnameOwner
+                }));
+                
+                // Fetch avatars for all replies
+                mappedReplies.forEach(reply => {
+                    if (reply.avatar) {
+                        fetchCommentAvatar(reply.avatar, reply.commentId);
+                    }
+                });
+                
+                // Cập nhật replies vào state
+                setPostComments(prev => {
+                    // Tìm post và comment
+                    let targetPostId = null;
+                    
+                    Object.entries(prev).forEach(([postId, comments]) => {
+                        comments.forEach(comment => {
+                            if (comment.commentId === commentId) {
+                                targetPostId = postId;
+                            }
+                        });
+                    });
+                    
+                    if (!targetPostId) return prev;
+                    
+                    const updatedComments = prev[targetPostId].map(comment => {
+                        if (comment.commentId === commentId) {
+                            // Nếu là trang đầu tiên, gán mới replies
+                            // Nếu không, ghép vào replies hiện tại
+                            const existingReplies = comment.replies || [];
+                            const updatedReplies = pageNumber === 0 
+                                ? [...mappedReplies] 
+                                : [...existingReplies, ...mappedReplies];
+                            
+                            return { 
+                                ...comment, 
+                                replies: updatedReplies,
+                                replyPagination: page,
+                                loadingReplies: false,
+                                reloadReplies: false
+                            };
+                        }
+                        return comment;
+                    });
+                    
+                    return {
+                        ...prev,
+                        [targetPostId]: updatedComments
+                    };
+                });
+            } else {
+                throw new Error(response.data?.message || 'Không thể tải trả lời bình luận');
+            }
+        } catch (error) {
+            console.error('Error fetching comment replies:', error);
+            showAlert('error', 'Lỗi', error.message || 'Không thể tải trả lời bình luận');
+            
+            // Xóa trạng thái loading
+            setPostComments(prev => {
+                // Tìm post và comment
+                let targetPostId = null;
+                
+                Object.entries(prev).forEach(([postId, comments]) => {
+                    comments.forEach(comment => {
+                        if (comment.commentId === commentId) {
+                            targetPostId = postId;
+                        }
+                    });
+                });
+                
+                if (!targetPostId) return prev;
+                
+                const updatedComments = prev[targetPostId].map(comment => {
+                    if (comment.commentId === commentId) {
+                        return { ...comment, loadingReplies: false };
+                    }
+                    return comment;
+                });
+                
+                return {
+                    ...prev,
+                    [targetPostId]: updatedComments
+                };
+            });
+        }
+    };
+
+    // Hàm tải thêm replies
+    const loadMoreReplies = (commentId) => {
+        setPostComments(prev => {
+            // Tìm post và comment
+            let targetPostId = null;
+            let targetComment = null;
+            
+            Object.entries(prev).forEach(([postId, comments]) => {
+                comments.forEach(comment => {
+                    if (comment.commentId === commentId) {
+                        targetPostId = postId;
+                        targetComment = comment;
+                    }
+                });
+            });
+            
+            if (!targetPostId || !targetComment || !targetComment.replyPagination) return prev;
+            
+            // Kiểm tra nếu đã tải hết replies
+            if (targetComment.replyPagination.number >= targetComment.replyPagination.totalPages - 1) {
+                return prev;
+            }
+            
+            // Gọi API với số trang tiếp theo
+            fetchCommentReplies(commentId, targetComment.replyPagination.number + 1);
+            
+            return prev;
+        });
+    };
+
+    // Add state for comment avatars URLs
+    const [commentAvatarUrls, setCommentAvatarUrls] = useState({});
+    
+    // Function to fetch comment avatar
+    const fetchCommentAvatar = async (avatarPath, commenterId, username) => {
+        if (!avatarPath) return;
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            console.log(`Fetching avatar for comment/reply: ${commenterId}, path: ${avatarPath}, username: ${username}`);
+
+            // Kiểm tra xem có phải avatar của giáo viên hiện tại không
+            if (teacherInfo && teacherInfo.avatar === avatarPath && teacherInfo.email === username) {
+                console.log(`Using cached teacher avatar for ${commenterId} because username matches: ${username}`);
+                if (teacherAvatarUrl) {
+                    setCommentAvatarUrls(prev => ({
+                        ...prev,
+                        [commenterId]: teacherAvatarUrl
+                    }));
+                    return;
+                }
+            } else if (teacherInfo && teacherInfo.avatar === avatarPath) {
+                console.log(`Avatar path matches current teacher but username doesn't match. Current: ${teacherInfo.email}, Reply: ${username}`);
+            }
+
+            // Fetch avatar with authorization header
+            const response = await axios.get(`${API_BASE_URL}${avatarPath}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob' 
+            });
+
+            // Create a URL for the blob data
+            const imageUrl = URL.createObjectURL(response.data);
+            console.log(`Avatar fetched successfully for ${commenterId}, username: ${username}`);
+            
+            setCommentAvatarUrls(prev => ({
+                ...prev,
+                [commenterId]: imageUrl
+            }));
+        } catch (err) {
+            console.error('Error fetching comment avatar:', err);
+            // Nếu lỗi và là avatar của giáo viên hiện tại, sử dụng avatar hiện tại
+            if (teacherInfo && teacherInfo.avatar === avatarPath && teacherInfo.email === username && teacherAvatarUrl) {
+                setCommentAvatarUrls(prev => ({
+                    ...prev,
+                    [commenterId]: teacherAvatarUrl
+                }));
+            }
+        }
+    };
+
     return (
         <div className='content-container'>
             {alert && (
@@ -3254,7 +4756,7 @@ const TeacherGroupDetail = () => {
                     />
                 </div>
             )}
-            <div className='course-detail-section'> 
+            <div className='course-detail-section'>
                 <div className='group-detail-header'> 
                     <div className='back-nav'> 
                         <button onClick={backToGroupsList} className="back_button">Groups</button>  
