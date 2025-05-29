@@ -3516,7 +3516,6 @@ const ChatboxPage = () => {
                                         value={searchUserQuery}
                                         onChange={(e) => setSearchUserQuery(e.target.value)}
                                     />
-                                    <BiSearch className="search-icon" />
                                 </div>
                                 
                                 {isSearching && <div className="loading-spinner"></div>}
@@ -3757,7 +3756,6 @@ const ChatboxPage = () => {
                                         value={searchMemberQuery}
                                         onChange={(e) => setSearchMemberQuery(e.target.value)}
                                     />
-                                    <BiSearch className="search-icon" />
                                 </div>
                                 
                                 {isSearchingMembers && <div className="loading-spinner"></div>}

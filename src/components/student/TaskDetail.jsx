@@ -16,9 +16,9 @@ const TaskDetail = () => {
     const [error, setError] = useState(null);
     const [startError, setStartError] = useState(null);
     const [test, setTest] = useState(null);
-    const [testResult, setTestResult] = useState(null);
-    console.log(testResult);
+    console.log(test);
     
+    const [testResult, setTestResult] = useState(null);
     const [resultLoading, setResultLoading] = useState(false);
     const [showQuestions, setShowQuestions] = useState(false);
     const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -36,6 +36,9 @@ const TaskDetail = () => {
         setAlert({ type, title, message });
     };
     
+    // Thêm state để theo dõi nếu đang trong quá trình nộp bài tự động
+    const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
+
     // Fetch test details and attempt to get result
     useEffect(() => {
         const fetchTestDetails = async () => {
@@ -184,14 +187,13 @@ const TaskDetail = () => {
             setIsTimeUp(true);
             clearInterval(timerRef.current);
             
-            showAlert('error', 'Hết thời gian', 'Thời gian làm bài đã hết. Kết quả của bạn sẽ không được lưu lại.');
+            showAlert('warning', 'Hết thời gian', 'Thời gian làm bài đã hết. Bài làm của bạn sẽ được tự động nộp.');
             
-            // Thêm timeout để hiển thị thông báo trước khi chuyển trang
+            // Tự động nộp bài khi hết thời gian
+            setIsAutoSubmitting(true);
             setTimeout(() => {
-                // Xóa trạng thái làm bài và chuyển về trang nhóm
-                setShowQuestions(false);
-                navigate('/groups'); 
-            }, 3000);
+                submitTest(true); // Truyền tham số true để chỉ ra rằng đây là nộp tự động
+            }, 1500); // Chờ 1.5 giây để người dùng đọc thông báo
         }
     };
 
@@ -365,11 +367,11 @@ const TaskDetail = () => {
     };
     
     // Submit test
-    const submitTest = async () => {
+    const submitTest = async (isAutoSubmit = false) => {
         try {
-            // Kiểm tra xem thời gian đã hết chưa
-            if (isTimeUp) {
-                showAlert('error', 'Lỗi', 'Thời gian làm bài đã hết. Không thể nộp bài.');
+            // Chỉ kiểm tra thời gian đã hết nếu không phải là nộp bài tự động
+            if (isTimeUp && !isAutoSubmit && !isAutoSubmitting) {
+                showAlert('error', 'Lỗi', 'Thời gian làm bài đã hết. Không thể nộp bài thủ công.');
                 return;
             }
             
@@ -422,11 +424,15 @@ const TaskDetail = () => {
                     clearInterval(timerRef.current);
                 }
                 
-                showAlert('success', 'Thành công', `Nộp bài kiểm tra thành công`);
+                const message = isAutoSubmit ? 
+                    'Bài kiểm tra đã được nộp tự động do hết thời gian' : 
+                    'Nộp bài kiểm tra thành công';
+                
+                showAlert('success', 'Thành công', message);
                 setTimeout(() => {
                     // Reload the page to get the results
                     window.location.reload();
-                }, 1000)
+                }, 1500);
             } else {
                 showAlert('error', 'Lỗi', `${response.data?.message}`);
                 throw new Error(response.data?.message || 'Failed to submit test');
@@ -434,8 +440,17 @@ const TaskDetail = () => {
         } catch (error) {
             console.error('Error submitting test:', error);
             showAlert('error', 'Lỗi', `Không thể nộp bài kiểm tra. Lỗi: ${error}`);
+            
+            // Nếu là nộp tự động nhưng bị lỗi, sau 3 giây sẽ trở về trang nhóm
+            if (isAutoSubmit || isAutoSubmitting) {
+                setTimeout(() => {
+                    setShowQuestions(false);
+                    navigate('/groups');
+                }, 3000);
+            }
         } finally {
             setSubmitLoading(false);
+            setIsAutoSubmitting(false);
         }
     };
     
@@ -446,9 +461,6 @@ const TaskDetail = () => {
         
         // Tính tổng điểm của bài kiểm tra
         const totalPoints = test.questions?.reduce((sum, q) => sum + (q.point || 0), 0) || 0;
-        
-        // Tính phần trăm điểm đạt được
-        const scorePercentage = totalPoints > 0 ? Math.round((testResult.score / totalPoints) * 100) : 0;
         
         return (
             <div className="test-result-container">
@@ -681,8 +693,9 @@ const TaskDetail = () => {
                                     <li>Đọc kỹ từng câu hỏi trước khi trả lời.</li>
                                     <li>Với câu hỏi trắc nghiệm, chọn một hoặc nhiều đáp án đúng.</li>
                                     <li>Nhấn nút "Nộp bài" khi hoàn thành tất cả các câu hỏi.</li>
-                                    <li>Nộp bài trước khi hết thời gian</li>
-                                    <li>Bài kiểm tra sẽ bị vô hiệu hóa khi hết thời gian.</li>
+                                    <li>Nộp bài trước khi hết thời gian.</li>
+                                    <li>Chuẩn bị thời gian làm bài hợp lý, không thoát ra khỏi trang trong khi đang làm bài.</li>
+                                    <li>Bài kiểm tra sẽ bị tự động nộp khi hết thời gian.</li>
                                 </ul>
                             </div>
                             
@@ -805,12 +818,9 @@ const TaskDetail = () => {
                             )}
                             
                             <div className="test-submit-actions">
-                                <button className="back-to-overview" onClick={() => setShowQuestions(false)}>
-                                    <ArrowLeft size={20} /> Quay lại tổng quan
-                                </button>
                                 <button 
                                     className="submit-test-button" 
-                                    onClick={submitTest}
+                                    onClick={() => submitTest(false)}
                                     disabled={submitLoading}
                                 >
                                     {submitLoading ? (

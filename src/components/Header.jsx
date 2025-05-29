@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/css/header.css';
 import logohusc from '../assets/imgs/Logo-ko-nen.png';
-import logo from '../assets/imgs/logo.png';
+import logo from '../assets/imgs/LMS-logo.jpg';
 import axios from 'axios';
 import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../context/AuthContext';
@@ -506,6 +506,15 @@ function Header() {
         navigate('/');
     };
 
+    const [activeSection, setActiveSection] = useState("home");
+    const scrollToSection = (id) => {
+        setActiveSection(id);
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth" });
+        }
+    };
+
     // Render form based on current registration step
     const renderRegistrationForm = () => {
         switch (registrationStep) {
@@ -705,10 +714,10 @@ function Header() {
             <header className="header">
                 <div className="logo"><img src={logo} alt="Logo"/></div>
                 <nav className="nav">
-                    <a href="#courses">Trang chủ</a>
-                    <a href="#about">Khóa học</a>
-                    <a href="#contact">Về chúng tôi</a>
-                    <a href="#contact">Liên hệ</a>
+                    <a onClick={() => scrollToSection("home")} className={activeSection === "home" ? "active" : ""}>Trang chủ</a>
+                    <a onClick={() => scrollToSection("courses")}  className={activeSection === "courses" ? "active" : ""}>Khóa học</a>
+                    <a onClick={() => scrollToSection("about")} className={activeSection === "about" ? "active" : ""}>Về chúng tôi</a>
+                    <a onClick={() => scrollToSection("contact")} className={activeSection === "contact" ? "active" : ""}>Liên hệ</a>
                 </nav>
                 {isAuthenticated ? (
                     <button className="login-btn" onClick={handleLogoutClick}>Đăng xuất</button>

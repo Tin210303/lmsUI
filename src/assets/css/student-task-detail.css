@@ -294,7 +294,7 @@
     gap: 8px;
     background: none;
     border: 1px solid #dadce0;
-    border-radius: 4px;
+    border-radius: 999px;
     padding: 10px 16px;
     color: #5f6368;
     font-size: 14px;
@@ -311,10 +311,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #1a73e8;
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 999px;
     padding: 10px 24px;
     font-size: 14px;
     font-weight: 500;
@@ -323,7 +323,7 @@
 }
 
 .submit-test-button:hover {
-    background-color: #0d47a1;
+    background-color: var(--primary-hover-color);
 }
 
 /* Loading and error states */

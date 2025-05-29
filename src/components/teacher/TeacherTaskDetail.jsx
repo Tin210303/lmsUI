@@ -7,7 +7,7 @@ import { ArrowLeft, Clock, ClockAlert, Users, FileText, Download, CheckCircle,
 import '../../assets/css/teacher-task-detail.css';
 
 const TaskDetail = () => {
-    const { id } = useParams();
+    const { id: groupId, testId: id } = useParams();
     const navigate = useNavigate();
     
     const [loading, setLoading] = useState(true);
@@ -196,7 +196,7 @@ const TaskDetail = () => {
     // Chuyển đến trang chỉnh sửa bài kiểm tra
     const handleEditTest = () => {
         // Sử dụng id là testInGroupId theo chuẩn API
-        navigate(`/teacher/groups/${id}/edit-test/${id}`);
+        navigate(`/teacher/groups/${groupId}/edit-test/${id}`);
     };
     
     // Go back to group page

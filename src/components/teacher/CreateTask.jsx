@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { X, ChevronDown, Calendar, Copy, Plus, CircleCheck, SquareCheck, ListCheck, AlertCircle } from 'lucide-react';
-import { API_BASE_URL, CREATE_TEST_API, TEST_GROUP_DETAIL, UPDATE_TEST_API, DELETE_TEST_API } from '../../services/apiService';
+import { X, ChevronDown, Copy, Plus, CircleCheck, SquareCheck, AlertCircle, ArrowLeft } from 'lucide-react';
+import { CREATE_TEST_API, TEST_GROUP_DETAIL, UPDATE_TEST_API, DELETE_TEST_API } from '../../services/apiService';
 import '../../assets/css/create-task.css';
 import Select from 'react-select';
 import Alert from '../common/Alert';
@@ -539,6 +539,9 @@ const CreateTask = () => {
             )}
             
             <div className="create-task-header">
+                <button className='back-button' onClick={() => navigate(-1)}>
+                    <ArrowLeft size={20} /> Quay lại
+                </button>
                 <h1>{isEditMode ? 'Chỉnh sửa bài kiểm tra' : 'Bài kiểm tra'}</h1>
             </div>
             
@@ -835,7 +838,7 @@ const CreateTask = () => {
                         <div className="form-actions">
                             <button
                                 type="button"
-                                className={isEditMode ? "test-delete-button" : "test-cancel-button"}
+                                className={isEditMode ? "teacher-test-delete-button" : "test-cancel-button"}
                                 onClick={isEditMode ? handleDeleteTest : handleCancel}
                                 disabled={loading}
                             >

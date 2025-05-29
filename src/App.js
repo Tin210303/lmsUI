@@ -260,7 +260,7 @@ function App() {
               </TeacherLayout>
             </ProtectedRoute>
           } />
-          <Route path="/teacher/tests/:id" element={
+          <Route path="/teacher/groups/:id/tests/:testId" element={
             <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherLayout>
                 <TeacherTaskDetail />

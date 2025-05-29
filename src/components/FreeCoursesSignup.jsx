@@ -4,7 +4,7 @@ import { LayoutDashboard, MonitorSmartphone, BookOpenCheck, MessageSquareCode, C
 
 function FreeCoursesSignup() {
     return (
-        <section className="free-courses-section" >
+        <section className="free-courses-section" id='about'>
             <div className="why-triprex">
                 <h2 data-aos="fade-up" className="home-section-title">Tại Sao Nên Chọn Hệ Thống Của Chúng Tôi</h2>
                 <div data-aos="fade-up" className="features-grid">

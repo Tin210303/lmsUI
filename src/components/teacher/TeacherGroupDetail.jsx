@@ -1555,7 +1555,7 @@ const TeacherGroupDetail = () => {
 
     // Thêm hàm xử lý khi click vào bài kiểm tra
     const handleTaskClick = (testId) => {
-        navigate(`/teacher/tests/${testId}`);
+        navigate(`/teacher/groups/${id}/tests/${testId}`);
     };
 
     // Hàm để lấy dữ liệu điểm số của tất cả sinh viên cho tất cả bài kiểm tra

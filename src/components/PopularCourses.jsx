@@ -6,39 +6,6 @@ import reactimg from '../assets/imgs/reactjs.jpg';
 import { User, Users, Book } from 'lucide-react'; 
 
 function PopularCourses() {
-    // Sample courses data
-    const courses = [
-        {
-            id: 1,
-            title: 'Build A Full Web Chat App',
-            instructor: 'Ana Murphy',
-            description: 'Lobortis arcu, a vestibulum augue. Vivamus ipsum neque, facilisis vel mollis vitae.',
-            image: '/path/to/chat-app-image.jpg',
-            rating: 5.0,
-            reviews: 980,
-            price: 'FREE'
-        },
-        {
-            id: 2,
-            title: 'Complete JavaScript Course',
-            instructor: 'Rosy Janner',
-            description: 'Lobortis arcu, a vestibulum augue. Vivamus ipsum neque, facilisis vel mollis vitae.',
-            image: '/path/to/javascript-image.jpg',
-            rating: 4.7,
-            reviews: 2632,
-            price: 'FREE'
-        },
-        {
-            id: 3,
-            title: 'Learning Python Data Analysis',
-            instructor: 'Tom Steven',
-            description: 'Lobortis arcu, a vestibulum augue. Vivamus ipsum neque, facilisis vel mollis vitae.',
-            image: '/path/to/python-image.jpg',
-            rating: 4.8,
-            reviews: 7982,
-            price: 'FREE'
-        }
-    ];
 
     const truncateTeacherName = (name, maxLength = 11) => {
         if (!name) return 'Giảng viên';
@@ -49,7 +16,7 @@ function PopularCourses() {
     };
 
     return (
-        <section className="popular-courses">
+        <section className="popular-courses" id='courses'>
             <div className="popular-container">
                 <div className="section-header">
                 <h2>Khám Phá Các Khóa Học Phổ Biến Nhất</h2>

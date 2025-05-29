@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, User, LogOut, Bell, Check, KeySquare, MessageCircle, UserPlus, CheckCircle, XCircle, FileText, MessageSquare } from 'lucide-react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-import logo from '../../assets/imgs/logo.png';
+import logo from '../../assets/imgs/LMS-logo.jpg';
 import notificationSound from '../../assets/sounds/notification.mp3';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL, SEARCH_COURSE_API, GET_MY_COURSE, GET_PROGRESS_PERCENT, GET_TEACHER_INFO } from '../../services/apiService';

@@ -141,16 +141,16 @@ const AddStudentsGroup = () => {
             
             // Xử lý kết quả
             if (response.data && response.data.code === 0) {
-                showAlert('success', 'Thành công', 'Đã thêm sinh viên vào khóa học');
+                showAlert('success', 'Thành công', 'Đã thêm sinh viên vào nhóm học');
                 setTimeout(() => {
                     navigate(`/teacher/groups/${id}`);
                 }, 1000);
             } else {
-                showAlert('error', 'Lỗi', response.data?.message || 'Không thể thêm sinh viên vào khóa học');
+                showAlert('error', 'Lỗi', response.data?.message || 'Không thể thêm sinh viên vào nhóm học');
             }
         } catch (error) {
             console.error('Error adding students to course:', error);
-            showAlert('error', 'Lỗi', 'Không thể thêm sinh viên vào khóa học');
+            showAlert('error', 'Lỗi', 'Không thể thêm sinh viên vào nhóm học');
         } finally {
             setLoading(false);
         }

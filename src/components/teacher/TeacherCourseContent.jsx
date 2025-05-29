@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { ChevronLeft, ChevronRight, BookOpen, HelpCircle, MessageSquare, FileText, Download, Menu, Lock, CircleCheck, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BookOpen, HelpCircle, FileText, Download, Menu, CircleCheck, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import '../../assets/css/learning-page.css';
+import'../../assets/css/teacher-learning-content.css';
 import CommentSection from '../student/CommentSection';
 import LearningContent from '../student/LearningContent';
 import Alert from '../common/Alert';
@@ -63,7 +64,9 @@ const TeacherCourseContent = () => {
         name: '',
         order: 1,
         type: 'video',
+        file: null,
     });
+    const [selectedFileName, setSelectedFileName] = useState('');
     
     // Fetch course data from API
     useEffect(() => {
@@ -1104,13 +1107,15 @@ const handleBackToCourses = () => {
 
     // Xử lý chỉnh sửa bài học (chapter trong API)
     const handleEditLesson = (e, chapter) => {
+        console.log(chapter);
+        
         e.stopPropagation();
         setMenuOpen({ type: null, id: null });
         setEditLessonData({
             chapterId: chapter.id,
             name: chapter.name || '',
             order: chapter.order || 1,
-            type: chapter.type || 'video'
+            type: chapter.type || 'video',
         });
         setShowEditLessonModal(true);
     };
@@ -1306,33 +1311,51 @@ const handleBackToCourses = () => {
         }
     };
 
-    // Xử lý điều hướng đến trang chỉnh sửa bài học
-    const navigateToEditLesson = () => {
-        navigate(`/teacher/edit-lesson/${courseId}`, {
-            state: { 
-                courseId: courseId,
-                lessonId: editLessonData.chapterId
+    // Xử lý cập nhật bài học
+    const handleUpdateLesson = async (e) => {
+        e.preventDefault();
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) throw new Error('No authentication token found');
+
+            const formData = new FormData();
+            formData.append('chapterId', editChapterData.chapterId);
+            formData.append('name', editChapterData.name);
+            formData.append('order', parseInt(editChapterData.order));
+            formData.append('type', editChapterData.type);
+            formData.append('file', editChapterData.file);
+
+            if (editChapterData.file instanceof File) {
+                formData.append('file', editChapterData.file);
+            } else {
+                throw new Error('File is missing or not valid');
             }
-        });
-        setShowEditLessonModal(false);
+
+            // API call to update chapter
+            const response = await axios.put(`${API_BASE_URL}/lms/chapter/update`, formData, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data && response.data.code === 0) {
+                showAlert('success', 'Thành công', 'Đã cập nhật bài học thành công!');
+                // Refresh lại danh sách
+                window.location.reload();
+                setShowEditChapterModal(false);
+            } else {
+                throw new Error(response.data?.message || 'Failed to update chapter');
+            }
+        } catch (err) {
+            console.error('Error updating chapter:', err);
+            showAlert('error', 'Lỗi', 'Không thể cập nhật bài học. Vui lòng thử lại sau.');
+        }
     };
 
     if (loading) return <div>Đang tải...</div>;
     if (error) return <div>Có lỗi xảy ra: {error}</div>;
     if (!courseData) return <div>Không tìm thấy khóa học</div>;
-
-    // Calculate total lessons and completed lessons
-    const totalLessons = courseData.lesson.reduce((total, chapter) => 
-        total + (chapter.chapter ? chapter.chapter.length : 0), 0);
-
-    // Tính toán số chapter đã hoàn thành
-    const completedLessons = completedChapters.length;
-
-    // Tính toán tỷ lệ phần trăm hoàn thành khóa học
-    const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-
-    // Tính số lesson đã hoàn thành
-    const completedLessonCount = completedLessonIds.length;
 
     // Kiểm tra xem chapter hiện tại có phải là chapter cuối cùng của lesson cuối cùng không
     const isLastChapterOfLastLesson = (lessonId, chapterId) => {
@@ -1837,252 +1860,6 @@ const handleBackToCourses = () => {
                 </div>
             )}
 
-            {/* Thêm CSS cho menu và buttons */}
-            <style jsx="true">{`
-                .content-menu-trigger-button {
-                    background: none;
-                    border: none;
-                    color: #666;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 4px;
-                    transition: all 0.2s;
-                }
-                
-                .content-menu-trigger-button:hover {
-                    background-color: rgba(0, 0, 0, 0.05);
-                    color: #333;
-                }
-                
-                .content-item-menu {
-                    position: absolute;
-                    right: 0;
-                    top: 100%;
-                    background: white;
-                    border-radius: 4px;
-                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                    z-index: 100;
-                    min-width: 150px;
-                }
-                
-                .content-menu-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 16px 20px;
-                    width: 100%;
-                    border: none;
-                    background: none;
-                    cursor: pointer;
-                    text-align: left;
-                    transition: background-color 0.2s;
-                }
-                
-                .content-menu-item:hover {
-                    background-color: rgba(0, 0, 0, 0.05);
-                }
-                
-                .content-edit-item {
-                    color: #333;
-                }
-                
-                .content-delete-item {
-                    color: #333;
-                }
-                
-                .content-delete-modal-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.5);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 1000;
-                    animation: fadeIn 0.3s ease-in-out;
-                }
-                
-                .content-delete-modal-container, .content-edit-modal-container {
-                    background: white;
-                    border-radius: 8px;
-                    padding: 24px;
-                    width: 90%;
-                    max-width: 500px;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-                }
-                
-                .content-delete-modal-container h2, .content-edit-modal-container h2 {
-                    font-size: 1.5rem;
-                    margin-bottom: 16px;
-                    color: #333;
-                }
-
-                .content-rollback {
-                    color: #ef4444;
-                    font-size: 14px;
-                    margin-top: 8px;
-                }
-                
-                .delete-modal-actions, .edit-modal-actions {
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 16px;
-                    margin-top: 24px;
-                }
-                
-                .btn-cancel-delete, .content-btn-cancel-edit {
-                    padding: 8px 16px;
-                    border: 1px solid #d1d5db;
-                    background: white;
-                    color: #4b5563;
-                    border-radius: 999px;
-                    cursor: pointer;
-                    font-weight: 500;
-                }
-                
-                .content-btn-confirm-delete {
-                    padding: 8px 16px;
-                    border: none;
-                    background: #ef4444;
-                    color: white;
-                    border-radius: 999px;
-                    cursor: pointer;
-                    font-weight: 500;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                
-                .content-btn-confirm-edit {
-                    padding: 8px 16px;
-                    border: none;
-                    background: #4f46e5;
-                    color: white;
-                    border-radius: 999px;
-                    cursor: pointer;
-                    font-weight: 500;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                
-                .content-edit-form-group {
-                    margin-bottom: 16px;
-                }
-                
-                .content-edit-form-group label {
-                    display: block;
-                    margin-bottom: 8px;
-                    font-weight: 500;
-                    color: #4b5563;
-                }
-                
-                .content-edit-form-group input {
-                    width: 100%;
-                    padding: 8px 12px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 999px;
-                }
-                
-                .teacher-content-lesson-actions {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    margin-left: 8px;
-                }
-                
-                .chapter-actions-wrapper {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                
-                .teacher-lesson-actions {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    margin-left: 4px;
-                    z-index: 10;
-                }
-                
-                .content-menu-trigger-button {
-                    width: 24px;
-                    height: 24px;
-                    min-width: 24px;
-                    opacity: 0.7;
-                    border-radius: 50%
-                }
-                
-                .content-menu-trigger-button:hover {
-                    opacity: 1;
-                }
-                
-                .content-item-menu {
-                    right: 0;
-                    top: calc(100% + 5px);
-                    z-index: 100;
-                }
-                
-                .lesson-item, .material-item, .quiz-item {
-                    padding-right: 16px;
-                }
-                
-                .lesson-item .content-menu-trigger-button,
-                .material-item .content-menu-trigger-button,
-                .quiz-item .content-menu-trigger-button {
-                    opacity: 0;
-                    transition: opacity 0.2s;
-                }
-                
-                .lesson-item:hover .content-menu-trigger-button,
-                .material-item:hover .content-menu-trigger-button,
-                .quiz-item:hover .content-menu-trigger-button,
-                .content-menu-trigger-button:focus {
-                    opacity: 1;
-                }
-                
-                /* Thêm CSS cho các menu modal */
-                .content-edit-modal-container h2, .content-delete-modal-container h2 {
-                    margin-top: 0;
-                    color: #333;
-                }
-                
-                .content-edit-form-group input:focus {
-                    outline: none;
-                    border-color: #4f46e5;
-                    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-                }
-                
-                .btn-cancel-delete:hover, .content-btn-cancel-edit:hover {
-                    background-color: #f3f4f6;
-                }
-                
-                .content-btn-confirm-delete:hover {
-                    background-color: #dc2626;
-                }
-                
-                .content-btn-confirm-edit:hover {
-                    background-color: #4338ca;
-                }
-                
-                /* Đảm bảo menu không bị che khuất */
-                .chapter-content {
-                    position: relative;
-                    z-index: 1;
-                }
-                
-                /* Điều chỉnh z-index để menu item hiển thị đúng */
-                .content-item-menu {
-                    z-index: 999;
-                }
-            `}</style>
-
             {/* Thêm các modal xác nhận và chỉnh sửa */}
             {showEditChapterModal && (
                 <div className="content-delete-modal-overlay">
@@ -2123,24 +1900,104 @@ const handleBackToCourses = () => {
                 <div className="content-delete-modal-overlay">
                     <div className="content-edit-modal-container">
                         <h2>Chỉnh sửa bài học</h2>
-                        <div className="content-edit-form-group">
-                            <label>Tên bài học: {editLessonData.name}</label>
-                        </div>
-                        <p>Để chỉnh sửa bài học này, bạn sẽ cần chuyển đến trang chỉnh sửa chi tiết.</p>
-                        <div className="edit-modal-actions">
-                            <button 
-                                className="content-btn-cancel-edit"
-                                onClick={() => setShowEditLessonModal(false)}
-                            >
-                                Hủy
-                            </button>
-                            <button 
-                                className="content-btn-confirm-edit"
-                                onClick={navigateToEditLesson}
-                            >
-                                <Edit size={16} /> Chỉnh sửa bài học
-                            </button>
-                        </div>
+                        <form onSubmit={handleUpdateLesson}>
+                            {/* Hidden field for chapterId */}
+                            <input 
+                                type="hidden" 
+                                name="chapterId" 
+                                value={editLessonData.chapterId} 
+                            />
+
+                            <div className="content-edit-form-group">
+                                <label htmlFor="name">Tên bài học:</label>
+                                <input 
+                                    type="text" 
+                                    id="name" 
+                                    value={editLessonData.name}
+                                    onChange={(e) => setEditLessonData({...editLessonData, name: e.target.value})}
+                                    
+                                />
+                            </div>
+
+                            <div className="content-edit-form-group">
+                                <label htmlFor="order">Thứ tự:</label>
+                                <input 
+                                    type="number" 
+                                    id="order" 
+                                    value={editLessonData.order}
+                                    onChange={(e) => setEditLessonData({...editLessonData, order: parseInt(e.target.value)})}
+                                    disabled 
+                                />
+                            </div>
+
+                            <div className="content-edit-form-group">
+                                <label htmlFor="type">Loại bài học:</label>
+                                <select 
+                                    id="type"
+                                    value={editLessonData.type}
+                                    onChange={(e) => setEditLessonData({ ...editLessonData, type: e.target.value })}
+                                    required
+                                >
+                                    <option value="video">Video</option>
+                                    <option value="image">Hình ảnh</option>
+                                    <option value="file">Tài liệu</option>
+                                </select>
+                            </div>
+
+                            <div className={`content-edit-form-group file-upload-group ${selectedFileName ? 'file-selected' : ''}`}>
+                                <label htmlFor="file">File đính kèm:</label>
+                                <label htmlFor="file" className="content-add-file-upload-placeholder"></label>
+                                <input 
+                                    type="file" 
+                                    id="file" 
+                                    className='lesson-file-input'
+                                    onChange={(e) => {
+                                        const selectedFile = e.target.files[0];
+                                        if (selectedFile) {
+                                            setEditLessonData(prev => ({ ...prev, file: selectedFile }));
+                                            setSelectedFileName(selectedFile.name);
+                                        }
+                                    }}
+                                />
+                                {selectedFileName && (
+                                    <div className="content-file-info">
+                                        <span className="add-file-name">{selectedFileName}</span>
+                                        <div className="file-actions">
+                                            <button 
+                                                type="button" 
+                                                className="change-file-btn" 
+                                                title="Tải file khác"
+                                            >
+                                                Tải file khác
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                className="remove-file-btn" 
+                                                title="Xóa file"
+                                            >
+                                                Xóa file
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="edit-modal-actions">
+                                <button 
+                                    type="button" 
+                                    className="content-btn-cancel-edit"
+                                    onClick={() => setShowEditLessonModal(false)}
+                                >
+                                    Hủy
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    className="content-btn-confirm-edit"
+                                >
+                                    <Edit size={16} /> Lưu thay đổi
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

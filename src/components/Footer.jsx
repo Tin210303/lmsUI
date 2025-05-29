@@ -22,7 +22,7 @@ import recentwork6 from '../assets/imgs/section3.jpg';
 
 function Footer() {
     return (
-        <footer className="bookflare-footer">
+        <footer className="bookflare-footer" id='contact'>
             {/* Features Banner */}
             <div className="features-banner">
                 <div className="container">

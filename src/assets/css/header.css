@@ -19,16 +19,48 @@
 }
 
 .logo img {
-    width: 8rem;
+    width: 10rem;
 }
 
 .nav {
     display: flex;
-    gap: 24px;
+    gap: 40px;
 }
 
-.nav a:hover {
-    color: #2b6cb0;
+.nav {
+    display: flex;
+    gap: 40px;
+}
+
+.nav a {
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+    font-weight: 600;
+    color: black;
+}
+
+.nav a::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -4px;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary-color);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.nav a:hover::after,
+.nav a.active::after {
+    width: 100%;
+}
+
+.nav a:hover,
+.nav a.active {
+    color: var(--primary-color);
 }
 
 .login-btn {

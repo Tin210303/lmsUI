@@ -20,7 +20,7 @@ function Hero() {
         return () => clearInterval(interval);
     }, [hovered]);
     return (
-        <section className="hero">
+        <section className="hero" id='home'>
             <div className="hero-container">
                 <div className="hero-content">
                     <h1>Nền tảng học trực tuyến hiện đại & hiệu quả</h1>

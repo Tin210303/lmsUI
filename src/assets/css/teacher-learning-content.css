@@ -1,0 +1,317 @@
+.content-menu-trigger-button {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.content-menu-trigger-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #333;
+}
+
+.content-item-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    min-width: 150px;
+}
+
+.content-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    width: 100%;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s;
+}
+
+.content-menu-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.content-edit-item {
+    color: #333;
+}
+
+.content-delete-item {
+    color: #333;
+}
+
+.content-delete-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.content-delete-modal-container, .content-edit-modal-container {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.content-delete-modal-container h2, .content-edit-modal-container h2 {
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+    color: #333;
+}
+
+.content-rollback {
+    color: #ef4444;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+.delete-modal-actions, .edit-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.btn-cancel-delete, .content-btn-cancel-edit {
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #4b5563;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.content-btn-confirm-delete {
+    padding: 8px 16px;
+    border: none;
+    background: #ef4444;
+    color: white;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.content-btn-confirm-edit {
+    padding: 8px 16px;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.content-edit-form-group {
+    margin-bottom: 16px;
+}
+
+.content-edit-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #4b5563;
+}
+
+.content-edit-form-group input,
+.content-edit-form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 999px;
+}
+
+.content-edit-form-group input[type="file"] {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.content-edit-form-group input[type="file"]:hover {
+    border-color: #888;
+    background-color: #f0f0f0;
+}
+
+.content-edit-form-group input[type="file"]:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.content-file-info {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px;
+    font-size: 14px;
+    background-color: #f0f5ff;
+    border: 1px solid #d0d9f0;
+    border-radius: 8px;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 0;
+    position: relative;
+}
+
+.content-add-file-upload-placeholder {
+    width: 100%;
+    height: 120px;
+    background-color: #f9f9f9;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.content-add-file-upload-placeholder:hover {
+    background-color: #f0f5ff;
+    border-color: var(--primary-color);
+}
+
+.content-add-file-upload-placeholder::after {
+    content: "Nhấn vào đây để chọn file";
+    color: #666;
+    font-size: 15px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.content-add-file-upload-placeholder:hover::after {
+    color: var(--primary-color);
+}
+
+.teacher-content-lesson-actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: 8px;
+}
+
+.chapter-actions-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.teacher-lesson-actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: 4px;
+    z-index: 10;
+}
+
+.content-menu-trigger-button {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    opacity: 0.7;
+    border-radius: 50%
+}
+
+.content-menu-trigger-button:hover {
+    opacity: 1;
+}
+
+.content-item-menu {
+    right: 0;
+    top: calc(100% + 5px);
+    z-index: 100;
+}
+
+.lesson-item, .material-item, .quiz-item {
+    padding-right: 16px;
+}
+
+.lesson-item .content-menu-trigger-button,
+.material-item .content-menu-trigger-button,
+.quiz-item .content-menu-trigger-button {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.lesson-item:hover .content-menu-trigger-button,
+.material-item:hover .content-menu-trigger-button,
+.quiz-item:hover .content-menu-trigger-button,
+.content-menu-trigger-button:focus {
+    opacity: 1;
+}
+
+/* Thêm CSS cho các menu modal */
+.content-edit-modal-container h2, .content-delete-modal-container h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+.content-edit-form-group input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.btn-cancel-delete:hover, .content-btn-cancel-edit:hover {
+    background-color: #f3f4f6;
+}
+
+.content-btn-confirm-delete:hover {
+    background-color: #dc2626;
+}
+
+.content-btn-confirm-edit:hover {
+    background-color: var(--primary-hover-color);
+}
+
+/* Đảm bảo menu không bị che khuất */
+.chapter-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Điều chỉnh z-index để menu item hiển thị đúng */
+.content-item-menu {
+    z-index: 999;
+}
