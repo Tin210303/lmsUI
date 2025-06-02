@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileText, Video, Image, Download } from 'lucide-react';
 import axios from 'axios';
 import { Document, Page } from '@react-pdf/renderer';
@@ -13,7 +13,9 @@ const LearningContent = ({ currentLesson, onVideoEnded, onDownload }) => {
     const [loading, setLoading] = useState(false);
     const [fileType, setFileType] = useState(null);
     const [numPages, setNumPages] = useState(null);
-    const [pageNumber, setPageNumber] = useState(1);
+    const videoRef = useRef(null);
+    const [lastTime, setLastTime] = useState(0);
+    const allowUpdateTime = useRef(true);
 
     useEffect(() => {
         if (currentLesson) {
@@ -31,6 +33,51 @@ const LearningContent = ({ currentLesson, onVideoEnded, onDownload }) => {
         };
     }, [currentLesson]);
 
+    useEffect(() => {
+        const video = videoRef.current;
+    
+        const handleTimeUpdate = () => {
+            if (!video) return;
+        
+            if (allowUpdateTime.current && video.currentTime > lastTime) {
+                setLastTime(video.currentTime);
+            }
+        
+            // Nếu tua quá giới hạn đã xem → trả về
+            if (video.currentTime > lastTime + 0.1) {
+                allowUpdateTime.current = false;
+                video.currentTime = lastTime;
+            }
+        };
+    
+        const handleSeeking = () => {
+            if (!video) return;
+        
+            // Nếu người dùng cố gắng tua vượt
+            if (video.currentTime > lastTime + 0.1) {
+                allowUpdateTime.current = false;
+                video.currentTime = lastTime;
+            }
+        };
+    
+        const handleSeeked = () => {
+            allowUpdateTime.current = true;
+        };
+    
+        if (video) {
+            video.addEventListener('timeupdate', handleTimeUpdate);
+            video.addEventListener('seeking', handleSeeking);
+            video.addEventListener('seeked', handleSeeked);
+        }
+    
+        return () => {
+            if (video) {
+                video.removeEventListener('timeupdate', handleTimeUpdate);
+                video.removeEventListener('seeking', handleSeeking);
+                video.removeEventListener('seeked', handleSeeked);
+            }
+        };
+      }, [lastTime]);
     if (!currentLesson) {
         return (
             <div className="content-placeholder">
@@ -38,6 +85,7 @@ const LearningContent = ({ currentLesson, onVideoEnded, onDownload }) => {
             </div>
         );
     }
+
 
     const getFileExtension = (filename) => {
         return filename.split('.').pop().toLowerCase();
@@ -294,6 +342,7 @@ const LearningContent = ({ currentLesson, onVideoEnded, onDownload }) => {
                     <div className="video-wrapper">
                         {mediaUrl ? (
                             <video 
+                                ref={videoRef}
                                 controls 
                                 className="video-player"
                                 key={mediaUrl}
