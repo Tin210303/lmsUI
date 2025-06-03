@@ -140,7 +140,7 @@
 }
 
 .register-btn {
-    background-color: #0056b3;
+    background-color: var(--primary-color);
     color: white;
     border: none;
     padding: 12px;
@@ -163,7 +163,7 @@
 }
 
 .register-btn:hover {
-    background-color: #1658e9;
+    background-color: var(--primary-hover-color);
 }
 
 .register-btn:disabled {

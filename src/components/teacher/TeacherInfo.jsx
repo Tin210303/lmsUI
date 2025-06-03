@@ -142,7 +142,7 @@ const CourseCard = ({ course }) => {
             <div className="course-card-header">
                 <h3 className="course-title">{course.name || 'Course Name'}</h3>
                 <p className="course-dates">
-                    Thời hạn: {formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}
+                    Bắt đầu từ: {course.endDate ? `${formatDate(course.startDate)} - ${formatDate(course.endDate)}` : formatDate(course.startDate)}
                 </p>
                 <p className="course-major">Chuyên ngành: {course.major || 'N/A'}</p>
                 <div className="course-status">

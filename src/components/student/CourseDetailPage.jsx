@@ -373,9 +373,8 @@ const CourseDetailPage = () => {
                 <div className="course-summary">
                     <h3>Nội dung khóa học</h3>
                     <p>
-                        <strong>{sortedLessons.length}</strong> chương · 
-                        <strong>{displayLessonOrItemCount}</strong> {lessonOrItemText} · 
-                        Thời gian học: <strong>{course.endDate ? `${formatDate(course.startDate)} - ${formatDate(course.endDate)}` : "Không giới hạn"}</strong>
+                        <strong>{sortedLessons.length}</strong> chương · <strong>{displayLessonOrItemCount}</strong> {lessonOrItemText} · 
+                        Bắt đầu từ: <strong>{course.endDate ? `${formatDate(course.startDate)} - ${formatDate(course.endDate)}` : `${formatDate(course.startDate)}`}</strong>
                     </p>
                 </div>
 
@@ -480,7 +479,7 @@ const CourseDetailPage = () => {
                         <li><GraduationCap size={16} className='mr-16'/>Chuyên ngành: {course.major}</li>
                         <li><Film size={16} className='mr-16'/> Tổng số {numChapters} chương / {displayLessonOrItemCount} {lessonOrItemText}</li>
                         <li><AlarmClock size={16} className='mr-16'/> {course.learningDurationType === 'LIMITED' ? 'Có thời hạn' : 'Không thời hạn'}</li>
-                        <li><Clock size={16} className='mr-16'/> Thời gian học: {formatDate(course.startDate)} - {course.endDate ? formatDate(course.endDate) : "Không giới hạn"}</li>
+                        <li><Clock size={16} className='mr-16'/> Bắt đầu từ: {course.endDate ? `${formatDate(course.startDate)} - ${formatDate(course.endDate)}` : formatDate(course.startDate)}</li>
                     </ul>
                 </div>
             </div>

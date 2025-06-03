@@ -871,6 +871,8 @@
 /* Phần Hành động */
 .chat-info-actions {
     margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
 }
 
 .chat-add-member-btn {
@@ -1507,8 +1509,9 @@
     align-items: center;
     gap: 8px;
     position: relative;
-    padding: 5px 8px;
-    border-radius: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-top: 1rem !important;
     margin: 0 auto;
     transition: background-color 0.2s ease;
 }

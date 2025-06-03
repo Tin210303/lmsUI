@@ -9,7 +9,7 @@ import '../../assets/css/chatbox.css';
 import { SEND_MESSAGE_API, API_BASE_URL, GET_STUDENT_INFO, GET_TEACHER_INFO } from '../../services/apiService'; // Assuming API_BASE_URL is for WebSocket too
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-import { Users } from 'lucide-react'
+import { Users, UserPlus } from 'lucide-react'
 import TextareaAutosize from 'react-textarea-autosize';
 import '../../assets/css/chatbox-styles.css'; // Add additional styles
 import { AuthContext } from '../../context/AuthContext';
@@ -3291,8 +3291,7 @@ const ChatboxPage = () => {
                         {selectedChatbox.group && (
                             <div className="chat-info-actions">
                                 <button className="add-member-btn" onClick={toggleAddMemberModal}>
-                                    <BiPlus size={18} />
-                                    <span>Thêm thành viên</span>
+                                    <UserPlus size={18} />
                                 </button>
                             </div>
                         )}
