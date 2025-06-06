@@ -703,7 +703,7 @@ const CreateTask = () => {
                         </div>
                         
                         {/* Điểm (Points) */}
-                        <div className="tasks-form-group">
+                        {/* <div className="tasks-form-group">
                             <div className="dropdown-container points">
                                 <div className="dropdown-label">Điểm</div>
                                 <div
@@ -730,7 +730,7 @@ const CreateTask = () => {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </div> */}
                         
                         {/* Thời gian bắt đầu (Start time) */}
                         <div className="tasks-form-group">
